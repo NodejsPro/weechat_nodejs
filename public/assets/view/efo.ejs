@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link id="dynamic-favicon" rel="shortcut icon" type="image/png" href="" style="border-radius: 50%;"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>EFO</title>
+        <link class="efo_style" rel="stylesheet">
+        <link href="<%= azure_storage_url %>css/efo_app.css?v=<%= version %>" rel="stylesheet">
+    </head>
+    <body>
+    <div id="botchan-chat" style="display: none">
+        <div class="row chatview-container">
+            <div class="col-md-12">
+                <div class="panel panel_chatview">
+                    <div class="panel-heading chat-header">
+                        <div class="col-xs-2 header-image-box">
+                            <img class="header-image" src="" alt="EFO webchat">
+                        </div>
+                        <div class="header-title-box">
+                            <div class="header-title-sub"></div>
+                            <div class="header-title-main">EFO</div>
+                        </div>
+                        <!--cart header template-->
+                        <div class="header_cart_box dropdown hidden">
+                            <a>
+                                <div class="shopping-cart hidden">
+                                    <svg aria-hidden="true" data-prefix="fas" data-icon="shopping-cart" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M528.12 301.319l47.273-208C578.806 78.301 567.391 64 551.99 64H159.208l-9.166-44.81C147.758 8.021 137.93 0 126.529 0H24C10.745 0 0 10.745 0 24v16c0 13.255 10.745 24 24 24h69.883l70.248 343.435C147.325 417.1 136 435.222 136 456c0 30.928 25.072 56 56 56s56-25.072 56-56c0-15.674-6.447-29.835-16.824-40h209.647C430.447 426.165 424 440.326 424 456c0 30.928 25.072 56 56 56s56-25.072 56-56c0-22.172-12.888-41.332-31.579-50.405l5.517-24.276c3.413-15.018-8.002-29.319-23.403-29.319H218.117l-6.545-32h293.145c11.206 0 20.92-7.754 23.403-18.681z"></path></svg>
+                                </div>
+                                <div class="document-cart hidden">
+                                    <svg aria-hidden="true" data-prefix="fas" data-icon="archive" role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path fill="currentColor" d="M488 128H24c-13.255 0-24-10.745-24-24V56c0-13.255 10.745-24 24-24h464c13.255 0 24 10.745 24 24v48c0 13.255-10.745 24-24 24zm-8 328V184c0-13.255-10.745-24-24-24H56c-13.255 0-24 10.745-24 24v272c0 13.255 10.745 24 24 24h400c13.255 0 24-10.745 24-24zM308 0-12-5.373-12-12v-8c0-6.627 5.373-12 12-12h104c6.627 0 12 5.373 12 12v8c0 6.627-5.373 12-12 12z"></path></svg>
+                                </div>
+                                <span class="badge cart_quantity">0</span>
+                            </a>
+                        </div>
+                    </div>
+                    <div id="wc-message-pane" class="panel-body wc-message-pane">
+                        <div class="wc_error_global" style="display: none;">
+                            <p class="error_content"></p>
+                        </div>
+
+                        <div id="wc-message-groups" class="message-container">
+                            <div class="wc-info" style="display: none;"></div>
+                            <div id="wc-message-group-content" class="wc-message-group-content hidden">
+                                <!--message content-->
+                            </div>
+                        </div>
+                    </div>
+                    <div class="panel-footer">
+                        <div class="progress progress-xs hidden">
+                            <span class="process_label sr-only"></span>
+                            <div class="progress-bar progress-bar-danger" role="progressbar" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <!--cart list preview-->
+                    <div id="cart_preview_box" class="cart_preview_box" style="display: none;">
+                        <div class="cart_preview_container">
+                            <ul>
+                                <p class="empty_label"><span>Cart is empty.</span></p>
+                            </ul>
+                        </div>
+                        <div class="price_total_box col-xs-12 hidden">
+                            <span class="price_total_label pull-left">Total:</span>
+                            <span class="price_total"></span>
+                        </div>
+                        <div class="cart_error_common_box col-xs-12"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="template_message hidden">
+            <!--User message template-->
+            <div class="wc-message-wrapper chat-right">
+                <div class="chat-avatar" style="display: none;">
+                    <img src="<%= azure_storage_url %>images/no-profile-image.png" alt="user_avatar" height="35px" width="35px">
+                </div>
+                <div class="chat-body" data-message_id=""></div>
+            </div>
+            <!--Bot message template-->
+            <div class="wc-message-wrapper chat-left">
+                <div class="chat-avatar" style="display: none;">
+                    <img src="" alt="bot_avatar" height="35px" width="35px">
+                </div>
+                <div class="chat-body" data-message_id=""></div>
+            </div>
+
+            <!--MESSAGE TYPE-->
+            <div class="message_type">
+                <!--NEXT MESSAGE BUTTON-->
+                <div class="next_message col-xs-12 active">
+                    <button type="button" class="btn btn-info">Next</button>
+                </div>
+
+                <!--LABEL-->
+                <div class="label_template">
+                    <!--Left message-->
+                    <p class="msg_group text_group"></p>
+
+                    <!--Right message-->
+                    <div class="msg_group text_group col-xs-12">
+                        <p class="option_label"></p>
+                    </div>
+                </div>
+
+                <!--INPUT-->
+                <div class="input_template">
+                    <div class="msg_group input_group col-xs-12">
+                        <p class="title"></p>
+                        <div class="input_container"></div>
+                    </div>
+
+                    <!--One input type-->
+                    <div class="input_box input_one col-xs-12">
+                        <div class="input_content">
+                            <input type="text" class="content" autocomplete="off"/>
+                        </div>
+                    </div>
+
+                    <!--Two input type in 1 row-->
+                    <div class="input_box two_input_one_row col-xs-12">
+                        <div class="input_content col-xs-6">
+                            <input type="text" class="content" autocomplete="off"/>
+                        </div>
+                        <div class="input_content col-xs-6">
+                            <input type="text" class="content" autocomplete="off"/>
+                        </div>
+                    </div>
+
+                    <!--Three input in 1 row-->
+                    <div class="input_box three_input_one_row col-xs-12">
+                        <div class="input_content col-xs-4">
+                            <input type="text" class="content" autocomplete="off"/>
+                        </div>
+                        <div class="input_content col-xs-4">
+                            <input type="text" class="content" autocomplete="off"/>
+                        </div>
+                        <div class="input_content col-xs-4">
+                            <input type="text" class="content" autocomplete="off"/>
+                        </div>
+                    </div>
+
+                    <!--Two input type in 2 row-->
+                    <div class="input_box input_two_row col-xs-12">
+                        <div class="input_content col-xs-12">
+                            <input type="text" class="content" autocomplete="off"/>
+                        </div>
+                        <div class="input_content col-xs-12">
+                            <input type="text" class="content" autocomplete="off"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!--TEXTAREA-->
+                <div class="textarea_template">
+                    <div class="msg_group textarea_group col-xs-12">
+                        <p class="title"></p>
+                        <div class="textarea_content">
+                            <textarea class="content"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <!--RADIO-->
+                <div class="radio_template">
+                    <!--RADIO GROUP-->
+                    <div class="msg_group radio_group col-xs-12">
+                        <p class="title"></p>
+                        <ul class="radio_container"></ul>
+                    </div>
+
+                    <!--RADIO OPTION ITEM-->
+                    <ul>
+                        <li class="radio_option col-xs-12"></li>
+
+                        <!--radio simple item-->
+                        <div class="radio_item">
+                            <input class="option_input icheck" type="radio" name=""/>
+                            <label class="option_label"></label>
+                        </div>
+
+                        <!--radio image item-->
+                        <div class="radio_img_item">
+                            <input class="option_input icheck" type="radio" name=""/>
+                            <label class="image_box"><img src="" alt=""/></label>
+                            <label class="option_label"></label>
+                        </div>
+                    </ul>
+                </div>
+
+                <!--CHECKBOX-->
+                <div class="checkbox_template">
+                    <!--CHECKBOX GROUP-->
+                    <div class="msg_group checkbox_group col-xs-12">
+                        <p class="title"></p>
+                        <ul class="checkbox_container"></ul>
+                    </div>
+
+                    <!--CHECKBOX OPTION ITEM-->
+                    <ul>
+                        <li class="checkbox_option">
+                            <input class="option_input icheck" type="checkbox" name=""/>
+                            <label class="option_label"></label>
+                        </li>
+                    </ul>
+                </div>
+
+                <!--POST CODE-->
+                <div class="postalcode_template">
+                    <div class="msg_group postalcode_group col-xs-12">
+
+                    </div>
+
+                    <!--Input child-->
+                    <div class="input_box postal_code col-md-12">
+                        <p class="title"></p>
+                        <div class="input_content">
+                            <input type="number" class="content" name="postal_code" autocomplete="off"/>
+                        </div>
+                    </div>
+                    <div class="input_box prefectures col-md-12">
+                        <p class="title"></p>
+                        <div class="input_content">
+                            <input type="text" class="content" name="prefectures" autocomplete="off"/>
+                        </div>
+                    </div>
+                    <div class="input_box municipality col-md-12">
+                        <p class="title"></p>
+                        <div class="input_content">
+                            <input type="text" class="content" name="municipality" autocomplete="off"/>
+                        </div>
+                    </div>
+                    <div class="input_box street_number col-md-12">
+                        <p class="title"></p>
+                        <div class="input_content">
+                            <input type="text" class="content" name="street_number" autocomplete="off"/>
+                        </div>
+                    </div>
+                    <div class="input_box building_name col-md-12">
+                        <p class="title"></p>
+                        <div class="input_content">
+                            <input type="text" class="content" name="building_name" autocomplete="off"/>
+                        </div>
+                    </div>
+                </div>
+
+                <!--TERMS OF USE-->
+                <div class="terms_use_template">
+                    <!--TERMS OF USE GROUP-->
+                    <div class="msg_group terms_use_group col-xs-12">
+
+                    </div>
+
+                    <!--Input child-->
+                    <p class="terms_use_label title"></p>
+
+                    <!--textarea-->
+                    <div class="textarea_content content_box readonly col-md-12">
+                        <textarea class="content readonly" readonly="readonly"></textarea>
+                    </div>
+                    <!--link-->
+                    <div class="textarea_content link_box col-md-12">
+                        <span class="title first_title"></span>
+                        <a class="content link" href="" target="_blank"></a>
+                        <span class="title last_title"></span>
+                    </div>
+
+                    <div class="input_content input_box col-md-12">
+                        <input class="option_input icheck" type="checkbox" name="" value="1"/>
+                        <label class="option_label"></label>
+                    </div>
+                </div>
+
+                <!--PULLDOWN-->
+                <div class="pulldown_template">
+                    <div class="msg_group pulldown_group col-xs-12">
+                        <p class="title"></p>
+                        <div class="pulldown_container"></div>
+                    </div>
+
+                    <!--Comment label-->
+                    <span class="pulldown_label title"></span>
+
+                    <!--Birthday pulldown type-->
+                    <div class="select_box birthday_box col-xs-12">
+                        <div class="input_content select_year_box col-xs-4">
+                            <select class="form-control content"></select>
+                        </div>
+                        <div class="input_content select_month_box col-xs-4">
+                            <select class="form-control content"></select>
+                        </div>
+                        <div class="input_content select_day_box col-xs-4">
+                            <select class="form-control content"></select>
+                        </div>
+                    </div>
+
+                    <!--Birthday Y-M type pulldown type-->
+                    <div class="select_box birthday_y_m_box col-xs-12">
+                        <div class="input_content select_year_box col-xs-4">
+                            <select class="form-control content"></select>
+                        </div>
+                        <div class="input_content select_month_box col-xs-4">
+                            <select class="form-control content"></select>
+                        </div>
+                    </div>
+
+                    <!--Date pulldown type-->
+                    <div class="select_box date_box col-xs-12">
+                        <div class="input_content select_year_box col-xs-4">
+                            <select class="form-control content"></select>
+                        </div>
+                        <div class="input_content select_month_box col-xs-4">
+                            <select class="form-control content"></select>
+                        </div>
+                        <div class="input_content select_day_box col-xs-4">
+                            <select class="form-control content"></select>
+                        </div>
+                    </div>
+
+                    <!--Time pulldown type-->
+                    <div class="select_box time_box col-xs-12">
+                        <div class="input_content select_hour_box col-xs-4">
+                            <select class="form-control content"></select>
+                        </div>
+                        <div class="input_content select_minute_box col-xs-4">
+                            <select class="form-control content"></select>
+                        </div>
+                    </div>
+
+                    <!--Customize pulldown type-->
+                    <!--Customize one select-->
+                    <div class="select_box customize_box one_select col-xs-12">
+                        <div class="title_box col-xs-6">
+                            <span class="title first_title"></span>
+                        </div>
+                        <div class="input_content col-xs-4">
+                            <select class="form-control content">
+                                <option class="first" value="">Please select</option>
+                            </select>
+                        </div>
+                        <div class="title_box col-xs-2">
+                            <span class="title last_title"></span>
+                        </div>
+                    </div>
+                    <!--Customize two select-->
+                    <div class="select_box customize_box two_select input-groupcol-xs-12">
+                        <p class="title first_title col-xs-12"></p>
+                        <div class="input-group">
+                            <div class="input_content">
+                                <select class="form-control content">
+                                    <option class="first" value="">Please select</option>
+                                </select>
+                            </div>
+                            <span class="input-group-addon">~</span>
+                            <div class="input_content">
+                                <select class="form-control content">
+                                    <option class="first" value="">Please select</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="title last_title col-xs-12"></p>
+                    </div>
+
+                    <!--Period time pulldown type-->
+                    <div class="select_box period_time_box col-xs-12">
+                        <div class="input-group">
+                            <div class="period_time_item">
+                                <div class="input_content select_hour_box col-xs-6">
+                                    <select class="form-control content"></select>
+                                </div>
+                                <div class="input_content select_minute_box col-xs-6">
+                                    <select class="form-control content"></select>
+                                </div>
+                            </div>
+                            <span class="input-group-addon">~</span>
+                            <div class="period_time_item">
+                                <div class="input_content select_hour_box col-xs-6">
+                                    <select class="form-control content"></select>
+                                </div>
+                                <div class="input_content select_minute_box col-xs-6">
+                                    <select class="form-control content"></select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--Month date pulldown type-->
+                    <div class="select_box month_date_box col-xs-12">
+                        <div class="input_content select_month_box col-xs-4">
+                            <select class="form-control content"></select>
+                        </div>
+                        <div class="input_content select_day_box col-xs-4">
+                            <select class="form-control content"></select>
+                        </div>
+                    </div>
+
+                    <!--Prefecture pulldown type-->
+                    <div class="select_box prefecture_box col-xs-12">
+                        <div class="input_content col-xs-12">
+                            <select class="form-control content">
+                                <option class="first" value="">Please select</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!--Prefecture and city two select-->
+                    <div class="select_box prefecture_city_box two_select input-groupcol-xs-12">
+                        <p class="title first_title col-xs-12"></p>
+                        <div class="input-group">
+                            <div class="input_content pref_box">
+                                <select class="form-control content">
+                                    <option class="first" value="">Please select</option>
+                                </select>
+                            </div>
+                            <span class="input-group-addon">~</span>
+                            <div class="input_content city_box">
+                                <select class="form-control content">
+                                    <option class="first" value="">Please select</option>
+                                </select>
+                            </div>
+                        </div>
+                        <p class="title last_title col-xs-12"></p>
+                    </div>
+                </div>
+
+                <!--FILE-->
+                <div class="file_template">
+                    <!--Image-->
+                    <div class="msg_group image_group col-xs-12">
+                        <img src="" alt=""/>
+                    </div>
+
+                    <!--Image-->
+                    <div class="msg_group video_group col-xs-12">
+                        <video controls="controls" src=""></video>
+                    </div>
+
+                    <!--Document-->
+                    <div class="msg_group document_group col-xs-12">
+                        <a href="" target="_blank">Download This Document</a>
+                    </div>
+                </div>
+
+                <!--CONFIRM-->
+                <div class="confirm_template">
+                    <div class="msg_group confirm_group col-xs-12">
+
+                    </div>
+                </div>
+
+                <!--CAROUSEL-->
+                <div class="carousel_template">
+                    <div class="msg_group carousel_group col-xs-12">
+                        <p class="title"></p>
+                        <div class="carousel_container"></div>
+                    </div>
+
+                    <!--carousel item-->
+                    <div class="carousel_item">
+                        <a class="item_url_box" target="_blank">
+                            <div class="image_box">
+                                <img src="" alt=""/>
+                            </div>
+                            <div class="title_box">
+                                <p class="item_title"></p>
+                                <p class="item_subtitle"></p>
+                            </div>
+                        </a>
+                        <div class="select_box col-xs-12">
+                            <button type="button" class="btn btn-info carousel_select">Select</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!--CARD PAYMENT-->
+                <div class="card_payment_template">
+                    <!--CARD PAYMENT GROUP-->
+                    <div class="msg_group card_payment_group col-xs-12">
+                        <p class="title"></p>
+
+                        <div class="card_payment_container">
+                            <div class="card_type_box col-xs-12"></div>
+
+                            <div class="input_box card_number_box col-xs-12">
+                                <p class="title">Card Number</p>
+                                <div class="input_content">
+                                    <input type="text" class="content validate-credit-card" name="card_number" autocomplete="off"/>
+                                </div>
+                            </div>
+                            <div class="input_box card_holder_box col-xs-12">
+                                <p class="title card_holder">Card holder's name</p>
+                                <div class="input_content">
+                                    <input type="text" class="content" name="card_name" autocomplete="off"/>
+                                </div>
+                            </div>
+                            <div class="select_box card_date_box col-xs-12">
+                                <p class="title card_date">Card expiry date</p>
+                                <!--Date pulldown type-->
+                                <div class="input_content select_year_box col-xs-4">
+                                    <select class="form-control content" name="card_year"></select>
+                                </div>
+                                <div class="input_content select_month_box col-xs-4">
+                                    <select class="form-control content" name="card_month"></select>
+                                </div>
+                            </div>
+                            <div class="input_box card_code_box col-xs-12">
+                                <p class="title card_code">Card security code</p>
+                                <div class="input_content col-xs-12">
+                                    <input type="number" class="content validate-number validate-max maximum-length-4 validate-min minimum-length-3" name="card_cvc" autocomplete="off"/>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!--CARD TYPE TEMPLATE-->
+                    <div class="card_type_item col-xs-4">
+                        <img src="" alt="">
+                    </div>
+                </div>
+
+                <!--FILE UPLOAD-->
+                <div class="upload_template">
+                    <!--Input file_path to get value if update conversation-->
+                    <!--Input file_name_origin to check validate require and get value if update conversation-->
+
+                    <div class="msg_group upload_group col-xs-12">
+                        <button type="button" class="btn btn-info file_select_btn">Select file</button>
+                        <p class="title"><a></a></p>
+                        <div class="loading hidden">
+                            <span>Uploading</span>
+                        </div>
+                        <input type="file" class="file_input content validate-file-upload hide"/>
+                        <input type="text" class="file_path content hide"/>
+                        <input type="text" class="file_name_origin content hide"/>
+                    </div>
+                </div>
+
+                <!--CALENDAR-->
+                <div class="calendar_template">
+                    <div class="msg_group calendar_group col-xs-12">
+                        <p class="title"></p>
+                        <div class="calendar_container"></div>
+                    </div>
+
+                    <!--Calendar select-->
+                    <div class="input_box calendar_select col-xs-12">
+                        <div class="input_content">
+                            <input type='text' class="content" readonly="readonly" />
+                            <span class="input-group-addon">
+                                <span class="glyphicon glyphicon-calendar"></span>
+                            </span>
+                        </div>
+                    </div>
+                    <!--Calendar embed-->
+                    <div class="input_box calendar_embed col-xs-12">
+                        <div class="input_content">
+                            <input type="text" class="content hide"/>
+                        </div>
+                    </div>
+                    <!--Calendar period two input-->
+                    <div class="input_box calendar_period col-xs-12">
+                        <div class="input-group">
+                            <div class="input_content">
+                                <input type="text" class="content" readonly="readonly" />
+                            </div>
+                            <span class="input-group-addon">~</span>
+                            <div class="input_content">
+                                <input type="text" class="content" readonly="readonly" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!--CAPTCHA-->
+                <div class="captcha_template">
+                    <div class="msg_group captcha_group col-xs-12">
+                        <p class="title"></p>
+                        <div class="captcha_container">
+                            <div class="input_box col-xs-5">
+                                <div class="input_content">
+                                    <input type="text" class="content" autocomplete="off"/>
+                                </div>
+                            </div>
+                            <div class="captcha_box col-xs-7">
+                                <img src="" alt=""/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!--SHOPPING CART-->
+                <div class="shopping_cart_template">
+                    <!--PRODUCT GROUP-->
+                    <div class="msg_group cart_group shopping_cart_group col-xs-12">
+                        <p class="title"></p>
+                        <ul class="cart_container">
+                            <li class="col-xs-12 empty_label"><span>Cart is empty.</span></li>
+                        </ul>
+                        <div class="price_total_box col-xs-12 hidden">
+                            <span class="price_total_label pull-left">Total:</span>
+                            <span class="price_total"></span>
+                        </div>
+                        <div class="cart_error_common_box col-xs-12"></div>
+                    </div>
+
+                    <!--item cart-->
+                    <ul>
+                        <li class="cart_item col-xs-12">
+                            <!--img here-->
+                            <div class="cart_detail_box col-xs-12">
+                                <div class="product_name_box col-xs-12">
+                                    <a class="product_name"></a>
+                                    <div class="product_remove_box">
+                                        <img src="<%= azure_storage_url %>images/cart_close_icon.png">
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <!--product image box-->
+                    <div class="cart_image_box col-xs-3">
+                        <img src="" alt=""/>
+                    </div>
+                    <!--product description box-->
+                    <div class="product_desc_box col-xs-12">
+                        <p class="product_desc"></p>
+                    </div>
+                    <!--product quantity box-->
+                    <div class="input_box number_input_box product_quantity_box col-xs-12">
+                        <label class="product_quantity_label">Amount:</label>
+                        <div class="incr-btn">
+                            <button type="button" class="btn" data-action="decrease">-</button>
+                        </div>
+                        <div class="input_content col-xs-3">
+                            <input type="number" class="content" min="1"/>
+                        </div>
+                        <div class="incr-btn">
+                            <button type="button" class="btn" data-action="increase">+</button>
+                        </div>
+                    </div>
+                    <!--product price box-->
+                    <div class="product_price_box col-xs-12">
+                        <span class="product_price_label">Unit price:</span>
+                        <span class="product_price"></span>
+                    </div>
+                    <!--product price total box-->
+                    <div class="product_price_total_box col-xs-12">
+                        <span class="product_price_label">Amount:</span>
+                        <span class="product_price"></span>
+                    </div>
+                </div>
+
+                <!--DOCUMENT CART-->
+                <div class="document_cart_template">
+                    <!--DOCUMENT GROUP-->
+                    <div class="msg_group cart_group document_cart_group col-xs-12">
+                        <p class="title"></p>
+                        <ul class="cart_container">
+                            <li class="col-xs-12 empty_label"><span>Document is empty.</span></li>
+                        </ul>
+                    </div>
+
+                    <!--item cart-->
+                    <ul>
+                        <li class="cart_item col-xs-12">
+                            <!--img here-->
+                            <div class="cart_detail_box col-xs-12">
+                                <div class="product_name_box col-xs-12">
+                                    <a class="product_name"></a>
+                                    <div class="product_remove_box">
+                                        <img src="<%= azure_storage_url %>images/cart_close_icon.png">
+                                    </div>
+                                </div>
+                            </div>
+                        </li>
+                    </ul>
+
+                    <!--product image box-->
+                    <div class="cart_image_box col-xs-3">
+                        <img src="" alt=""/>
+                    </div>
+                    <!--product description box-->
+                    <div class="product_desc_box col-xs-12">
+                        <p class="product_desc"></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script id="efo_js_main" src="<%= azure_storage_url %>js/efo_app.js?v=<%= version %>" data-socket-url="<%= socket_url %>"></script>
+    </body>
+</html>

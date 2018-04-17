@@ -1,0 +1,192 @@
+/*CODE 1 (#040980): RADIO, CHECKBOX MESSAGE TYPE*/
+.c_code_1,
+.chat-header,
+.chat-right .chat-body .next_message button,
+.chat-right .chat-body .select_box button
+{
+    background-color: #040980;
+}
+.chat-header.is_gradation,
+.chatview-container .panel-footer .progress-bar.is_gradation
+{
+    background: linear-gradient(270deg, #040980, #e9bd1c);
+}
+.chat-right .chat-body textarea,
+.chat-right .chat-body input,
+.chat-right .chat-body select,
+.chat-right .chat-body .card_payment_group .card_type_box .card_type_item img.active,
+.chat-right .chat-body .radio_group .radio_img_item.active .image_box img,
+.chatview-container .cart_item,
+.cart_preview_container input,
+.cart_preview_box .price_total_box,
+.cart_group .price_total_box
+{
+    border-color: #040980;
+}
+.chat-right .chat-body .carousel_group .slick-arrow.slick-prev:before,
+.chat-right .chat-body .carousel_group .slick-arrow.slick-next:before,
+.chatview-container .product_price_total_box .product_price,
+.cart_preview_box .price_total_box,
+.cart_group .price_total_box,
+.number_input_box button
+{
+    color: #040980;
+}
+.chat-right .chat-body .carousel_group .carousel_item.active {
+    border: 1px solid #040980;
+}
+/*select2*/
+.chat-right .chat-body .select2-container--default .select2-selection--single,
+.select2-dropdown,
+.chat-right .chat-body .calendar_group .calendar_embed .bootstrap-datetimepicker-widget
+{
+    border-color: #040980 !important;
+}
+.chat-right .chat-body .select2-container--default .select2-selection--single .select2-selection__arrow b
+{
+    border-color: #040980 transparent transparent transparent;
+}
+.select2-container--default .select2-results__option--highlighted[aria-selected],
+.bootstrap-datetimepicker-widget table td.active, .bootstrap-datetimepicker-widget table td.active:hover,
+.bootstrap-datetimepicker-widget table td span.active,
+.chat-right .chat-body .calendar_group .calendar_embed .bootstrap-datetimepicker-widget .table-condensed thead tr:first-child,
+.chat-right .chat-body .calendar_group .calendar_embed .bootstrap-datetimepicker-widget table thead tr:first-child th:hover
+{
+    background-color: #040980 !important;
+}
+.bootstrap-datetimepicker-widget table td.today:before {
+    border-bottom-color: #040980 !important;
+}
+.chat-right .chat-body .calendar_group .input_content .input-group-addon
+{
+    border-color: #040980 !important;
+    color: #040980 !important;
+}
+/*CODE 2 (#363cd5)*/
+.c_code_2,
+.chat-left .text_group,
+.chat-right .chat-body .upload_group button.file_select_btn
+{
+    background-color: #363cd5;
+}
+/*CODE 3 (#c8caf7)*/
+.c_code_3,
+.radio_option,
+.checkbox_option,
+.chat-right .chat-body .radio_group .radio_image_container .icheck_input_box
+{
+    background-color: #c8caf7;
+}
+/*CODE 4 (#8a8ef4)*/
+.c_code_4,
+.chatview-container .panel-footer .progress,
+.radio_option.active,
+.checkbox_option.active,
+.number_input_box button
+{
+    background-color: #8a8ef4;
+}
+.select2-container--default .select2-results__option[aria-selected=true],
+.chat-right .chat-body .calendar_group .input_content .input-group-addon
+{
+    background-color: #8a8ef4 !important;
+}
+.chat-right .chat-body .carousel_group .carousel_item {
+    border: 1px solid #8a8ef4;
+}
+/*CODE 5 (#363bad)*/
+.c_code_5,
+.chatview-container .product_remove_box img
+{
+    background-color: #363bad;
+}
+/*CODE 6 (#b0b0bb)*/
+.c_code_6,
+.chat-right .chat-body .next_message button.disabled,
+.chat-right .chat-body button.carousel_select.disabled
+{
+    background-color: #b0b0bb;
+}
+.chat-header .header_cart_box.disabled svg path {
+    fill: #b0b0bb;
+}
+/*CODE 7 (#1e24b4)*/
+.c_code_7 {
+    background-color: #1e24b4;
+}
+/*CODE 8 (#2a31d2)*/
+.c_code_8 {
+    background-color: #2a31d2;
+}
+/*CODE 9 (#dfe0f5)*/
+.c_code_9,
+.chatview-container .wc-message-pane,
+.chatview-container .panel-footer
+{
+    background-color: #dfe0f5;
+}
+/*CODE 10 (#272a69)*/
+.c_code_10,
+.chatview-container .panel-footer .progress-bar
+{
+    background-color: #272a69;
+}
+/*CODE 11 (#8889ae)*/
+.c_code_11 {
+    background-color: #8889ae;
+}
+/*CODE 12 (#33356f)*/
+.msg_group .title,
+.chat-right .chat-body textarea,
+.chat-right .chat-body input,
+.chat-right .chat-body select,
+.chat-right .chat-body .select2-container--default .select2-selection--single .select2-selection__rendered,
+.select2-container--open .select2-dropdown--above,
+.select2-results__option,
+.chat-right .chat-body .carousel_group .item_title,
+.chat-right .chat-body .carousel_group .item_subtitle,
+.chat-right .chat-body .bootstrap-datetimepicker-widget,
+.chat-right .chat-body .upload_group .title a,
+.chat-right .chat-body .upload_group .title a:hover,
+.chatview-container .cart_item .product_name,
+.chatview-container .cart_item .product_desc,
+.header_cart_box .cart_quantity,
+.cart_preview_container input,
+.cart_preview_container .empty_label,
+.chat-right .chat-body .cart_group .empty_label,
+.chatview-container .product_quantity_box .product_quantity_label,
+.chatview-container .product_price_box,
+.chatview-container .product_price_total_box,
+.number_input_box button:hover
+{
+   color: #33356f;
+}
+/*CODE 13 (#FFFFE7): Text area input*/
+.c_code_13,
+.chat-right .chat-body textarea:not(.readonly),
+.chat-right .chat-body input:not(.readonly),
+.chat-right .chat-body select,
+.cart_preview_container input:not(.readonly)
+{
+    background-color: #FFFFE7;
+}
+/*CODE 14 (#627A9B):*/
+.c_code_14 {
+    background-color: #627A9B;
+}
+.chat-right .chat-body .option_label {
+    color: #627A9B;
+}
+/*CODE 15 (#A3A3A3): placeholder*/
+.c_code_15 {
+    background-color: #A3A3A3;
+}
+.chat-right .chat-body textarea::placeholder, .chat-right .chat-body input::placeholder {
+    color: #A3A3A3;
+}
+.chat-right .chat-body textarea:-ms-input-placeholder, .chat-right .chat-body input:-ms-input-placeholder {
+    color: #A3A3A3;
+}
+.chat-right .chat-body textarea::-ms-input-placeholder, .chat-right .chat-body input::-ms-input-placeholder {
+    color: #A3A3A3;
+}

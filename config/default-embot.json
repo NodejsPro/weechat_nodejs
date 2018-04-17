@@ -1,0 +1,16 @@
+{
+    "appEnv" : "embot",
+    "appSecret": "319c0f5bb0c5f9196832152840336ff4",
+    "pageAccessToken": "EAADoECGlcLYBAI4Jhc2U3LEHoANm8KRTZA1Iv85JAgn40F5ZBi0YHxDdjdP1mFWKOTo0HjrhwSBsv9qWgR0N3086jvnagNZCmZAKvuLC1e6ZBemR1K5ME7fgeitcNSKq8kqPEKISwlIdpga8azD78sullELKZCV2ZCWttjna6vUXAZDZD",
+    "validationToken": "QEEl99CA4cZCCFvyhpOlzr2JKXk9v6sWIZC3JE",
+    "serverURL": "https://admin.embot.chat/",
+    "dbURL" : "mongodb://wevnal2:Wevnal12345$@127.0.0.1:27017/embot?authSource=admin",
+    "redisHost" : "127.0.0.1",
+    "redisPort" : "6379",
+    "appPort" : "5000",
+    "socketPort" : "3030",
+    "sendgrid_api_key" : "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",
+    "ssl_passphrase" : "wevnalukiuki",
+    "mail_from" : "no-reply@embot.chat",
+    "luis_subscription_key" : "1d7bd6c15f1748c0b7b010e1482ee7af"
+}

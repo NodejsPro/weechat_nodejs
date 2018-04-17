@@ -1,0 +1,20 @@
+{
+    "appEnv" : "embot_dev",
+    "appSecret": "5660baed8e84f7a6c47e73f840dbd98f",
+    "pageAccessToken": "EAAD1DFGQstEBAMw7dAftfWG2g1OoIJIuc5lXF1BUACbYM7hxqbYIieKygh1CgE0ewsajV25tOL9aFMBy4iSAXYRtpZCtbi7F7zkZA1nEyc87TVSDuWHejODaBwuwi2e5SZBZAXjc6rC5e9dBBZA2hxUh3ARHhSkyus6l1csNOzAZDZD",
+    "validationToken": "QEEl99CA4cZCCFvyhpOlzr2JKXk9v6sWIZC3JD",
+    "serverURL": "https://embot-dev.wevnal.co.jp/",
+    "dbURL" : "mongodb://wevnal2:Hailt12345$@localhost:27017/botchan-dev?authSource=admin",
+    "redisHostPush" : "127.0.0.1",
+    "redisHost" : "127.0.0.1",
+    "redisPort" : "6380",
+    "appPort" : "5001",
+    "socketPort" : "3031",
+    "sendgrid_api_key" : "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",
+    "ssl_passphrase" : "dogbert0",
+    "mail_from" : "no-reply@botchan.chat",
+    "mail_host" : "localhost",
+    "luis_subscription_key" : "1d7bd6c15f1748c0b7b010e1482ee7af",
+    "azure_storage_name" : "botchancms",
+    "azure_storage_container" : "develop"
+}

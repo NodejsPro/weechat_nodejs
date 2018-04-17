@@ -1,0 +1,10 @@
+{
+  "max_limit_user_chat": "จำนวนผู้ใช้เกินใบอนุญาต คุณไม่สามารถสนทนาได้",
+  "mail_subject_limit_chat": "จำนวนผู้ใช้เกินใบอนุญาต",
+  "mail_body_limit_chat": "จำนวนผู้ใช้เกินใบอนุญาต โปรดอัปเกรดแผนของคุณ",
+  "button": {
+    "update_plan": "แผนปรับปรุง"
+  },
+  "mail_subject_validate_mail" : "Verify Email Address",
+  "mail_body_validate_mail" : "Here is your code"
+}

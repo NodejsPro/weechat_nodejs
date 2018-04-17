@@ -1,0 +1,10 @@
+{
+  "max_limit_user_chat" : "The number of users exceeded the license. You are unable to chat",
+  "mail_subject_limit_chat": "The number of users exceeded the license",
+  "mail_body_limit_chat": "The number of users exceeded the license. Please upgrade your plan",
+  "button": {
+    "update_plan": "Upgrade plan"
+  },
+  "mail_subject_validate_mail" : "Verify Email Address",
+  "mail_body_validate_mail" : "Here is your code"
+}

@@ -1,0 +1,128 @@
+﻿{
+  "scenario" : {
+    "id"  : "222",
+    "name" : "scenario_name"
+  },
+  "messages": [
+    {
+      "question": {
+         "id" : 12,
+         "text" : "hello1"
+      },
+      "anwers": [
+        {
+          "key" : "14",
+          "type" : "text",
+          "text_vn" : "helloworld",
+          "text_jp" : "helloworld",
+          "text_en" : "helloworld"
+        }
+      ]
+    },
+    {
+      "question": {
+         "id" : 13,
+         "text" : "hello1"
+      },
+      "anwers": [
+        {
+          "key" : "12",
+          "type" : "text",
+          "text" : "helloworld"
+        },
+        {
+          "key" : "13",
+          "type" : "attachment",
+          "attachment" : {
+              "type":"audio", // audio, file, image, video
+              "payload":{
+                 "url":"https://petersapparel.com/bin/clip.mp3"
+              }
+          }
+        }
+      ]
+    },
+    {
+      "question": {
+         "id" : 14,
+         "text" : "hello1"
+      },
+      "anwers": [
+        {
+          "key" : "14",
+          "type" : "text",
+          "text" : "helloworld"
+        },
+        {
+          "key" : "15",
+          "type" : "generic",
+          "attachment": {
+            "type": "template",
+            "payload": {
+              "template_type": "generic",
+              "elements": [
+                {
+                  "title": "Welcome to Peter\'s Hats", //max 80
+                  "item_url": "https://petersfancybrownhats.com",
+                  "image_url": "https://petersfancybrownhats.com/company_image.png",
+                  "subtitle": "We\'ve got the right hat for everyone.", //max 80  buttons max 3
+                  "buttons": [
+                    {
+                      "type": "web_url",
+                      "url": "https://petersfancybrownhats.com",
+                      "title": "View Website"
+                    },
+                    {
+                      "type": "postback",
+                      "title": "Start Chatting",
+                      "payload": "DEVELOPER_DEFINED_PAYLOAD"
+                    },
+                    {
+                      "type":"phone_number",
+                      "title":"Call Representative",
+                      "payload":"+15105551234"
+                    },
+                    {
+                      "type":"element_share"
+                    }
+                  ]
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "question": {
+         "id" : 15,
+         "text" : "hello1"
+      },
+      "anwers": [
+        {
+          "key" : "15",
+          "type" : "button",
+          "attachment": {
+            "type": "template",
+            "payload": {
+              "template_type": "button",
+              "text":"What do you want to do next?",
+              "buttons":[
+                {
+                  "type":"web_url",
+                  "url":"https://petersapparel.parseapp.com",
+                  "title":"Show Website"
+                },
+                {
+                  "type":"postback",
+                  "title":"Start Chatting",
+                  "payload":"USER_DEFINED_PAYLOAD"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,226 @@
+/*html client site*/
+.webchat-lock-screen {
+	height: 100%;
+	overflow: hidden;
+	width: 100%;
+	position: fixed;
+}
+/*COMMON*/
+.wc-webchat-ctn.ja {
+    font-family: "Hiragino Sans", "ヒラギノ角ゴ Pro W3", "Hiragino Kaku Gothic Pro", メイリオ, Meiryo, "ＭＳ Ｐゴシック", "MS PGothic", sans-serif;
+}
+.wc-webchat-ctn .hidden {
+    display: none !important;
+}
+/*Chat box*/
+.wc-webchat-ctn {
+	z-index: 9998;
+	background-color: transparent;
+	-webkit-overflow-scrolling: touch;
+    position: fixed;
+    right: 10px;
+    bottom: 10px;
+}
+.wc-webchat-ctn:not(.wc-mobile) {
+    transition: all .4s ease-in-out;
+}
+.wc-webchat-ctn.wc-open {
+    box-shadow: 0 0 29px 2px rgba(0, 0, 0, .1);
+    bottom: 0 !important;
+}
+
+/*Open from right*/
+.wc-webchat-ctn.leftward.wc-open {
+    right: 10px !important;
+}
+.wc-webchat-ctn:not(.wc-mobile).leftward.wc-close {
+    bottom: 0;
+}
+
+/*Chat box Mobile*/
+.wc-webchat-ctn.wc-mobile {
+    border: none;
+    box-shadow: none;
+    right: 0;
+}
+.wc-webchat-ctn.wc-mobile.wc-open {
+    width: 100% !important;
+    height: 100% !important;
+    max-width: 100%;
+    max-height: 100%;
+    bottom: 0 !important;
+    right: 0 !important;
+}
+
+/*Right open box*/
+.wc-webchat-ctn .right_open_box {
+    transform: rotate(-90deg);
+    transform-origin: left top;
+    display: block;
+    position: absolute;
+    left: -40px;
+    width: 200px;
+    height: 40px;
+    bottom: 0;
+    background-color: transparent;
+    border: 1px solid #ccc;
+    color: darkslategray;
+    cursor: pointer;
+    align-items: flex-start;
+    text-align: center;
+    box-sizing: border-box;
+    font-size: 14px;
+}
+.wc-webchat-ctn:not(.wc-mobile) .right_open_box {
+    transition: all .2s ease-in-out;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 3px;
+}
+.wc-webchat-ctn .right_open_box span {
+    line-height: 40px;
+}
+
+/*Webchat box*/
+.wc-webchat-ctn .wc-webchat-box {
+	/*overflow: hidden;*/
+	-webkit-overflow-scrolling: touch;
+	-moz-overflow-scrolling: touch;
+	-o-overflow-scrolling: touch;
+	-ms-overflow-scrolling: touch;
+	overflow-scrolling: touch;
+	width: 100%;
+	height: 100%;
+	bottom: 0;
+	top: 0px;
+}
+
+/*Iframe*/
+.wc-webchat-ctn iframe.wc-webchat {
+	width: 0px;
+	height: 0px;
+	min-width: 200px;
+	min-height: 300px;
+	border: none;
+    position: relative;
+    z-index: 0;
+}
+.wc-webchat-ctn:not(.wc-mobile) iframe.wc-webchat {
+    transition: all .4s ease-in-out .2s
+}
+.wc-webchat-ctn iframe {
+	width: 100% !important;
+	height: 100% !important;
+}
+.wc-webchat-ctn.wc-close iframe.wc-webchat {
+    min-height: auto;
+    min-width: auto;
+}
+
+
+/*CLOSE CHATBOX TEMPLATE*/
+
+/*------------------------------------------------------001: avatar and title*/
+.wc-webchat-ctn.wc-close:not(.leftward).close_type_001 {
+    height: 66px !important;
+    overflow: hidden;
+}
+.wc-webchat-ctn.upward.wc-close:not(.wc-mobile).close_type_001 {
+    width: 360px !important;
+}
+.wc-webchat-ctn.wc-mobile.wc-close.close_type_001 {
+    width: 180px !important;
+    height: 45px !important;
+}
+/*END 001*/
+
+/*----------------------------------------------------002: avatar only*/
+.wc-webchat-ctn.wc-close:not(.leftward).close_type_002 {
+    width: 66px !important;
+    height: 66px !important;
+    overflow: hidden;
+}
+/*END 002*/
+
+/*---------------------------------------------------------003: only title and gradation*/
+.wc-webchat-ctn:not(.wc-mobile).close_type_003 {
+    right: 0;
+    bottom: 0;
+}
+.wc-webchat-ctn.wc-close:not(.leftward).close_type_003 {
+    height: 66px !important;
+    overflow: hidden;
+}
+.wc-webchat-ctn.wc-mobile.wc-close.close_type_003 {
+    width: 66px !important;
+}
+/*END 003*/
+
+/*----------------------------------------------------004: only title and no gradation*/
+.wc-webchat-ctn:not(.wc-mobile).close_type_004 {
+    right: 0;
+    bottom: 0;
+}
+.wc-webchat-ctn.wc-close:not(.leftward).close_type_004 {
+    height: 66px !important;
+    overflow: hidden;
+}
+.wc-webchat-ctn.wc-mobile.wc-close.close_type_004 {
+    width: 66px !important;
+}
+/*END 004*/
+
+
+/*Set color follow theme*/
+.wc-webchat-ctn:not(.close_type_004).theme_azuki .right_open_box {
+    background: linear-gradient(270deg, #CB6D6D, #8b819e);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_black .right_open_box {
+    background: linear-gradient(270deg, #262525, #e9bd1c);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_blue .right_open_box {
+    background: linear-gradient(270deg, #0084FF, #36d1dc);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_chocolate .right_open_box {
+    background: linear-gradient(270deg, #7D573F, #8b819e);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_darkblue .right_open_box {
+    background: linear-gradient(270deg, #040980, #e9bd1c);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_grayblue .right_open_box {
+    background: linear-gradient(270deg, #8B819E, #88c8bb);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_green .right_open_box {
+    background: linear-gradient(270deg, #58B240, #fabf3f);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_khaki .right_open_box {
+    background: linear-gradient(270deg, #8BA16B, #b6c34a);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_navyblue .right_open_box {
+    background: linear-gradient(270deg, #588CBF, #8bbf58);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_orange .right_open_box {
+    background: linear-gradient(270deg, #FA7117, #d6de4d);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_palepurple .right_open_box {
+    background: linear-gradient(270deg, #C77DA8, #5c6bc0);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_pink .right_open_box {
+    background: linear-gradient(270deg, #F4579A, #91c2ec);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_purple .right_open_box {
+    background: linear-gradient(270deg, #7E63CD, #fbab88);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_red .right_open_box {
+    background: linear-gradient(270deg, #FA3C4C, #c779d0);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_skyblue .right_open_box {
+    background: linear-gradient(270deg, #12C3EB, #fbab88);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_turquoise .right_open_box {
+    background: linear-gradient(270deg, #44bec7, #d6de4d);
+}
+.wc-webchat-ctn:not(.close_type_004).theme_yellow .right_open_box {
+    background: linear-gradient(270deg, #FFCC00, #ff8400);
+}

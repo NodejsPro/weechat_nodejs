@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <link id="dynamic-favicon" rel="shortcut icon" type="image/png" href="" style="border-radius: 50%;"/>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+        <title>Webchat</title>
+        <link class="webchat_style" rel="stylesheet">
+        <link href="<%= azure_storage_url %>css/app.css?v=<%= version %>" rel="stylesheet">
+    </head>
+    <body>
+    <div id="BotChatElement" style="display: none">
+        <div class="chatview-container">
+            <div class="panel panel_chatview">
+                <div class="panel-heading chat-header">
+                    <div class="col-xs-2 header-image-box">
+                        <img class="header-image" src="" alt="EFO webchat">
+                    </div>
+                    <div class="header-title-box">
+                        <div class="header-title-sub"></div>
+                        <div class="header-title-main">Webchat</div>
+                    </div>
+                </div>
+
+                <div class="wc_error_global" style="display: none;">
+                    <p class="error_content"></p>
+                </div>
+                <div id="wc-message-pane" class="panel-body wc-message-pane">
+                    <div id="wc-message-groups" class="message-container">
+                        <div class="template_message hidden">
+                            <!--User message template-->
+                            <div class="wc-message-wrapper chat-right">
+                                <div class="chat-avatar" style="display: none;">
+                                    <img src="<%= azure_storage_url %>images/no-profile-image.png" alt="Webchat" height="35px" width="35px">
+                                </div>
+                                <div class="chat-body">
+                                    <p class="chat-text">Text</p>
+                                </div>
+                                <div class="message_notification">
+                                    <span></span>
+                                </div>
+                            </div>
+                            <!--Bot message template-->
+                            <div class="wc-message-wrapper chat-left">
+                                <div class="chat-avatar" style="display: none;">
+                                    <img src="" alt="bot_avatar" height="35px" width="35px">
+                                </div>
+                                <div class="chat-body">
+                                    <p class="chat-text">Text</p>
+                                </div>
+                                <div class="message_notification">
+                                    <span></span>
+                                </div>
+                            </div>
+
+                            <!--Button template-->
+                            <div class="button_template">
+                                <a class="button" href="" target="_blank"></a>
+                            </div>
+
+                            <!--quick reply template-->
+                            <div class="quick_replies_template">
+                                <span class="quick-replies-item location"><img src="<%= azure_storage_url %>images/location_action.png" class="location_icon" alt=""></span>
+                                <span class="quick-replies-item text"></span>
+
+                                <a class="send_location" target="_blank" href="" rel="dialog nofollow">
+                                    <div class="map_background" style="background-image: url(https://external.xx.fbcdn.net/static_map.php?v=29&amp;osm_provider=2&amp;size=320x280&amp;zoom=15&amp;markers=:lat_coordinates%2C:long_coordinates);"></div>
+                                    <div class="map_title">
+                                        <div style="">title.location_title</div>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <!--show location address-->
+                            <div class="location_template">
+                                <div class="confirm">
+                                    <div class="button_item">
+                                        <a href="" target="_blank"></a>
+                                    </div>
+                                </div>
+                                <div class="location">
+                                    <a href="https://www.google.com/maps/place/:location_address/@:lat_coordinates,:long_coordinates" target="_blank">
+                                        <!--<div class="location_icon"><img src="{{elixir('images/line_pin.png')}}" alt=""></div>-->
+                                        <div class="location_icon"><img src="" alt=""></div>
+                                        <div class="message">
+                                            <p class="title"></p>
+                                            <p class="address"></p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!--Generic carousel template-->
+                            <div id="" class="carousel carousel_message slide">
+                                <!-- Wrapper for slides -->
+                                <div class="carousel-inner" role="listbox"></div>
+                            </div>
+                            <div class="carousel_item">
+                                <div class="item">
+                                    <div class="carousel-top">
+                                        <a class="carousel_item_top" target="_blank">
+                                            <div class="image">
+                                                <img src="" alt="">
+                                            </div>
+                                            <div class="carousel-wrap-title">
+                                                <div class="carousel-caption-top"><p></p></div>
+                                                <div class="carousel-sub-caption"><p></p></div>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!--Menu template-->
+                            <div class="menu-item">
+                                <a>
+                                    <span class="menu-label"></span>
+                                    <span class="menu-next-btn pull-right" style="display: none;"></span>
+                                </a>
+                            </div>
+                        </div>
+
+                        <div class="wc-info" style="display: none;">
+                            <!--<div id="preChatFormMessageContainer" class="formMessageField">Please fill out the form below to start chatting with the next available agent.</div>-->
+                            <!--<div class="wc-input-box"><input class="wc-txt-name" type="text" name="name" placeholder="Your name"></div>-->
+                            <!--<div class="wc-input-box">-->
+                                <!--<input class="wc-txt-email" type="text" name="email" placeholder="Your email">-->
+                                <!--<span class="msg error" style="display: none;">Not a valid email address</span>-->
+                            <!--</div>-->
+                            <!--<div class="wc-input-box-btn"><input class="wc-send-info" type="button" value="Start chat"></div>-->
+                        </div>
+                        <div id="wc-message-group-content" class="wc-message-group-content hidden">
+                            <!--message content-->
+                        </div>
+                    </div>
+                </div>
+
+                <!--Menu area-->
+                <div class="menu-container" style="display: none;">
+                    <div class="menu-title text-center">
+                        <span class="menu-prev-btn pull-left" href="#" style="display: none;"></span>
+                        <div class="title text-center" data-origin_text="">Menu</div>
+                    </div>
+                    <div class="menu-item-list">
+                        <!--menu item-->
+                    </div>
+                    <img class="menu_arrow" src="<%= azure_storage_url %>images/menu_arrow.png">
+                </div>
+
+                <!--Bottom webchat-->
+                <div class="message-input-wrap">
+            <div class="message-menu-container">
+                <div class="bar1 bar"></div>
+                <div class="bar2 bar"></div>
+                <div class="bar3 bar"></div>
+            </div>
+            <div class="message-input-container">
+                <input type="text" class="message-input-text" value="" placeholder="Type your message..." autofocus>
+            </div>
+            <label class="message-button-container">
+                <button type="button" class="btn btn-send">SEND</button>
+             </label>
+        </div>
+            </div>
+        </div>
+    </div>
+    <script id="webchat_js_main" src="<%= azure_storage_url %>js/app.js?v=<%= version %>" data-socket-url="<%= socket_url %>"></script>
+    </body>
+</html>

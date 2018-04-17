@@ -1,0 +1,10 @@
+{
+  "max_limit_user_chat" : "Số user đã đạt mức giới hạn. Bạn không thể tiếp tục chat.",
+  "mail_subject_limit_chat": "Số người dùng đã đạt mức giới hạn",
+  "mail_body_limit_chat": "Số người dùng đã đạt giới hạn cho phép. Vui lòng nâng cấp plan.",
+  "button": {
+    "update_plan": "Nâng cấp plan"
+  },
+  "mail_subject_validate_mail" : "Mã code xác nhận địa chỉ email",
+  "mail_body_validate_mail" : "Mã code của bạn"
+}

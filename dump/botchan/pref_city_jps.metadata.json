@@ -1,0 +1,1 @@
+{"options":{},"indexes":[{"v":2,"key":{"_id":1},"name":"_id_","ns":"botchan.pref_city_jps"},{"v":2,"key":{"pref":1,"city_code":1},"name":"pref_1_city_code_1","ns":"botchan.pref_city_jps","background":true}],"uuid":"acd2791c0bd84796aa9c776965fd820e"}

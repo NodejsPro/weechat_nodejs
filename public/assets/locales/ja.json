@@ -1,0 +1,13 @@
+{
+	"max_limit_user_chat": "ユーザー数の上限に達しました。メッセージのやりとりができません。",
+	"mail_subject_limit_chat": "ユーザー数の上限に達しました。",
+	"mail_body_limit_chat": "ユーザー数が上限に達成しました。料金プランを変更してください",
+	"button": {
+		"update_plan": "料金プラン変更"
+	},
+	"mail_subject_validate_mail" : "メールアドレス存在確認",
+	"mail_body_validate_mail" : "Here is your code",
+
+
+    "payment_gateway_error" : "決済ゲートウェイが登録されていません。"
+}

@@ -1,0 +1,130 @@
+/*CODE 1 (#44bec7): RADIO, CHECKBOX MESSAGE TYPE*/
+.c_code_1,
+.chat-header,
+.message-input-wrap .message-button-container button,
+.wc-send-info
+{
+    background-color: #44bec7;
+}
+.chat-header.is_gradation {
+    background: linear-gradient(270deg, #44bec7, #d6de4d);
+}
+.chat-right .chat-body .carousel_group .slick-arrow.slick-prev:before,
+.chat-right .chat-body .carousel_group .slick-arrow.slick-next:before,
+.chat-left .quick-container .quick-replies-item,
+.chat-left .button-item,
+.chat-left .carousel_message .glyphicon.glyphicon-chevron-right,
+.chat-left .carousel_message .glyphicon.glyphicon-chevron-left,
+.menu-container .menu-label,
+.menu-container .menu-title,
+.chat-right .chat-body .chat-text,
+.chat-left .chat-body .carousel_message .slick-arrow.slick-prev:before,
+.chat-left .chat-body .carousel_message .slick-arrow.slick-next:before
+{
+    color: #44bec7;
+}
+.chat-left .quick-container .quick-replies-item
+{
+    border-color: #44bec7;
+}
+
+/*CODE 2 (#60CFC3)*/
+.c_code_2,
+.chat-left .chat-body .chat-text,
+.message-input-wrap .message-menu-container .bar1,
+.message-input-wrap .message-menu-container .bar2,
+.message-input-wrap .message-menu-container .bar3,
+.chat-left .chat-body .chat-text.button-title
+{
+    background-color: #60CFC3;
+}
+.message-input-wrap
+{
+    border-color: #60CFC3;
+}
+/*CODE 3 (#E3F3F1)*/
+.c_code_3 {
+    background-color: #E3F3F1;
+}
+/*CODE 4 (#C1F5EF)*/
+.c_code_4 {
+    background-color: #C1F5EF;
+}
+.wc-input-box-btn {
+    color: #C1F5EF;
+}
+.chat-left .carousel_message .slick-slide,
+.chat-left .button-item,
+.menu-container,
+.menu-container .menu-item a
+{
+    border-color: #C1F5EF;
+}
+/*CODE 5 (#7CD2D8)*/
+.c_code_5 {
+    background-color: #7CD2D8;
+}
+/*CODE 6 (#D3D9DA)*/
+.c_code_6,
+.chat-right .chat-body button.carousel_select.disabled
+{
+    background-color: #D3D9DA;
+}
+/*CODE 7 (#3EBCC5)*/
+.c_code_7 {
+    background-color: #3EBCC5;
+}
+/*CODE 8 (#91D9DD)*/
+.c_code_8 {
+    background-color: #91D9DD;
+}
+/*CODE 9 (#EBF2F3)*/
+.c_code_9,
+.chatview-container .wc-message-pane
+{
+    background-color: #EBF2F3;
+}
+/*CODE 10 (#4E9BA1)*/
+.c_code_10 {
+    background-color: #4E9BA1;
+}
+/*CODE 11 (#A6CDD0)*/
+.c_code_11 {
+    background-color: #A6CDD0;
+}
+
+/*CODE 12 (#77989A)*/
+.c_code_12,
+.chat-left .carousel_message .item .carousel-caption-top,
+.chat-left .carousel_message .item .carousel-sub-caption
+{
+   color: #77989A;
+}
+/*CODE 13 (#FFFFE7): Text area input*/
+.c_code_13 {
+    background-color: #FFFFE7;
+}
+/*CODE 14 (#5A7D80): */
+.c_code_14 {
+    background-color: #5A7D80;
+}
+.wc-input-box input {
+    color: #5A7D80;
+}
+/*CODE 15 (#A3A3A3): placeholder*/
+.c_code_15 {
+    background-color: #A3A3A3;
+}
+
+.wc-message-wrapper .message_notification,
+.wc_error_global .error_content,
+.message-input-wrap input::placeholder
+{
+    color: #A3A3A3;
+}
+.message-input-wrap input:-ms-input-placeholder {
+    color: #A3A3A3;
+}
+.message-input-wrap input::-ms-input-placeholder {
+    color: #A3A3A3;
+}
