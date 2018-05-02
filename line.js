@@ -1575,7 +1575,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('join', function (data) {
-            //console.log("join=" + data.connect_page_id);
+            console.log("join=" ,  data);
             socket.join(data.connect_page_id);
         });
 
