@@ -330,7 +330,7 @@ var svgCaptcha = require('svg-captcha');
 if (!sticky.listen(server, config.get('socketPort'))) {
     // Master code
     server.once('listening', function() {
-        console.log('server started on socket port');
+        console.log('server started on socket port', config.get('socketPort'));
     });
 } else {
     app.set('port', process.env.PORT || config.get('appPort'));
@@ -4893,7 +4893,7 @@ function receivedMessageRead(event, secret_key) {
 
 function listen () {
   app.listen(app.get('port'), function() {
-    //console.log('Node app is running on port', app.get('port'));
+    console.log('Node app is running on port', app.get('port'));
   });
 }
 
