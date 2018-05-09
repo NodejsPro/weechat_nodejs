@@ -14,7 +14,6 @@ var model = require('./model');
 var moment = require('moment-timezone');
 //var collection = require( './mongoclient');
 
-// var helper = require('sendgrid').mail;
 var i18n = require("i18n");
 var User = model.User;
 var Connect = model.Connect;
@@ -45,6 +44,8 @@ var Zipcode = model.Zipcode;
 var PrefJp = model.PrefJp;
 var PrefCityJp = model.PrefCityJp;
 
+var Room = model.Room;
+
 //var EfoCv = model.EfoCv;
 var CreateModelLogForName = model.CreateModelLogForName;
 var CreateModelUserProfileForName = model.CreateModelUserProfileForName;
@@ -66,7 +67,7 @@ var RoomMemberProfile = model.RoomMemberProfile;
 var RoomMessageVariable = model.RoomMessageVariable;
 
 var EfoModule = require('./EfoModule');
-var CrdPayment = require('./module/payment');
+// var CrdPayment = require('./module/payment');
 
 
 const default_variable = ["current_url", "user_first_name", "user_last_name", "user_full_name", "user_gender", "user_locale", "user_timezone", "user_referral", "user_lat", "user_long", "user_display_name", "user_id", "preview_flg"];
@@ -85,80 +86,18 @@ const
     WEBCHAT_DEFAULT_MESSAGE_TYPE = "001";
 
 const
-    LINE_USER_TEXT = "001",
-    LINE_USER_IMAGE = "002",
-    LINE_USER_STICKER = "003",
-    LINE_USER_LOCATION =  "004",
-    SLOT_ACTION_SCENARIO = "001",
-    SLOT_ACTION_API = "002",
-    SLOT_ACTION_MAIL = "003",
-    API_TYPE_DIRECT = "001",
-    API_TYPE_VARIABLE = "002",
-    MESSAGE_USER_TEXT = "001",
-    MESSAGE_USER_PAYLOAD = "003",
-    MESSAGE_USER_ATTACHMENT = "004",
-    USER_TYPE = 1,
-    BOT_TYPE = 2,
-    SNS_TYPE_FACEBOOK = '001',
-    SNS_TYPE_LINE = '002',
-    SNS_TYPE_WEBCHAT = '005',
-    SNS_TYPE_EFO = '006',
-    SNS_TYPE_CHATWORK = '007',
-    MESSAGE_USER = '001',
-    MESSAGE_BOT = '002',
-    USER_TYPE_TEXT = "001",
-    USER_TYPE_LIBRARY = "002",
-    USER_TYPE_API = "003",
-    BOT_TYPE_QUICK_REPLIES = "005",
-    BOT_TYPE_API = "006",
-    BOT_TYPE_SCENARIO = "007",
-    BOT_TYPE_TEXT = "001",
-    BOT_TYPE_BUTTON = "002",
-    BOT_TYPE_GENERIC = "003",
-    BOT_TYPE_STICKER = "009",
-    BOT_TYPE_MAIL = "020",
-    LIBRARY_TEXT = "001",
-    LIBRARY_SCENARIO = "002",
-    MENU_TYPE_URL = "1",
-    MENU_TYPE_SCENARIO = "2",
-    MENU_TYPE_SUBMENU = "3",
-
-
-    EFO_USER_INPUT_TEXT = "002",
-    EFO_USER_INPUT_TEXTAREA = "003",
-    EFO_USER_RADIO_BUTTON = "004",
-    EFO_USER_CHECKBOX = "005",
-    EFO_USER_PULLDOWN = "006",
-    EFO_USER_POSTAL_CODE = "007",
-    EFO_USER_FILE = "008",
-    EFO_USER_CALENDAR = "009",
-    EFO_USER_TERMS = "010",
-    EFO_USER_CAROUSEL = "012",
-    EFO_USER_CREDITCARD = "013",
-    EFO_BOT_TEXT = "001",
-    EFO_BOT_FILE = "002",
-    EFO_BOT_MAIL = "003",
-
-    CALENDAR_TYPE_INPUT = "001",
-    CALENDAR_TYPE_EMBED = "002",
-    CALENDAR_TYPE_PERIOD = "003";
-const
-    EFO_INPUT_TYPE_CUSTOMIZE = "001",
-    EFO_INPUT_TYPE_TIME = "002",
-    EFO_INPUT_TYPE_DATE = "003",
-    EFO_INPUT_TYPE_MD = "009",
-    EFO_INPUT_TYPE_DATETIME = "004",
-    EFO_INPUT_TYPE_BIRTHDAY = "005",
-    EFO_INPUT_TYPE_BIRTHDAY_YM = "010",
-    EFO_INPUT_TYPE_PERIOD_HM = "006",
-    EFO_INPUT_TYPE_PERIOD_YMD = "007",
-    EFO_INPUT_TYPE_PREF_CITY = "100",
-    EFO_RADIO_TYPE_IMAGE = "002";
+    ROOM_TYPE_ONE_ONE = "001",
+    ROOM_TYPE_ONE_MANY = "002";
 
 const
-    EFO_INPUT_TYPE_TEL = "004",
-    EFO_TEL_INPUT_NO_HYPHEN = "001",
-    EFO_TEL_INPUT_HYPHEN = "002";
+    USER_SEND_TEXT = "001",
+    USER_SEND_FILE = "002";
+
+const
+    USER_AUTHORITY_SUPER_ADMIN = "001",
+    USER_AUTHORITY_ADMIN_LV_1 = "002",
+    USER_AUTHORITY_ADMIN_LV_2 = "003",
+    USER_AUTHORITY_CLIENT = "004";
 
 const
     bodyParser = require('body-parser'),
@@ -190,8 +129,8 @@ i18n.configure({
 
 var Redis = require('ioredis');
 var redis = new Redis({
-  port: config.get('redisPort'),
-  host: config.get('redisPushHost')
+    port: config.get('redisPort'),
+    host: config.get('redisPushHost')
 });
 var g_bot_language = 'ja';
 redis.subscribe('notification');
@@ -265,9 +204,6 @@ const SOCKET_URL = config.get('socketURL');
 
 const TIMEZONE = config.get('timezone');
 
-const AZURE_STORAGE_URL = 'https://' + config.get('azure_storage_name') + '.blob.core.windows.net/' + config.get('azure_storage_container') + "/uploads/bot_picture/";
-const AZURE_STORAGE_UPLOAD_URL = 'https://' + config.get('azure_storage_name') + '.blob.core.windows.net/' + config.get('azure_storage_container') + "/";
-const EMBED_AZURE_STORAGE_URL = 'https://' + config.get('app_azure_storage_name') + '.blob.core.windows.net/' + config.get('app_azure_storage_container') + "/";
 const APP_VERSION = config.get('app_version');
 
 if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
@@ -275,16 +211,7 @@ if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
     process.exit(1);
 }
 
-var LUIS_SUB_KEY = config.get('luis_subscription_key');
-
 var http = require('http');
-//var options = {
-//    key: fs.readFileSync('/etc/pki/tls/private/embot_dev.key', 'utf8'),
-//    cert: fs.readFileSync('/etc/pki/tls/certs/embot_dev.crt', 'utf8'),
-//    ca: fs.readFileSync('/etc/pki/tls/certs/embot_dev_chain.crt', 'utf8')
-//};
-//const session = require('express-session');
-//var RedisStore = require('connect-redis')(session);
 
 const sticky = require('sticky-session');
 const sredis = require('socket.io-redis');
@@ -478,13 +405,66 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
     // socketIO check connection status
     io.on('connection', function (socket) {
-        //console.log(io.engine.clientsCount);
-        //console.log("client connected");
+        console.log(io.engine.clientsCount);
+        console.log("client connected");
         console.log("connection worker =" + cluster.worker.id);
 
         socket.on('disconnect', function () {
             //console.log('client disconnected');
         });
+
+        socket.on('user_join', function (data) {
+            validUserId(data, function () {
+                
+            })
+        
+            
+            console.log('user join', data);
+            var data_return = {
+                'data' : data,
+                'success' : true
+            };
+            // var user_id = data.user_id;
+            var rooms = Object.keys(socket.rooms);
+            var user_id = '5adc1da69a89200e910d70b2';
+            if (rooms.indexOf(user_id) == -1) {
+                socket.join(user_id);
+            }
+            Room.find({member: {$in: [user_id]}}, function(err, results) {
+                if (err) throw err;
+                console.log('result', results);
+                if (results && results.length > 0) {
+
+                }
+            });
+            console.log('socket: ', socket);
+            io.to(socket.id).emit('server_send_message', data_return);
+        });
+
+        socket.on('user_join_room', function (data) {
+            console.log('user join', data);
+            var data_return = {
+                'data' : data,
+                'success' : true
+            };
+            // var user_id = data.user_id;
+            var rooms = Object.keys(socket.rooms);
+            var user_id = '5adc1da69a89200e910d70b2';
+            if (rooms.indexOf(user_id) == -1) {
+                socket.join(user_id);
+            }
+            valida()
+            Room.find({member: {$in: [user_id]}}, function(err, results) {
+                if (err) throw err;
+                console.log('result', results);
+                if (results && results.length > 0) {
+
+                }
+            });
+            console.log('socket: ', socket);
+            io.to(socket.id).emit('server_send_message', data_return);
+        });
+
 
         socket.on('webchat_user_conversation', function (msg) {
             //console.log("webchat_user_conversation");
@@ -568,6 +548,19 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     io.to(socket.id).emit('webchat_bot_start', data);
                 }
             });
+        });
+
+        socket.on('user_send_message', function (data) {
+            //console.log("webchat_user_start");
+            var room_id = data.room_id;
+            if(room_id != void 0 && room_id.length > 0){
+                console.log('server send client');
+                var data_send = {
+                    'data' : data,
+                    'success' : true
+                };
+                io.to(room_id).emit('server_send_message', data_send);
+            }
         });
 
         //webchat client to server
@@ -759,21 +752,6 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 });
             });
         });
-
-        // get user information on start
-        //socket.on('webchat_client_sendinfo', function (data) {
-        //    var connect_page_id = data.connect_page_id;
-        //    //console.log(connect_page_id);
-        //    validConnectPageId(data, function (err, event, params) {
-        //        if (!err) {
-        //            params.user_full_name = event.user_full_name;
-        //            params.user_email = event.user_email;
-        //            params.ref = event.ref;
-        //            socket.broadcast.to(event.user_id).emit("webchat_other_user_start");
-        //            saveUserProfileWebchat(params);
-        //        }
-        //    });
-        //});
 
         socket.on('webchat_user_send_postback', function (data) {
             //console.log("webchat_user_send_postback");
@@ -2981,6 +2959,26 @@ function validConnectPageId(data, callback){
         }else{
             data.status = 0;
             io.to(data.user_id).emit('webchat_status_join', data);
+            return callback(true);
+        }
+    });
+}
+
+function validRoomId(data, callback){
+    var room_id = data.room_id;
+    var user_id = data.user_id;
+    if(!room_id || !mongoose.Types.ObjectId.isValid(room_id)){
+        data.status = 0;
+        io.to(user_id).emit('status_join', data);
+        return callback(true);
+    }
+    Room.findOne({_id: room_id, deleted_at: null}, function (err, result) {
+        if (!err && result) {
+            var params = createParameterDefault(result.sns_type, result._id, data.user_id, result.page_id);
+            return callback(false, data, params);
+        }else{
+            data.status = 0;
+            io.to(user_id).emit('status_join', data);
             return callback(true);
         }
     });
@@ -6247,670 +6245,3 @@ function startButton(page_access_token){
         }
     });
 }
-
-function saveAllVariableEfo(params, variable_arr, logCollection, log_message_id, question_edit_flg, question_answer_count){
-    Q.all(variable_arr.map(efoSaveVariable))
-        .then(function (data) {
-            logCollection.findOneAndUpdate({_id: log_message_id}, {
-                $set: {
-                    message: message,
-                    updated_at: new Date()
-                }
-            }, {upsert: false}, function (err, result) {
-                if (err) throw err;
-                result.message = message;
-                result.start_flg = 1;
-                if(params.preview_flg === undefined){
-                    io.to(params.connect_page_id).emit('receive_new_message', result);
-                }
-
-                socket.broadcast.to(params.user_id).emit('efo_bot_other_user_answer', {
-                    result: result,
-                    question_edit_flg: question_edit_flg,
-                    question_count: question_answer_count
-                });
-                efoAfterClickNext(params);
-            });
-        });
-}
-var efoSaveVariable = function (val){
-    return Q.Promise(function (resolve, reject) {(Variable.findOne({_id: val.variable_id, connect_page_id: val.connect_page_id}).exec())
-        .then(function (result) {
-            if(result){
-                var now = new Date();
-                var logMessageVariableCollection = CreateModelMessageVariableForName(val.connect_page_id + "_message_variables");
-                return Q(logMessageVariableCollection.update({connect_page_id: result.connect_page_id, variable_id: result._id, user_id: val.user_id}, {$set: {variable_value: val.value, created_at : now, updated_at : now}},
-                    {upsert: true, multi: false}).exec());
-            }
-            return resolve(result);
-        })
-        .then(function (result) {
-            return resolve(result);
-        })
-    });
-
-};
-
-var luisSaveVariable = function (val){
-    return Q.Promise(function (resolve, reject) {(Variable.findOne({connect_page_id: val.connect_page_id, variable_name: val.variable_name}).exec())
-        .then(function (result) {
-            console.log(result);
-            if(result){
-                var now = new Date();
-                return Q(MessageVariable.update({connect_page_id: result.connect_page_id, variable_id: result._id, user_id: val.user_id}, {$set: {variable_value: val.value, created_at : now, updated_at : now}},
-                           {upsert: true, multi: false}).exec());
-            }
-            return resolve(result);
-        })
-        .then(function (result) {
-            console.log(result);
-            return resolve(result);
-        })
-    });
-};
-
-//luisQuery("Book me a flight to Cairo");
-
-//luisQueryRequest();
-
-//luisQueryRequest("Book me a flight to Cairo", "59f7dcd99a892007246ab665")
-//    .then(function(result) { //callback invoked on deferred.resolve
-//        console.log("new02");
-//        console.log(result);
-//    }, function(err) { //callback invoked on deferred.reject
-//        console.log("dsdsdsds");
-//        console.log(err);
-//    });
-
-function luisQueryRequest(params, text){
-    var deferred  = Q.defer();
-    if(params.nlp_id !== undefined){
-        Nlp.findOne({_id: params.nlp_id}, function(err, result) {
-            if(result){
-                request({
-                    uri: 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/' + result.app_id + '?subscription-key=' + LUIS_SUB_KEY + '&timezoneOffset=540&verbose=true',
-                    qs: { q: text },
-                    method: 'GET',
-                    json: true
-                }, function (error, response, body) {
-                    if (!error && response.statusCode == 200) {
-                        var entities = body.entities;
-                        if(entities !== undefined && entities.length > 0){
-                            var entity_arr = [];
-                            entities.forEach(function (row) {
-                                var entity = row.entity;
-                                var value_st = text.slice(row.startIndex, row.endIndex + 1);
-                                entity_arr.push({variable_name: row.type, value: value_st, connect_page_id: params.connect_page_id, user_id: params.user_id});
-                            });
-
-                            Q.all(entity_arr.map(luisSaveVariable))
-                                .then(function(data){
-                                    deferred.resolve(true);
-                                });
-                        }else {
-                            deferred.resolve(true);
-                        }
-                    } else {
-                        deferred.resolve(false);
-                    }
-                });
-            }else{
-                deferred.resolve(false);
-            }
-        });
-    }else{
-        deferred.resolve(false);
-    }
-    return deferred.promise;
-}
-
-function luisQuery(text){
-    request({
-        uri: 'https://westus.api.cognitive.microsoft.com/luis/v2.0/apps/18b8533e-18cb-4b9b-bf69-1c4b5d7a94b6?subscription-key=1d7bd6c15f1748c0b7b010e1482ee7af&timezoneOffset=540&verbose=true',
-        qs: { q: text },
-        method: 'GET'
-    }, function (error, response, body) {
-        if (!error && response.statusCode == 200) {
-            console.log(body);
-            var entities = body.entities;
-            entities =[
-                {
-                    "entity": "nlp_variable1",
-                    "type": "Location",
-                    "startIndex": 20,
-                    "endIndex": 24,
-                    "score": 0.956781447
-                }
-            ];
-            if(entities !== undefined && entities.length > 0){
-                var entity_arr = [];
-                entities.forEach(function (row) {
-                    var entity = row.entity;
-                    var value_st = text.slice(row.startIndex, row.endIndex + 1);
-                    entity_arr.push({variable_name: entity, value: value_st});
-                });
-
-                Q.all(entity_arr.map(luisSaveVariable))
-                .then(function(data){
-                    console.log(data);
-                });
-            }
-
-        } else {
-            console.error("westus failed ", uri);
-        }
-    });
-}
-
-
-//sendEmail();
-function sendEmail(params, mail_id){
-    Email.findOne({_id: mail_id}, function(err, result) {
-        if (err) throw err;
-        if (result) {
-            var subject = variableTextToValue(result.subject, params.user_variable);
-            var content = variableTextToValue(result.content, params.user_variable);
-            var to_email = variableTextToValue(result.to, params.user_variable);
-            if(!emailValidator.validate(to_email)){
-                return;
-            }
-            //content = new helper.Content('text/plain', content);
-            var from = '"Botchan"<' + config.get('mail_from') + '>';
-            var from_name = result.from_name;
-            if(typeof from_name !== 'undefined' && from_name.length > 0){
-                from = '"' + from_name + '"<' + config.get('mail_from') + '>';
-            }
-            var mailOptions = {
-                from: from,
-                to: to_email,
-                subject: subject,
-                text: content
-            };
-            transporter.sendMail(mailOptions, function(error, info){
-                var messageData = {
-                    "content": content,
-                    "to" : to_email
-                };
-                if(error){
-                    saveLogChatMessage(params, BOT_TYPE_MAIL, BOT_TYPE, messageData, new Date(), '', 1, error);
-                    return;
-                }
-                saveLogChatMessage(params, BOT_TYPE_MAIL, BOT_TYPE, messageData, new Date());
-            });
-            //var fromEmail = new helper.Email("info@wevnal.co.jp");
-            //var toEmail = new helper.Email(result.to);
-            //var mail = new helper.Mail(fromEmail, subject, toEmail, content);
-            //var request = sg.emptyRequest({
-            //    method: 'POST',
-            //    path: '/v3/mail/send',
-            //    body: mail.toJSON()
-            //});
-            //
-            //sg.API(request, function (error, response) {
-            //    var messageData = {
-            //        "content": content,
-            //        "to" : toEmail
-            //    };
-            //    if (error) {
-            //        console.log('Error response received');
-            //        saveLogChatMessage(params, BOT_TYPE_MAIL, BOT_TYPE, messageData, new Date(), '', 1);
-            //        return;
-            //    }
-            //    saveLogChatMessage(params, BOT_TYPE_MAIL, BOT_TYPE, messageData, new Date());
-            //    console.log(response.statusCode);
-            //});
-        }
-    });
-}
-
-function getPersistentMenu(menu_mains) {
-    var result = {};
-    if (menu_mains && menu_mains.length) {
-        var data = [];
-        menu_mains.forEach(function (menu_main) {
-            var tmp_main = generateDataMenu(menu_main);
-            data.push(tmp_main);
-        });
-        result = {
-            "persistent_menu": [
-                {
-                    "locale": "default",
-                    "composer_input_disabled": true,
-                    "call_to_actions": data
-                }
-            ]
-        };
-    }
-    return result;
-}
-
-function getMainMenu(connect_page_id) {
-    return Q.Promise(function (resolve, reject) {(Menu.find({connect_page_id: connect_page_id, parent_id: ""}).exec())
-        .then(function(result) {
-            if(result){
-                return resolve(result);
-            }
-            return reject(result);
-        });
-    });
-}
-
-function getSubSubMenu(menu) {
-    return Q.Promise(function (resolve, reject) {(Menu.find({connect_page_id: menu.connect_page_id, parent_id: menu.id}, {}, {sort: {priority_order: 1}}).exec())
-        .then(function(result) {
-            return resolve({main: menu, sub: result});
-        });
-    });
-}
-
-function getSubMenu(menu) {
-    return Q.Promise(function (resolve, reject) {(Menu.find({connect_page_id: menu.connect_page_id, parent_id: menu.id}, {}, {sort: {priority_order: 1}}).exec())
-        .then(getSubSubEachmenu)
-        .then(function (result) {
-            return resolve({main: menu, sub: result});
-        })
-    });
-}
-
-
-function getSubEachmenu(data){
-    return Q.all(data.map(getSubMenu))
-    .then(function(data){
-        return data;
-    });
-}
-
-function getSubSubEachmenu(data){
-    return Q.all(data.map(getSubSubMenu))
-        .then(function(result){
-            return result;
-        });
-}
-
-//getFullPersistentMenu("596c21109a89204be35e77a6");
-function getFullPersistentMenu(connect_page_id) {
-    return Q.Promise(function (resolve, reject) {(Menu.find({connect_page_id: connect_page_id, parent_id: ""}, {}, {sort: {priority_order: 1}}).exec())
-            .then(getSubEachmenu)
-            .then(function (result) {
-                var data = [];
-                var index = 0;
-                result.forEach(function (row) {
-                    //console.log(row);
-                    var menu_main = row.main;
-                    //console.log(menu_main);
-                    data[index] = generateDataMenu(menu_main);
-                    if (menu_main.type == MENU_TYPE_SUBMENU) {
-                        var subs = row.sub;
-                        //console.log(subs);
-                        var data_subs = [];
-                        var index2 = 0;
-                        if (subs && subs.length) {
-                            subs.forEach(function (sub) {
-                                var main_sub = sub.main;
-                                if (main_sub) {
-                                    data_subs.push(generateDataMenu(main_sub));
-                                }
-                                var data_sub_subs = [];
-                                var sub_subs = sub.sub;
-                                if (sub_subs && sub_subs.length) {
-                                    sub_subs.forEach(function (main_sub_sub) {
-                                        data_sub_subs.push(generateDataMenu(main_sub_sub));
-                                    });
-                                }
-                                if (data_sub_subs.length > 0) {
-                                    data_subs[index2]['call_to_actions'] = data_sub_subs;
-                                }
-                                index2++;
-                            });
-                        }
-                        if (data_subs.length > 0) {
-                            data[index]['call_to_actions'] = data_subs;
-                        }
-                    }
-                    index++;
-                });
-                var result_data = {
-                    "persistent_menu": [
-                        {
-                            "locale": "default",
-                            "composer_input_disabled": true,
-                            "call_to_actions": data
-                        }
-                    ]
-                };
-                return resolve(result_data);
-            })
-    });
-}
-
-function decodeBase64(b64string){
-    if (typeof Buffer.from === "function") {
-       return Buffer.from(b64string, 'base64').toString();
-    } else {
-        return new Buffer(b64string, 'base64').toString();
-    }
-}
-
-function generateDataMenu(item){
-    var result = {};
-    if(item){
-        if (item.type == MENU_TYPE_URL) {
-            result = {title: item.title, type: 'web_url', url: item.url};
-        }else if(item.type == MENU_TYPE_SCENARIO) {
-            result = {title: item.title, type: 'postback', payload: 'MENU_SCENARIO_' + item.scenario_id};
-        }else{
-            result = {title: item.title, type: 'nested', call_to_actions: []};
-        }
-    }
-    return result;
-}
-
-function saveException(err){
-    var now = new Date();
-    var exception = new Exception({
-        err: err,
-        created_at : now,
-        updated_at : now
-    });
-    exception.save(function(err) {
-    });
-}
-
-function checkLimitUserChat(connect_page_id, sns_type, user_chat_id, callback) {
-    if(sns_type == SNS_TYPE_EFO ){
-        return callback(true);
-    }
-    TotalUserChat.findOne({cpid: {$in: [connect_page_id]}}, function(err, result) {
-        if(result){
-            var logUserProfileCollection = UserProfile;
-            if(sns_type == SNS_TYPE_EFO ){
-                logUserProfileCollection = CreateModelUserProfileForName(connect_page_id + "_user_profiles");
-            }
-            logUserProfileCollection.findOne({connect_page_id: connect_page_id, user_id: user_chat_id, start_flg: {$ne: 0}}, function (err, user_profile) {
-                if (err) throw err;
-                if (user_profile) {
-                    return callback(true);
-                }
-                Plan.findOne({code: result.plan}, function(err, plan) {
-                    if(!plan) {
-                        User.findOne({_id: result.user_id, deleted_at: null}, function(err, user) {
-                            return callback(false, user);
-                        });
-                    }else{
-                        if(result.total_user_chat < plan.max_user){
-                            return callback(true);
-                        } else {
-                            return callback(false);
-                        }
-                    }
-                });
-            });
-        }else{
-            return callback(true);
-        }
-    });
-}
-
-function checkPlanUser(user, max_user_number, callback) {
-    Connect.find({user_id: user._id, type: {$in: [SNS_TYPE_FACEBOOK, SNS_TYPE_LINE, SNS_TYPE_WEBCHAT]}}, function(err, connects) {
-       if (err) throw err;
-       if(connects){
-           var connect_arr = [];
-           for(var i = 0; i < connects.length; i++){
-               connect_arr.push(connects[i]._id);
-           }
-           ConnectPage.find({connect_id: {$in: connect_arr}, template_flg: {$ne: 1}}, function(err, connect_pages) {
-               if (err) throw err;
-               if(connect_pages){
-                   var connect_page_arr = [];
-                   for(var j = 0; j < connect_pages.length; j++){
-                       connect_page_arr.push(connect_pages[j]._id);
-                   }
-                   UserProfile.find({connect_page_id : {$in: connect_page_arr}, start_flg: {$ne: 0}}).count(function (err, count) {
-                       if (err) throw err;
-                       //console.log('count:', count, ',max_user_number: ', max_user_number);
-                       if(count < max_user_number){
-                           return callback(true);
-                       } else {
-                           return callback(false);
-                       }
-                   });
-               } else {
-                   return callback(false);
-               }
-           })
-       } else {
-           return callback(false);
-       }
-    });
-}
-
-function sendMessageLimit(params, user) {
-    var locale = 'ja';
-    if(params.locale){
-        locale = params.locale;
-    } else if(user && user.locale){
-        locale = user.locale;
-    }
-    i18n.setLocale(locale);
-    if(params.sns_type != SNS_TYPE_WEBCHAT){
-        var answer = convertTextMessage(params.sns_type, i18n.__('max_limit_user_chat'));
-        params.background_flg = 1;
-        sendMessage(params, USER_TYPE_TEXT, answer);
-    }
-    if(user && user.email && !user.limit_user_flg){
-        sendEmailLimitChat(params, user.email);
-        User.update({_id: user._id}, {$set: {limit_user_flg: 1}},
-            {upsert: false, multi: false}, function (err) {
-                if (err) throw err;
-            });
-    }
-}
-
-//getFacebookUserUrl("https://www.facebook.com/100016877104035");
-function getFacebookUserUrl(url){
-    //request({
-    //    uri: url,
-    //    method: 'GET'
-    //}, function (error, response, body) {
-    //    if (!error && response.statusCode == 200) {
-    //        //console.log(body);
-    //        var n = body.indexOf("joshua.riordan");
-    //        console.log(n);
-    //    } else {
-    //        console.error("westus failed ", uri);
-    //    }
-    //});
-    var afterLoad = require('after-load');
-    afterLoad(url, function(html){
-        console.log(html);
-        var n1 = html.indexOf('fbid=100016877104035');
-        var n2 = html.indexOf('&type=');
-        console.log(n1);
-        var str = html.slice(n1, n2);
-
-        var arr = str.split(".");
-        //console.log(html.slice(n1, n1+200));
-        console.log(arr[3]);
-    });
-}
-
-function sendEmailLimitChat(params, mail_to) {
-    var mail_template = fs.readFileSync(__dirname + '/public/assets/view/mail_limit_user_chat.html', 'utf8');
-    // var subject = i18n.__('mail_subject_limit_chat');
-    // mail_template = mail_template.replace(':mail_header', i18n.__('mail_subject_limit_chat'));
-    // mail_template = mail_template.replace(':mail_body', i18n.__('mail_body_limit_chat'));
-    // mail_template = mail_template.replace(':button_update_plan', i18n.__('button.update_plan'));
-    // mail_template = mail_template.replace(':link', config.get('serverURL') + 'plan');
-    // var fromEmail = new helper.Email('"Botchan"<' + config.get('mail_from') + '>');
-    // var toEmail = new helper.Email(mail_to);
-    // var content = new helper.Content('text/html', mail_template);
-    // var mail = new helper.Mail(fromEmail, subject, toEmail, content);
-    //
-    // var request = sg.emptyRequest({
-    //     method: 'POST',
-    //     path: '/v3/mail/send',
-    //     body: mail.toJSON()
-    // });
-    //
-    // sg.API(request, function (error, response) {
-    //     if (error) {
-    //         console.log('Error response received');
-    //         return;
-    //     }
-    // });
-    var subject = i18n.__('mail_subject_limit_chat');
-    mail_template = mail_template.replace(':mail_header', i18n.__('mail_subject_limit_chat'));
-    mail_template = mail_template.replace(':mail_body', i18n.__('mail_body_limit_chat'));
-    mail_template = mail_template.replace(':button_update_plan', i18n.__('button.update_plan'));
-    mail_template = mail_template.replace(':link', config.get('serverURL') + 'plan');
-    //content = new helper.Content('text/plain', content);
-    var mailOptions = {
-        from: '"Botchan"<' + config.get('mail_from') + '>',
-        to: mail_to,
-        subject: subject,
-        html: mail_template
-    };
-    transporter.sendMail(mailOptions, function(error, info){
-        var messageData = {
-            "content": mail_template,
-            "to" : mail_to
-        };
-        if(error){
-            saveLogChatMessage(params, BOT_TYPE_MAIL, BOT_TYPE, messageData, new Date(), '', 1, error);
-            return;
-        }
-        saveLogChatMessage(params, BOT_TYPE_MAIL, BOT_TYPE, messageData, new Date());
-    });
-}
-
-function searchAddressJPFromZipcode(zipcode, callback){
-    Zipcode.findOne({"zipcode" : zipcode},function(err, result) {
-        var data = {};
-        if(result){
-            data = {"success" : 1, "pref" : result.pref, "city" : result.city + result.street};
-        }else{
-            data = {"success" : 0, "msg" : "指定された郵便番号から住所が見つかりません"};
-        }
-        return callback(data);
-    });
-}
-
-function searchPrefJP(callback){
-    PrefJp.find({},{}, {sort: {_id: 1}}, function(err, result) {
-        var pref = [];
-        if(result){
-            result.forEach(function(row) {
-                pref.push(row.pref);
-            });
-            return callback(pref);
-        }else{
-            return callback(pref);
-        }
-    });
-}
-
-
-function searchCityJP(pref, callback){
-    PrefCityJp.find({pref: pref},{}, {sort: {_id: 1}}, function(err, result) {
-        var city = [];
-        if(result){
-            result.forEach(function(row) {
-                city.push(row.city);
-            });
-            return callback(city);
-        }else{
-            return callback(city);
-        }
-    });
-}
-
-//searchCityJP("北海道");
-function searchCityJPss(pref){
-    if(typeof cluster.worker !== "undefined"){
-        return;
-    }
-    Zipcode.find({},{}, {sort: {_id: 1}}, function(err, result) {
-        console.log("err = " + err);
-        if(result){
-            var pref = "";
-            var city = "";
-            var pref_id = 0;
-            result.forEach(function(row) {
-                var tmp_pref = row.pref;
-                var tmp_city = row.city;
-                if(pref != tmp_pref){
-                    pref_id++;
-                    pref = tmp_pref;
-                }
-                if(tmp_city != city){
-                    var prefJp = new PrefJp({
-                        pref: tmp_pref,
-                        pref_id:pref_id,
-                        city: tmp_city
-                    });
-                    prefJp.save(function(err) {
-                        if (err) throw err;
-                    });
-                    city = tmp_city;
-                }
-            });
-        }
-    });
-}
-
-var date_tmp = moment().tz(TIMEZONE).format("YYYY-MM-DD");
-console.log(date_tmp);
-console.log(moment().tz(TIMEZONE).format());
-// EfoModule.validateEmail("5a8e7a87a24a6107092b0dae", "5a8e7a87a24a6107092b0dae", "lethanhhai2008@gmail.com");
-//var google = require('googleapis');
-//var sheets = google.sheets('v4');
-//var oauth2Client = new google.auth.OAuth2(
-//    GOOGLE_CLIENT_ID,
-//    GOOGLE_CLIENT_SECRET
-//);
-
-//getValueGoogleSheet('1BuHcAvpPN-N6gWiqpUqjr00u1u7DMay05cLGquY9ASI' ,'A', 'B');
-// getValueGoogleSheet('1SXIGMgqrPmNmCOnkgSJ-1mVCqUMuAf5AqKk5iHkFs0s' ,'A', 'B', 'abc');// chi co miyatsu
-
-//function getValueGoogleSheet(sheet_id, column_user, column_bot, access_token) {
-//    //console.log('------------getValueGoogleSheet--------------');
-//    //if(access_token == void 0){
-//    //    console.log(' via api key');
-//    //    oauth2Client.apiKey = 'AIzaSyBuM5GwydDMWgeOsPKYaaPWuHTR3xxEu6o';
-//    //} else{
-//    //    console.log(' via access_token');
-//    //
-//    //}
-//    oauth2Client.apiKey = GOOGLE_API_KEY;
-//
-//    oauth2Client.credentials = {
-//        "access_token" : "ya29.GltgBSbLZ_geI5cJqQx7WPXvrSWD-83-N36TD69SEQCB5kyTLTUGYq5R9MrMk4ibIFx8D3gcflYxy-4qe314Bkjmc4-_atAZs35K3II7e7_d9ZR5TRNtfh6gUpk_",
-//        "token_type" : "Bearer",
-//        "expires_in" : 3600,
-//        "refresh_token" : "1/TuIRzwI0zPQnKkothRhvUJsj3_eNHVliSE8TGCt-91o",
-//        "id_token" : "eyJhbGciOiJSUzI1NiIsImtpZCI6ImUyNzY3MWQ3M2EyNjA1Y2NkNDU0NDEzYzRjOTRlMjViM2Y2NmNkZWEifQ.eyJhenAiOiI1Mzc3OTM5ODYzNTMtMzVsMnQxOTNtdG1xbXVybm5lY242Yjk4ZDNzbWhvZTQuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJhdWQiOiI1Mzc3OTM5ODYzNTMtMzVsMnQxOTNtdG1xbXVybm5lY242Yjk4ZDNzbWhvZTQuYXBwcy5nb29nbGV1c2VyY29udGVudC5jb20iLCJzdWIiOiIxMDQzNTUyMTM2MTE4NjUzNDQyNTgiLCJoZCI6Im1peWF0c3Uudm4iLCJlbWFpbCI6ImxlLnRoYW5oLmhhaUBtaXlhdHN1LnZuIiwiZW1haWxfdmVyaWZpZWQiOnRydWUsImF0X2hhc2giOiJ5dXBOLTYxY05IWDBqbnNwZFlJNElRIiwiZXhwIjoxNTE4NDM2NjMxLCJpc3MiOiJodHRwczovL2FjY291bnRzLmdvb2dsZS5jb20iLCJpYXQiOjE1MTg0MzMwMzEsIm5hbWUiOiJMw6ogVGhhbmggSOG6o2kiLCJwaWN0dXJlIjoiaHR0cHM6Ly9saDQuZ29vZ2xldXNlcmNvbnRlbnQuY29tLy02Z2VYOVNyXzZldy9BQUFBQUFBQUFBSS9BQUFBQUFBQUFCQS95TkFiQ1NVR1c2US9zOTYtYy9waG90by5qcGciLCJnaXZlbl9uYW1lIjoiTMOqIFRoYW5oIiwiZmFtaWx5X25hbWUiOiJI4bqjaSIsImxvY2FsZSI6ImphIn0.IhcE4Q0FsP3cjuHFwk5qQWQp1vccDvC8u2UuKTh1mpZU_q4MDEmv80XzlxekVH4dxNclLneLkcVNCaWP6wxm8Q0UdrjI4m_yWKbqcbzXAhIYbYZjsEtsXr_Ry_x-5FOhSfHsCXrFoBbtGVFAhreBQhYvVB1rqD9ejQzwg403hFa6987fDSoUrs8cLL3EEeUQqX-uZJ0y-IS69NfwYEc0gon-sLVOS_0nyrKAixzFLywehuvVd7YGjHS3VEClMw4a7BMTLuUZM23anqeTIPdfYE82nNYVurn8zmXVdBCBb-bBbOryg_YW7Uzr5WGksSdlxen-UKaOhmnesXnXKNhjcA",
-//        "created" : 1518433031
-//    };
-//
-//    sheets.spreadsheets.values.get({
-//        spreadsheetId: sheet_id,
-//        range: column_user + ':' + column_bot,
-//        auth: oauth2Client
-//    }, function(err, response) {
-//        if (err) {
-//            console.log('The API returned an error: ' + err);
-//            return;
-//        }
-//        var rows = response && response.data ? response.data.values : [];
-//        if (rows.length == 0) {
-//            console.log('No data found.');
-//        } else {
-//            for (var i = 0; i < rows.length; i++) {
-//                var row = rows[i];
-//                // Print columns A and E, which correspond to indices 0 and 4.
-//                console.log(row);
-//            }
-//        }
-//    });
-//}

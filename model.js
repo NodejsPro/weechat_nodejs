@@ -646,41 +646,11 @@ var PrefCityJpSchema = new Schema({
     city: String
 }, { collection: 'pref_city_jps' });
 
-//var EfoCvSchema = new Schema({
-//    connect_page_id: String,
-//    user_id: String,
-//    scenario_id: String,
-//    answer_count: Number,
-//    position: Number,
-//    cv_flg: Number,
-//    cv_time: Number,
-//    cv_minute: Number,
-//    date: String,
-//    browser: String,
-//    device: String,
-//    os: String,
-//    lang: String,
-//    created_at: Date,
-//    updated_at: Date
-//}, { collection: 'efo_cvs' });
-//EfoCvSchema.index({ connect_page_id: 1, user_id: 1});
-
-//connect()
-//    .on('error', console.log)
-//    .on('disconnected', connect);
-//
-//function connect () {
-//    console.log("connect");
-//    //var options = { database: 'admin', server: { socketOptions: { keepAlive: 1 } } };
-//    var options = {
-//        useMongoClient: true,
-//        socketTimeoutMS: 0,
-//        keepAlive: true,
-//        reconnectTries: 30
-//    };
-//
-//    return mongoose.connect(config.get('dbURL'), options).connection;
-//}
+var RoomSchema = new Schema({
+    name: String,
+    user_id: String,
+    member: Array
+});
 
 var options = {
     //useMongoClient: true,
@@ -736,6 +706,7 @@ exports.EfoCookie = mongoose.model('EfoCookie', EfoCookieSchema);
 exports.EfoCaptcha = mongoose.model('EfoCaptcha', EfoCaptchaSchema);
 exports.EfoCart = mongoose.model('EfoCart', EfoCartSchema);
 
+exports.Room = mongoose.model('Room', RoomSchema);
 
 exports.RoomList = mongoose.model('RoomList', RoomListSchema);
 exports.RoomMessageVariable = mongoose.model('RoomMessageVariable', RoomMessageVariableSchema);
