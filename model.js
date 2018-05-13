@@ -8,13 +8,15 @@ var config = require('config');
 mongoose.Promise = global.Promise;
 
 var UserSchema = new Schema({
-    limit_user_flg: Number,
-    locale: String,
-    email: String,
-    plan: String,
-    delete_flg: Number
+    authority: String,
+    phone: String,
+    contact: Array,
+    user_name: String,
+    code: String,
+    is_login: String,
+    created_at : Date,
+    updated_at : Date
 });
-UserSchema.index({ email: 1});
 
 var TotalUserChatSchema = new Schema({
     user_id: String,
@@ -315,31 +317,18 @@ var establishedModels = {};
 var createModelLogForName = function (name) {
     if (!(name in establishedModels)) {
         var Any = new Schema({
-            connect_page_id: String,
-            scenario_id: String,
-            page_id: String,
+            room_id: String,
             user_id: String,
             message_type: String,
-            type : Number,
             message : Schema.Types.Mixed,
             message_id: String,
-            input_requiment_flg: Number,
-            payload: String,
-            notification_id: String,
             error_flg: Number,
             background_flg: Number,
-            error_message : Schema.Types.Mixed,
             created_at : Date,
             updated_at : Date,
-            start_flg: Number,
-            user_said: String,
             time_of_message : Date,
-            question_count: Number,
-            bid: String,
-            b_position: Number,
-            btn_next: String
         }, { collection: name });
-        Any.index({ connect_page_id: 1, user_id: 1, created_at: -1});
+        Any.index({ room_id: 1, user_id: 1, created_at: -1});
         establishedModels[name] = mongoose.model(name, Any);
     }
     return establishedModels[name];
@@ -649,7 +638,10 @@ var PrefCityJpSchema = new Schema({
 var RoomSchema = new Schema({
     name: String,
     user_id: String,
-    member: Array
+    room_type: String,
+    member: Array,
+    created_at : Date,
+    updated_at : Date
 });
 
 var options = {

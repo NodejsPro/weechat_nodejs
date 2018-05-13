@@ -414,55 +414,42 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('user_join', function (data) {
-            validUserId(data, function () {
-                
-            })
-        
-            
-            console.log('user join', data);
-            var data_return = {
-                'data' : data,
-                'success' : true
-            };
-            // var user_id = data.user_id;
+            console.log('event user_join ');
             var rooms = Object.keys(socket.rooms);
-            var user_id = '5adc1da69a89200e910d70b2';
-            if (rooms.indexOf(user_id) == -1) {
-                socket.join(user_id);
-            }
-            Room.find({member: {$in: [user_id]}}, function(err, results) {
-                if (err) throw err;
-                console.log('result', results);
-                if (results && results.length > 0) {
-
+            validUserId(data, function (error, result, params) {
+                if(!error && result){
+                    var user_id = data.user_id;
+                    if (rooms.indexOf(user_id) == -1) {
+                        socket.join(user_id, function() {
+                            var data_return = {
+                                success: true,
+                            };
+                            io.to(user_id).emit('status_join', data_return);
+                        });
+                    }
                 }
             });
-            console.log('socket: ', socket);
-            io.to(socket.id).emit('server_send_message', data_return);
         });
 
         socket.on('user_join_room', function (data) {
-            console.log('user join', data);
-            var data_return = {
-                'data' : data,
-                'success' : true
-            };
-            // var user_id = data.user_id;
+            var user_id = data.user_id;
+            console.log('user_join_room');
             var rooms = Object.keys(socket.rooms);
-            var user_id = '5adc1da69a89200e910d70b2';
             if (rooms.indexOf(user_id) == -1) {
                 socket.join(user_id);
             }
-            valida()
-            Room.find({member: {$in: [user_id]}}, function(err, results) {
-                if (err) throw err;
-                console.log('result', results);
-                if (results && results.length > 0) {
-
+            validRoom(data, function( error, result, param){
+                if(!error && result){
+                    var data_result = {
+                        success: true,
+                        room_id: param.room_id
+                    };
+                    socket.join(param.room_id, function() {
+                        console.log('resut: ', data_result, Object.keys(socket.rooms));
+                        io.to(user_id).emit('status_join_room', data_result);
+                    });
                 }
             });
-            console.log('socket: ', socket);
-            io.to(socket.id).emit('server_send_message', data_return);
         });
 
 
@@ -503,7 +490,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                             });
                             //socket.broadcast.to(event.user_id).emit("efo_other_user_start");
                         } else {
-                            data.status = 0;
+                            data.success = 0;
                             data.limit_user_chat = 1;
                             params.limit_user_chat = 1;
                             sendMessageLimit(params, user);
@@ -514,7 +501,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                         }
                     });
                 } else {
-                    data.status = 0;
+                    data.success = 0;
                     socket.emit('webchat_status_join', data);
                 }
             });
@@ -551,15 +538,28 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('user_send_message', function (data) {
-            //console.log("webchat_user_start");
+            console.log("user_send_message data",data);
             var room_id = data.room_id;
+            var user_id = data.user_id;
+            var rooms = Object.keys(socket.rooms);
+            if (rooms.indexOf(user_id) == -1) {
+                console.log('room add user_id', Object.keys(socket.rooms));
+                socket.join(user_id);
+            }
             if(room_id != void 0 && room_id.length > 0){
-                console.log('server send client');
-                var data_send = {
-                    'data' : data,
-                    'success' : true
-                };
-                io.to(room_id).emit('server_send_message', data_send);
+                getRoom(data, function( error, result, params){
+                    console.log("user_send_message error",error, result, params);
+                    if(!error && result){
+                        var rooms = Object.keys(socket.rooms);
+                        // if (rooms.indexOf(params.room_id) == -1) {
+                        //     socket.join(params.room_id);
+                        // }
+                        var dataObj = data.data;
+                        // sendMessage(params, message, message_type) {
+                        console.log('room full ', Object.keys(socket.rooms));
+                        sendMessage(params, dataObj.message, dataObj.message_type);
+                    }
+                });
             }
         });
 
@@ -570,13 +570,13 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             socket.join(data.user_id);
             var connect_page_id = data.connect_page_id;
             if (!connect_page_id || !mongoose.Types.ObjectId.isValid(connect_page_id)) {
-                data.status = 0;
+                data.success = 0;
                 io.to(data.user_id).emit('webchat_status_join', data);
                 return true;
             }
             getConnectPageBySns(connect_page_id, SNS_TYPE_WEBCHAT)
                 .then(function (connect_page) {
-                    data.status = 1
+                    data.success = 1
                     var tmp_picture = (typeof connect_page.picture !== "undefined") ? connect_page.picture : "default_web_embed.png";
                     data.picture = AZURE_STORAGE_URL + tmp_picture;
                     data.setting = connect_page.setting;
@@ -603,7 +603,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                     //});
                                     //socket.broadcast.to(event.user_id).emit("webchat_other_user_start");
                                 } else {
-                                    data.status = 0;
+                                    data.success = 0;
                                     data.limit_user_chat = 1;
                                     params.limit_user_chat = 1;
                                     sendMessageLimit(params, user);
@@ -616,7 +616,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                             //    saveUserProfileWebchat(params);
                             //}
                         } else {
-                            data.status = 0;
+                            data.success = 0;
                             socket.emit('webchat_status_join', data);
                         }
                     });
@@ -641,13 +641,13 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 //})
                 .fail(function () {
                     console.log("fail");
-                    data.status = 0;
+                    data.success = 0;
                     io.to(data.user_id).emit('webchat_status_join', data);
                 })
                 .catch(function (err) {
                     console.error('Something went wrong: ' + err);
                     saveException(err);
-                    data.status = 0;
+                    data.success = 0;
                     io.to(data.user_id).emit('webchat_status_join', data);
                 });
         });
@@ -838,7 +838,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             socket.join(data.user_id);
             var connect_page_id = data.connect_page_id;
             if (!connect_page_id || !mongoose.Types.ObjectId.isValid(connect_page_id)) {
-                data.status = 0;
+                data.success = 0;
                 io.to(data.user_id).emit('efo_status_join', data);
                 return true;
             }
@@ -848,7 +848,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             data.embed_azure_storage_url = EMBED_AZURE_STORAGE_URL;
             getConnectPageBySns(connect_page_id, SNS_TYPE_EFO)
                 .then(function (connect_page) {
-                    data.status = 1;
+                    data.success = 1;
                     var tmp_picture = (typeof connect_page.picture !== "undefined") ? connect_page.picture : "default_web_embed_efo.png";
                     data.picture = AZURE_STORAGE_URL + tmp_picture;
                     data.setting = connect_page.setting;
@@ -868,7 +868,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                     //});
                                     //socket.broadcast.to(event.user_id).emit("efo_other_user_start");
                                 } else {
-                                    data.status = 0;
+                                    data.success = 0;
                                     data.limit_user_chat = 1;
                                     params.limit_user_chat = 1;
                                     sendMessageLimit(params, user);
@@ -887,7 +887,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                             //    saveUserProfileWebchat(params);
                             //}
                         } else {
-                            data.status = 0;
+                            data.success = 0;
                             //socket.emit('efo_status_join', data);
                             io.to(data.user_id).emit('efo_status_join', data);
                         }
@@ -895,13 +895,13 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 })
                 .fail(function () {
                     console.log("fail");
-                    data.status = 0;
+                    data.success = 0;
                     io.to(data.user_id).emit('efo_status_join', data);
                 })
                 .catch(function (err) {
                     console.error('Something went wrong: ' + err);
                     saveException(err);
-                    data.status = 0;
+                    data.success = 0;
                     io.to(data.user_id).emit('efo_status_join', data);
                 });
         });
@@ -944,7 +944,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                             });
                             //socket.broadcast.to(event.user_id).emit("efo_other_user_start");
                         } else {
-                            data.status = 0;
+                            data.success = 0;
                             data.limit_user_chat = 1;
                             params.limit_user_chat = 1;
                             sendMessageLimit(params, user);
@@ -955,7 +955,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                         }
                     });
                 } else {
-                    data.status = 0;
+                    data.success = 0;
                     socket.emit('efo_status_join', data);
                 }
             });
@@ -979,20 +979,20 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                 EfoCaptcha.remove({cid: cid, uid: uid}, function(err) {
                                     if (err) throw err;
                                 });
-                                data.status = 1;
+                                data.success = 1;
                                 io.to(socket.id).emit('efo_bot_send_captcha', data);
                             }else {
-                                data.status = 0;
+                                data.success = 0;
                                 io.to(socket.id).emit('efo_bot_send_captcha', data);
                             }
                         });
                     }else {
-                        data.status = 0;
+                        data.success = 0;
                         io.to(socket.id).emit('efo_bot_send_captcha', data);
                     }
                 });
             }else{
-                data.status = 0;
+                data.success = 0;
                 io.to(socket.id).emit('efo_bot_send_captcha', data);
             }
 
@@ -2342,7 +2342,6 @@ function receivedMessage(event, secret_key, type) {
                                 //connectScenario(params);
                                 if(!mongoose.Types.ObjectId.isValid(params.current_scenario_id)){
                                     var messageTextLower = messageText.toLowerCase();
-                                    allDialogLibrary(params, messageTextLower);
                                 }else{
                                     connectScenario(params);
                                 }
@@ -2546,14 +2545,12 @@ function receivedTextMessage(params, messageText){
                 params.current_scenario_id = current_scenario_id;
                 if(!mongoose.Types.ObjectId.isValid(current_scenario_id)){
                     //console.log("allDialogLibrary");
-                    allDialogLibrary(params, messageTextLower);
                     return true;
                 }
                 Scenario.findOne({_id: current_scenario_id, connect_page_id: user_position.connect_page_id, deleted_at: null}, function(err, result) {
                     if (err) throw err;
                     //console.log(result);
                     if(result){
-                        var scenario_library_arr = result.library;
                         BotMessage.findOne({ scenario_id: result._id, message_type: MESSAGE_USER, position: current_position + 1}, function(err, result) {
                             if (err) throw err;
                             //console.log("user talk");
@@ -2877,7 +2874,7 @@ function validConnectPageIdEfo(data, callback){
     data.azure_storage_upload_url = AZURE_STORAGE_UPLOAD_URL;
     data.embed_azure_storage_url = EMBED_AZURE_STORAGE_URL;
     if(!connect_page_id || !mongoose.Types.ObjectId.isValid(connect_page_id)){
-        data.status = 0;
+        data.success = 0;
         io.to(data.user_id).emit('efo_status_join', data);
         return callback(true);
     }
@@ -2914,13 +2911,13 @@ function validConnectPageIdEfo(data, callback){
                         return callback(false, data, params);
                     }
                 }else{
-                    data.status = 0;
+                    data.success = 0;
                     io.to(data.user_id).emit('efo_status_join', data);
                     return callback(true);
                 }
             });
         }else{
-            data.status = 0;
+            data.success = 0;
             io.to(data.user_id).emit('efo_status_join', data);
             return callback(true);
         }
@@ -2930,7 +2927,7 @@ function validConnectPageIdEfo(data, callback){
 function validConnectPageId(data, callback){
     var connect_page_id = data.connect_page_id;
     if(!connect_page_id || !mongoose.Types.ObjectId.isValid(connect_page_id)){
-        data.status = 0;
+        data.success = 0;
         io.to(data.user_id).emit('webchat_status_join', data);
         return callback(true);
     }
@@ -2951,37 +2948,162 @@ function validConnectPageId(data, callback){
                     params.preview_flg = data.preview_flg;
                     return callback(false, data, params);
                 }else{
-                    data.status = 0;
+                    data.success = 0;
                     io.to(data.user_id).emit('webchat_status_join', data);
                     return callback(true);
                 }
             });
         }else{
-            data.status = 0;
+            data.success = 0;
             io.to(data.user_id).emit('webchat_status_join', data);
             return callback(true);
         }
     });
 }
 
-function validRoomId(data, callback){
+function validRoom(data, callback){
     var room_id = data.room_id;
     var user_id = data.user_id;
-    if(!room_id || !mongoose.Types.ObjectId.isValid(room_id)){
-        data.status = 0;
+    var room_type = data.room_type;
+    var member = data.member;
+    var room_type_arr = [ROOM_TYPE_ONE_MANY, ROOM_TYPE_ONE_ONE];
+    console.log('validRoom');
+    if(!user_id || !mongoose.Types.ObjectId.isValid(user_id)){
+        data.success = 0;
+        data.message = 'message.user_id_validate';
+        console.log('user_id_validate');
+        io.to(user_id).emit('status_join_room', data);
+        return callback(true);
+    }
+    if(room_id){
+        var query = {_id: room_id, deleted_at: null};
+    }else {
+        if (!room_type || !room_type_arr.indexOf(room_type)) {
+            data.success = 0;
+            data.message = 'message.room_type_validate';
+            io.to(user_id).emit('status_join_room', data);
+            console.log('room_type_validate');
+            return callback(true);
+        } else if (!member || !(member instanceof Array) || (room_type == ROOM_TYPE_ONE_ONE && member.length != 2)) {
+            data.success = 0;
+            data.message = 'message.member_validate_1';
+            console.log('member_validate_1');
+            io.to(user_id).emit('status_join_room', data);
+            return callback(true);
+        }
+        var query = {member: {$in : member, $size : 2}, deleted_at: null}
+    }
+    console.log('validRoom find user');
+    User.findOne({_id: user_id, deleted_at: null}, function (err, result) {
+        console.log('validRoom find user ', err, result);
+        var params = createParameterDefault(room_type, undefined, data.user_id, member);
+        if(err){
+            data.success = false;
+            data.message = "message.user_not_exsits";
+            io.to(user_id).emit('status_join_room', data);
+            console.log('user_not_exsits');
+            return callback(true);
+        }
+        var user = result;
+        if(room_type == ROOM_TYPE_ONE_ONE){
+            var u1 = member[0];
+            var u2 = member[1];
+            var contact = user.contact;
+            console.log(user._id, result._id, contact, u1, contact.indexOf(u2), u2, contact.indexOf(u1));
+            Room.findOne(query, function (err, result) {
+                if (!err && result) {
+                    params.room_id = result._id;
+                    console.log('room true', result);
+                    return callback(false, data, params);
+                }else if((contact instanceof Array  && contact > 0 &&
+                        ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0))) || user.authority == USER_AUTHORITY_SUPER_ADMIN){
+                    var now = new Date();
+                    var roomStore = new Room({
+                        name: member.join('_'),
+                        user_id: user_id,
+                        member: member,
+                        room_type: room_type,
+                        created_at : now,
+                        updated_at : now
+                    });
+                    roomStore.save(function(err, roomStore) {
+                        if (err) throw err;
+                        console.log('room true store');
+                        params.room_id = roomStore._id;
+                        return callback(false, data, params);
+                    });
+                }else {
+                    console.log('member_validate_2');
+                    data.success = 0;
+                    data.message = 'message.member_validate_2';
+                    io.to(user_id).emit('status_join_room', data);
+                    return callback(true);
+                }
+            });
+        }
+    });
+}
+
+function validUserId(data, callback){
+    var user_id = data.user_id;
+    if(!user_id || !mongoose.Types.ObjectId.isValid(user_id)){
+        data.success = 0;
         io.to(user_id).emit('status_join', data);
         return callback(true);
     }
-    Room.findOne({_id: room_id, deleted_at: null}, function (err, result) {
+    User.findOne({_id: user_id, deleted_at: null}, function (err, result) {
         if (!err && result) {
             var params = createParameterDefault(result.sns_type, result._id, data.user_id, result.page_id);
             return callback(false, data, params);
         }else{
-            data.status = 0;
+            data.success = 0;
             io.to(user_id).emit('status_join', data);
             return callback(true);
         }
     });
+}
+
+var getRoom = function(data, callback) {
+    var user_id = data.user_id;
+    var room_id = data.room_id;
+    Room.findOne({_id : room_id, member : {$in: [user_id]}, deleted_at: null}, function (err, result) {
+        if(err || !result){
+            console.log('error getroom');
+            data.success = 0;
+            data.message = 'message.room_not-exits';
+            io.to(user_id).emit('status_join_room', data);
+            return callback(true);
+        }
+        console.log('success getroom');
+        var params = createParameterDefault(undefined, room_id, data.user_id, result.member);
+        return callback(false, result, params);
+    });
+};
+
+function validUserContact(data, callback){
+    var user_id = data.user_id;
+    var room_id = data.room_id;
+    var member = data.member;
+    var room_type = data.room_type;
+    if(!user_id || !room_type || !mongoose.Types.ObjectId.isValid(user_id)){
+        data.success = 0;
+        io.to(user_id).emit('status_join', data);
+        return callback(true);
+    }
+    if(room_id){
+        Room.findOne({_id: user_id, deleted_at: null}, function (err, result) {
+            if (!err && result) {
+                var params = createParameterDefault(result.sns_type, result._id, data.user_id, result.page_id);
+                return callback(false, data, params);
+            }else{
+                data.success = 0;
+                io.to(user_id).emit('status_join', data);
+                return callback(true);
+            }
+        });
+    }else{
+
+    }
 }
 
 function receivedWebchatQuickreplies(data) {
@@ -3253,15 +3375,12 @@ function getMatchData(message, rows){
     return result;
 }
 
-function createParameterDefault(sns_type, connect_page_id, user_id, page_id, page_access_token, current_scenario_id, notification_id){
+function createParameterDefault(room_type, room_id, user_id, member){
     var params = {};
-    params.sns_type = sns_type;
-    params.connect_page_id = connect_page_id;
+    params.room_type = room_type;
+    params.room_id = room_id;
     params.user_id = user_id;
-    params.page_id = page_id;
-    params.page_access_token = page_access_token;
-    params.current_scenario_id = current_scenario_id;
-    params.notification_id = notification_id;
+    params.member = member;
     return params;
 }
 
@@ -4899,7 +5018,7 @@ function listen () {
  * Send a text message using the Send API.
  *
  */
-function sendMessage(params, type, message, message_type, bid, b_position, btn_next, input_requiment_flg) {
+function sendMessageOld(params, type, message, message_type, bid, b_position, btn_next, input_requiment_flg) {
     var messageData;
     if(params.sns_type == SNS_TYPE_EFO) {
         var logCollection = params.logCollection;
@@ -5007,6 +5126,42 @@ function sendMessage(params, type, message, message_type, bid, b_position, btn_n
             message: message
         };
         callSendAPI(params, type, messageData);
+    }
+}
+
+function sendMessage(params, message, message_type) {
+    var messageData;
+    console.log('func sendMessage: ', params, message, message_type);
+    if(message_type == USER_SEND_TEXT) {
+        console.log('func USER_SEND_TEXT: ');
+        var logCollection = params.logCollection;
+        if(!logCollection){
+            logCollection = CreateModelLogForName(params.room_id + "_logs");
+            params.logCollection = logCollection;
+        }
+        params.message = message;
+        var now = new Date();
+        var logCollection = new logCollection({
+            room_id: params.room_id,
+            user_id: params.user_id,
+            message_type: message_type,
+            message: message,
+            created_at : now,
+            updated_at : now
+        });
+        logCollection.save(function(err, logCollectionStore) {
+            if (err) throw err;
+            console.log('logCollectionStore store');
+            var result = {
+              'user_id' : params.user_id,
+              'room_id' : params.room_id,
+              'message_type' : message_type,
+              'message' : message,
+              'created_at' : logCollectionStore.created_at,
+            };
+            console.log('send message to user  : ', result);
+            io.to(params.room_id).emit('server_send_message', result);
+        });
     }
 }
 
