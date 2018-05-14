@@ -2993,11 +2993,11 @@ function validRoom(data, callback){
         }
         var query = {member: {$all : member, $size : 2}, deleted_at: null}
     }
-    console.log('validRoom find user');
+    console.log('validRoom find user', data);
     User.findOne({_id: user_id, deleted_at: null}, function (err, result) {
         console.log('validRoom find user ', err, result);
         var params = createParameterDefault(room_type, undefined, data.user_id, member);
-        if(err){
+        if(err || !result){
             data.success = false;
             data.message = "message.user_not_exsits";
             io.to(user_id).emit('status_join_room', data);
@@ -3008,9 +3008,9 @@ function validRoom(data, callback){
         if(room_type == ROOM_TYPE_ONE_ONE){
             var u1 = member[0];
             var u2 = member[1];
-            var contact = user.contact;
+            var contact = user.contact != void 0 ? user.contact : [];
             //console.log(user._id, result._id, contact, u1, contact.indexOf(u2), u2, contact.indexOf(u1));
-            console.log('---------------');
+            console.log('---------------', user);
             console.log('user.authority: ', user.authority , USER_AUTHORITY_SUPER_ADMIN);
             console.log('query', query);
             Room.findOne(query, function (err, result) {
@@ -3018,7 +3018,7 @@ function validRoom(data, callback){
                     params.room_id = result._id;
                     console.log('room true', result);
                     return callback(false, data, params);
-                }else if(user.authority == USER_AUTHORITY_SUPER_ADMIN || (contact instanceof Array  && contact > 0 &&
+                }else if(user.authority == USER_AUTHORITY_SUPER_ADMIN || (contact instanceof Array  && contact.length > 0 &&
                         ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0)))){
                     var now = new Date();
                     var roomStore = new Room({
