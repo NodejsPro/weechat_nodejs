@@ -3009,7 +3009,7 @@ function validRoom(data, callback){
             var u1 = member[0];
             var u2 = member[1];
             var contact = user.contact;
-            console.log(user._id, result._id, contact, u1, contact.indexOf(u2), u2, contact.indexOf(u1));
+            //console.log(user._id, result._id, contact, u1, contact.indexOf(u2), u2, contact.indexOf(u1));
             console.log('---------------');
             console.log('user.authority: ', user.authority , USER_AUTHORITY_SUPER_ADMIN);
             console.log('query', query);
