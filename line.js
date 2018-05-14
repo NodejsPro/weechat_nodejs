@@ -2991,7 +2991,7 @@ function validRoom(data, callback){
             io.to(user_id).emit('status_join_room', data);
             return callback(true);
         }
-        var query = {member: {$in : member, $size : 2}, deleted_at: null}
+        var query = {member: {$all : member, $size : 2}, deleted_at: null}
     }
     console.log('validRoom find user');
     User.findOne({_id: user_id, deleted_at: null}, function (err, result) {
@@ -3010,13 +3010,16 @@ function validRoom(data, callback){
             var u2 = member[1];
             var contact = user.contact;
             console.log(user._id, result._id, contact, u1, contact.indexOf(u2), u2, contact.indexOf(u1));
+            console.log('---------------');
+            console.log('user.authority: ', user.authority , USER_AUTHORITY_SUPER_ADMIN);
+            console.log('query', query);
             Room.findOne(query, function (err, result) {
                 if (!err && result) {
                     params.room_id = result._id;
                     console.log('room true', result);
                     return callback(false, data, params);
-                }else if((contact instanceof Array  && contact > 0 &&
-                        ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0))) || user.authority == USER_AUTHORITY_SUPER_ADMIN){
+                }else if(user.authority == USER_AUTHORITY_SUPER_ADMIN || (contact instanceof Array  && contact > 0 &&
+                        ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0)))){
                     var now = new Date();
                     var roomStore = new Room({
                         name: member.join('_'),
@@ -3066,6 +3069,7 @@ function validUserId(data, callback){
 var getRoom = function(data, callback) {
     var user_id = data.user_id;
     var room_id = data.room_id;
+    console.log('user_id: ', user_id, 'room_id: ', room_id);
     Room.findOne({_id : room_id, member : {$in: [user_id]}, deleted_at: null}, function (err, result) {
         if(err || !result){
             console.log('error getroom');
