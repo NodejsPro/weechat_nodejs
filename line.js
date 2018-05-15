@@ -393,16 +393,6 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         res.status(200).send(captcha.data);
     });
 
-    app.get('/webchat', function (req, res) {
-        console.log("webchat worker =" + cluster.worker.id);
-        res.render('index', { azure_storage_url: EMBED_AZURE_STORAGE_URL, version: APP_VERSION, socket_url: SOCKET_URL });
-    });
-
-    app.get('/efo', function (req, res) {
-        console.log("efo worker =" + cluster.worker.id);
-        res.render('efo', { azure_storage_url: EMBED_AZURE_STORAGE_URL, version: APP_VERSION, socket_url: SOCKET_URL });
-    });
-
     // socketIO check connection status
     io.on('connection', function (socket) {
         console.log(io.engine.clientsCount);
@@ -578,10 +568,8 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 .then(function (connect_page) {
                     data.success = 1
                     var tmp_picture = (typeof connect_page.picture !== "undefined") ? connect_page.picture : "default_web_embed.png";
-                    data.picture = AZURE_STORAGE_URL + tmp_picture;
                     data.setting = connect_page.setting;
                     data.page_name = connect_page.page_name;
-                    data.embed_azure_storage_url = EMBED_AZURE_STORAGE_URL;
                     //return[
                     //    Q(LogChatMessage.find({ connect_page_id: connect_page.id, user_id: data.user_id, background_flg : null, error_flg: null}, {}, {sort: {created_at: 1}}).exec()),
                     //    Q(Menu.find({connect_page_id: connect_page.id, parent_id: ""}).exec())
@@ -844,13 +832,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             }
             data.server_url = SERVER_URL;
             data.app_url = APP_URL;
-            data.azure_storage_upload_url = AZURE_STORAGE_UPLOAD_URL;
-            data.embed_azure_storage_url = EMBED_AZURE_STORAGE_URL;
             getConnectPageBySns(connect_page_id, SNS_TYPE_EFO)
                 .then(function (connect_page) {
                     data.success = 1;
                     var tmp_picture = (typeof connect_page.picture !== "undefined") ? connect_page.picture : "default_web_embed_efo.png";
-                    data.picture = AZURE_STORAGE_URL + tmp_picture;
                     data.setting = connect_page.setting;
                     data.cv_setting = connect_page.conversion_setting;
                     data.scenario_type = (typeof connect_page.scenario_type !== "undefined") ? connect_page.scenario_type : "100";
@@ -1075,175 +1060,6 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                                     }
                                                 });
                                                 return;
-                                            }
-                                            else if ((typeof variable_id !== 'undefined') && variable_id.length > 0 && mongoose.Types.ObjectId.isValid(variable_id)) {
-                                                var value_arr = [];
-                                                if(type == EFO_USER_FILE){
-                                                    //{ file_name_origin: 'safe_image.jpg',
-                                                    //    file_path: 'uploads/5a5da5129a89204b1a1231ca/efo_client/b24d929c-f515-8656-8dfa-5cca1aa3e420_0.jpg' }
-                                                    if (typeof answer.file_path !== "undefined") {
-                                                        value_arr.push(AZURE_STORAGE_UPLOAD_URL +  answer.file_path);
-                                                    }
-                                                }
-                                                else if (type == EFO_USER_CALENDAR){
-                                                    var answer_date = "";
-                                                    var index_date_arr = ["year", "month", "day"];
-                                                    var answer_date1_arr = [];
-                                                    var answer_date2_arr = [];
-                                                    if(template_type == CALENDAR_TYPE_PERIOD && answer.length  == 2){
-                                                        var answer1 = answer[0];
-                                                        var answer2 = answer[1];
-                                                        index_date_arr.forEach(function (value) {
-                                                            if (typeof answer1[value] !== "undefined" && answer1[value]) {
-                                                                answer_date1_arr.push(answer1[value]);
-                                                            }
-                                                            if (typeof answer2[value] !== "undefined" && answer2[value]) {
-                                                                answer_date2_arr.push(answer2[value]);
-                                                            }
-                                                        });
-                                                        if (answer_date1_arr.length > 0) {
-                                                            if (g_bot_language != "undefined" && g_bot_language == 'ja') {
-                                                                answer_date += answer_date1_arr.join("/")  + " ～ " + answer_date2_arr.join("/");
-                                                            }else {
-                                                                var answer_date1_arr_reverse = answer_date1_arr.reverse(),
-                                                                    answer_date2_arr_reverse = answer_date2_arr.reverse();
-                                                                answer_date += answer_date1_arr_reverse.join("/")  + " ～ " + answer_date2_arr_reverse.join("/");
-                                                            }
-                                                            // answer_date += answer_date1_arr.join("/")  + " ～ " + answer_date2_arr.join("/");
-                                                        }
-                                                    }else{
-                                                        index_date_arr.forEach(function (value) {
-                                                            if (typeof answer[value] !== "undefined" && answer[value]) {
-                                                                answer_date1_arr.push(answer[value]);
-                                                            }
-                                                        });
-                                                        if (answer_date1_arr.length > 0) {
-                                                            if (g_bot_language != "undefined" && g_bot_language == 'ja') {
-                                                                answer_date += answer_date1_arr.join("/");
-                                                            }else {
-                                                                var answer_date1_arr_reverse = answer_date1_arr.reverse();
-                                                                answer_date += answer_date1_arr_reverse.join("/");
-                                                            }
-                                                        }
-                                                    }
-                                                    value_arr.push(answer_date);
-                                                }
-                                                else if (type == EFO_USER_POSTAL_CODE) {
-                                                    var answer_address = "";
-                                                    if (typeof answer.postal_code !== "undefined" && answer.postal_code.length > 0) {
-                                                        answer_address = "〒" + answer.postal_code.trim();
-                                                    }
-                                                    var index_arr = ["prefectures", "municipality", "street_number", "building_name"];
-                                                    var address_arr = [];
-                                                    index_arr.forEach(function (value) {
-                                                        //console.log(value);
-                                                        //console.log(answer[value]);
-                                                        if (typeof answer[value] !== "undefined" && answer[value]) {
-                                                            address_arr.push(answer[value].trim());
-                                                        }
-                                                    });
-                                                    if (address_arr.length > 0) {
-                                                        answer_address += " " + address_arr.join("");
-                                                    }
-                                                    value_arr.push(answer_address);
-                                                }
-                                                else if (type == EFO_USER_CAROUSEL) {
-                                                    var index_carousel = (typeof answer[0] !== 'undefined') ? answer[0] : -1;
-                                                    if (typeof list[index_carousel] !== 'undefined') {
-                                                        value_arr.push(list[index_carousel].title.trim());
-                                                    }
-                                                }
-                                                else if (type == EFO_USER_CHECKBOX || type == EFO_USER_RADIO_BUTTON) {
-                                                    if(type == EFO_USER_RADIO_BUTTON && template_type == EFO_RADIO_TYPE_IMAGE){
-                                                        if(answer[0] !== undefined){
-                                                            var index_arr_radio = answer[0].split(',');
-                                                            if (index_arr_radio.length == 2 && typeof list[index_arr_radio[0]] !== 'undefined' && typeof list[index_arr_radio[0]][index_arr_radio[1]] !== 'undefined') {
-                                                                console.log(list[index_arr_radio[0]][index_arr_radio[1]]);
-                                                                value_arr.push(list[index_arr_radio[0]][index_arr_radio[1]].comment);
-                                                            }
-                                                        }
-                                                    }else{
-                                                        for (var j in answer) {
-                                                            var index = parseInt(answer[j]);
-                                                            if (typeof list[index] !== 'undefined') {
-                                                                value_arr.push(list[index].trim());
-                                                            }
-                                                        }
-                                                    }
-
-                                                }
-                                                else if (type == EFO_USER_INPUT_TEXT) {
-                                                    var answer_text = answer.join(" ");
-                                                    if(template_type == EFO_INPUT_TYPE_TEL){
-                                                        var tel_input_type = obj.tel_input_type;
-                                                        if(tel_input_type == EFO_TEL_INPUT_HYPHEN){
-                                                            answer_text = answer.join("-");
-                                                        }
-                                                    }
-                                                    value_arr.push(answer_text.trim());
-                                                } else if (type == EFO_USER_INPUT_TEXTAREA) {
-                                                    value_arr.push(answer.trim());
-                                                } else if (type == EFO_USER_PULLDOWN) {
-                                                    var answer_pull_text = "";
-                                                    if (template_type == EFO_INPUT_TYPE_DATE || template_type == EFO_INPUT_TYPE_BIRTHDAY || template_type == EFO_INPUT_TYPE_BIRTHDAY_YM) {
-                                                        answer_pull_text = answer.join("");
-                                                        if (answer_pull_text.length > 0) {
-                                                            answer_pull_text = answer.join("-");
-                                                        }
-                                                    } else if (template_type == EFO_INPUT_TYPE_TIME) {
-                                                        answer_pull_text = answer.join(":");
-                                                    } else if (template_type == EFO_INPUT_TYPE_DATETIME) {
-                                                        var ymd = answer.slice(0, 3);
-                                                        var hm = answer.slice(3, 5);
-                                                        answer_pull_text = ymd.join("-") + " " + hm.join(":");
-
-                                                    } else if (template_type == EFO_INPUT_TYPE_MD) {
-                                                        answer_pull_text = answer.join("/")
-                                                    }
-                                                    else if (template_type == EFO_INPUT_TYPE_PERIOD_HM) {
-                                                        answer_pull_text = answer.join("");
-                                                        if (answer_pull_text.length > 0 && answer.length == 4) {
-                                                            var hm1 = answer.slice(0, 2);
-                                                            var hm2 = answer.slice(2, 4);
-                                                            answer_pull_text = hm1.join(":") + "～" + hm2.join(":");
-                                                        }
-                                                    }
-                                                    else if (template_type == EFO_INPUT_TYPE_PERIOD_YMD) {
-                                                        answer_pull_text = answer.join("");
-                                                        if (answer_pull_text.length > 0 && answer.length == 6) {
-                                                            var ymd1 = answer.slice(0, 3);
-                                                            var ymd2 = answer.slice(3, 6);
-                                                            answer_pull_text = ymd1.join("-") + "～" + ymd2.join("-");
-                                                        }
-                                                    }
-                                                    else if(template_type == EFO_INPUT_TYPE_PREF_CITY){
-                                                        answer_pull_text = answer.join("");
-                                                    }
-                                                    else {
-                                                        var answer_pull_arr = [];
-                                                        for(var k  = 0; k < answer.length; k++) {
-                                                            var index_tmp = parseInt(answer[k]);
-                                                            if (typeof list[k] !== 'undefined' && typeof list[k][index_tmp] !== 'undefined') {
-                                                                answer_pull_arr.push(list[k][index_tmp].trim()) ;
-                                                            }
-
-                                                        }
-                                                        if (answer_pull_arr.length > 0) {
-                                                            answer_pull_text = answer_pull_arr.join("～");
-                                                        }
-                                                    }
-                                                    value_arr.push(answer_pull_text.trim());
-                                                }
-
-                                                if (value_arr.length > 0) {
-                                                    variable_arr.push({
-                                                        "variable_id": variable_id,
-                                                        "value": value_arr,
-                                                        "user_id": result.user_id,
-                                                        "connect_page_id": result.connect_page_id
-                                                    });
-                                                }
-
                                             }
                                         }
                                     }
@@ -2516,6 +2332,16 @@ function receivedMessage(event, secret_key, type) {
   //console.log(JSON.stringify(message));
 }
 
+function saveException(err){
+    var now = new Date();
+    var exception = new Exception({
+        err: err,
+        created_at : now,
+        updated_at : now
+    });
+    exception.save(function(err) {
+    });
+}
 
 function receivedTextMessage(params, messageText){
     var messageTextLower = messageText.toLowerCase();
@@ -2559,106 +2385,6 @@ function receivedTextMessage(params, messageText){
                                 params.variable_id = result.data[0].variable_id;
                                 params.nlp_id = result.data[0].nlp_id;
                                 params.current_user_position = user_position;
-                                saveUserSpeechVariable(params, messageText, function (err) {
-                                    luisQueryRequest(params, messageText)
-                                        .then(function(luis_result) {
-                                            var new_position;
-                                            var content = result.data[0];
-                                            //console.log("content");
-                                            //console.log(content);
-                                            if(content.type == USER_TYPE_TEXT ){
-                                                //console.log("user messageText");
-                                                var isMatch = true;
-                                                if(content.text){
-                                                    var arr = content.text.toLowerCase().split(",");
-                                                    isMatch = false;
-                                                    arr.some(function (value, index2, _ary2) {
-                                                        if (messageTextLower.indexOf(value) > -1) {
-                                                            isMatch = true;
-                                                            return true;
-                                                        }
-                                                    });
-                                                }
-                                                if(isMatch){
-                                                    new_position = current_position + 2;
-                                                    BotMessage.find({ scenario_id: result.scenario_id, message_type: MESSAGE_BOT, position: { $gte: new_position } }, {}, {sort: {position: 1}}, function(err, result) {
-                                                        if (err) throw err;
-                                                        //console.log("Bot messageText");
-                                                        //console.log(result);
-                                                        if(result && result.length > 0){
-                                                            if(params.sns_type == SNS_TYPE_LINE){
-                                                                sendMultiMessageLine(params, result, new_position);
-                                                            }else if(params.sns_type == SNS_TYPE_WEBCHAT){
-                                                                sendMultiMessageWebchat(params, result, new_position);
-                                                            }else if(params.sns_type == SNS_TYPE_CHATWORK){
-                                                                sendMultiMessageChatwork(params, result, new_position);
-                                                            }
-                                                            else{
-                                                                sendMultiMessage(params, result, new_position);
-                                                            }
-                                                            return true;
-                                                        }
-                                                        scenarioDialogLibrary(params, messageTextLower, scenario_library_arr);
-                                                        return true;
-                                                        //saveUserPosition(connect_page_id, senderID, recipientID, current_scenario_id, new_position);
-                                                    });
-                                                }else{
-                                                    scenarioDialogLibrary(params, messageTextLower, scenario_library_arr);
-                                                    return true;
-                                                }
-                                            }else if(content.type == USER_TYPE_LIBRARY){
-                                                var library_arr = content.library;
-                                                if(library_arr && library_arr.length > 0){
-                                                    Library.find({ _id: { "$in" : library_arr}}, function(err, library_result) {
-                                                        if (err) throw err;
-                                                        //console.log("library_result");
-                                                        //console.log(library_result);
-                                                        var position_arr = [];
-                                                        if(library_result && library_result.length > 0){
-                                                            position_arr = getMatchData(messageTextLower, library_result);
-                                                        }
-                                                        ////console.log("position_arr");
-                                                        ////console.log(position_arr);
-                                                        if(position_arr.length > 0){
-                                                            ////console.log(tmp_index);
-                                                            var element = getMaxLength(position_arr);
-                                                            if(element){
-                                                                var row = element.data;
-                                                                //console.log("params");
-                                                                //console.log(params);
-                                                                if(row.type == LIBRARY_TEXT){
-                                                                    row.answer = variableTextToValue(row.answer, params.user_variable);
-                                                                    var answer = convertTextMessage(params.sns_type, row.answer);
-                                                                    sendMessage(params, USER_TYPE_TEXT, answer);
-                                                                    return true;
-
-                                                                }else if(row.type == LIBRARY_SCENARIO){
-                                                                    params.current_scenario_id = row.answer;
-                                                                    connectScenario(params);
-                                                                    return true;
-                                                                }
-                                                            }
-                                                            scenarioDialogLibrary(params, messageTextLower, scenario_library_arr);
-                                                            return true;
-                                                        }else{
-                                                            scenarioDialogLibrary(params, messageTextLower, scenario_library_arr);
-                                                            return true;
-                                                        }
-                                                    })
-                                                }else{
-                                                    scenarioDialogLibrary(params, messageTextLower, scenario_library_arr);
-                                                    return true;
-                                                }
-                                            }else if(content.type == USER_TYPE_API){
-                                                params.variable_id = content.variable;
-                                                params.api_id = content.message.api;
-                                                //userVariableSettingApi(params, messageText);
-                                                return true;
-                                            }
-                                        }, function(err) {
-                                            console.log(err);
-                                        });
-                                });
                             }else{
                                 //console.log("no botmessage");
                                 scenarioDialogLibrary(params, messageTextLower, scenario_library_arr);
@@ -2871,8 +2597,6 @@ function validConnectPageIdEfo(data, callback){
     var connect_page_id = data.connect_page_id;
     data.server_url = SERVER_URL;
     data.app_url = APP_URL;
-    data.azure_storage_upload_url = AZURE_STORAGE_UPLOAD_URL;
-    data.embed_azure_storage_url = EMBED_AZURE_STORAGE_URL;
     if(!connect_page_id || !mongoose.Types.ObjectId.isValid(connect_page_id)){
         data.success = 0;
         io.to(data.user_id).emit('efo_status_join', data);

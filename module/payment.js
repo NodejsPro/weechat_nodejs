@@ -21,11 +21,6 @@ const request = require('request'),
       Q = require('q'),
       config = require('config');
 
-const GMO_PAYMENT_GATEWAY = '001',
-      GMO_PAYMENT_BRANCH = config.get('gmo_payment_branch'),
-      GMO_PAYMENT_SUCCESS = '001',
-      GMO_PAYMENT_FAIL = '002';
-
 i18n.configure({
     locales:['ja', 'en', 'th', 'vn'],
     defaultLocale: 'ja',
