@@ -243,7 +243,10 @@ if(APP_ENV == "embot_dev" || APP_ENV == "embot_staging" ){
 
 
 //var io = require('socket.io')(app.server);
-io.attach( server );
+io.attach( server ,{
+    transports: ['polling', 'websocket'],
+    origin: '*'
+});
 //var isWorker = sticky.listen(server, config.get('socketPort'));
 
 
