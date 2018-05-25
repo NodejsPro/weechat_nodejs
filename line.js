@@ -177,21 +177,6 @@ var transporter = mailer.createTransport({
 //const GOOGLE_CLIENT_ID = config.get('googleapi_client_id');
 //const GOOGLE_CLIENT_SECRET = config.get('googleapi_client_secret');
 
-// App Secret can be retrieved from the App Dashboard
-const APP_SECRET = (process.env.MESSENGER_APP_SECRET) ?
-    process.env.MESSENGER_APP_SECRET :
-    config.get('appSecret');
-
-// Arbitrary value used to validate a webhook
-const VALIDATION_TOKEN = (process.env.MESSENGER_VALIDATION_TOKEN) ?
-    (process.env.MESSENGER_VALIDATION_TOKEN) :
-    config.get('validationToken');
-
-// Generate a page access token for your page from the App Dashboard
-const PAGE_ACCESS_TOKEN = (process.env.MESSENGER_PAGE_ACCESS_TOKEN) ?
-    (process.env.MESSENGER_PAGE_ACCESS_TOKEN) :
-    config.get('pageAccessToken');
-
 // URL where the app is running (include protocol). Used to point to scripts and
 // assets located at this address.
 const SERVER_URL = (process.env.SERVER_URL) ?
@@ -206,10 +191,10 @@ const TIMEZONE = config.get('timezone');
 
 const APP_VERSION = config.get('app_version');
 
-if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
-    console.error("Missing config values");
-    process.exit(1);
-}
+// if (!(APP_SECRET && VALIDATION_TOKEN && PAGE_ACCESS_TOKEN && SERVER_URL)) {
+//     console.error("Missing config values");
+//     process.exit(1);
+// }
 
 var http = require('http');
 
@@ -534,9 +519,12 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log("user_send_message data",data);
             var room_id = data.room_id;
             var user_id = data.user_id;
+            if(isEmpty(room_id) || isEmpty(user_id)){
+                console.log('data send empty');
+            }
             var rooms = Object.keys(socket.rooms);
             if (rooms.indexOf(user_id) == -1) {
-                console.log('room add user_id', Object.keys(socket.rooms));
+                console.log('room add user_id', user_id);
                 socket.join(user_id);
             }
             if(room_id != void 0 && room_id.length > 0){
@@ -544,13 +532,14 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     console.log("user_send_message error",error, result, params);
                     if(!error && result){
                         var rooms = Object.keys(socket.rooms);
-                        // if (rooms.indexOf(params.room_id) == -1) {
-                        //     socket.join(params.room_id);
-                        // }
-                        var dataObj = data.data;
+                        if (rooms.indexOf(params.room_id) == -1) {
+                            socket.join(params.room_id);
+                            sendMessage(params, data.message, data.message_type);
+                            return;
+                        }
                         // sendMessage(params, message, message_type) {
                         console.log('room full ', Object.keys(socket.rooms));
-                        sendMessage(params, dataObj.message, dataObj.message_type);
+                        sendMessage(params, data.message, data.message_type);
                     }
                 });
             }
