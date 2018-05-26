@@ -393,18 +393,19 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('user_join', function (data) {
             console.log('event user_join ');
-            var rooms = Object.keys(socket.rooms);
+            showListRoom(socket);
             validUserId(data, function (error, result, params) {
                 if(!error && result){
                     var user_id = data.user_id;
-                    if (rooms.indexOf(user_id) == -1) {
-                        socket.join(user_id, function() {
-                            var data_return = {
-                                success: true,
-                            };
-                            io.to(user_id).emit('status_join', data_return);
-                        });
-                    }
+                    userJoinRoom(socket, user_id, function(success){
+                       if(success){
+                           var data_return = {
+                               success: true,
+                           };
+                           io.to(user_id).emit('status_join', data_return);
+                           return;
+                       }
+                    });
                 }
             });
         });
@@ -412,21 +413,26 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         socket.on('user_join_room', function (data) {
             var user_id = data.user_id;
             console.log('user_join_room');
-            var rooms = Object.keys(socket.rooms);
-            if (rooms.indexOf(user_id) == -1) {
-                socket.join(user_id);
-            }
-            validRoom(data, function( error, result, param){
-                if(!error && result){
-                    var data_result = {
-                        success: true,
-                        room_id: param.room_id
-                    };
-                    socket.join(param.room_id, function() {
-                        console.log('resut: ', data_result, Object.keys(socket.rooms));
-                        io.to(user_id).emit('status_join_room', data_result);
-                    });
-                }
+            userJoinRoom(socket, user_id, function(success){
+               if(success){
+                   validRoom(data, function( error, result, param){
+                       if(!error && result){
+                           var data_result = {
+                               success: true,
+                               room_id: param.room_id
+                           };
+                           userJoinRoom(socket, param.room_id, function (success) {
+                               if(success){
+                                   io.to(user_id).emit('status_join_room', data_result);
+                                   return;
+                               }
+                               data.success = false;
+                               data.message = "message.not_join_room ," + param.room_id;
+                               io.to(user_id).emit('status_join_room', data);
+                           });
+                       }
+                   });
+               }
             });
         });
 
@@ -521,26 +527,24 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             var user_id = data.user_id;
             if(isEmpty(room_id) || isEmpty(user_id)){
                 console.log('data send empty');
-            }
-            var rooms = Object.keys(socket.rooms);
-            if (rooms.indexOf(user_id) == -1) {
-                console.log('room add user_id', user_id);
-                socket.join(user_id);
+                return;
             }
             if(room_id != void 0 && room_id.length > 0){
-                getRoom(data, function( error, result, params){
-                    console.log("user_send_message error",error, result, params);
-                    if(!error && result){
-                        var rooms = Object.keys(socket.rooms);
-                        if (rooms.indexOf(params.room_id) == -1) {
-                            socket.join(params.room_id);
-                            sendMessage(params, data.message, data.message_type);
-                            return;
+                userJoinRoom(socket, user_id, function(success){
+                    getRoom(data, function( error, result, params){
+                        console.log("user_send_message error",error, result, params);
+                        if(!error && result){
+                            userJoinRoom(socket, params.room_id, function (success) {
+                               if(success){
+                                   sendMessage(params, data.message, data.message_type);
+                                   return;
+                               };
+                                data.success = false;
+                                data.message = "message.not_join_room ," + params.room_id;
+                                io.to(user_id).emit('status_join_room', data);
+                            });
                         }
-                        // sendMessage(params, message, message_type) {
-                        console.log('room full ', Object.keys(socket.rooms));
-                        sendMessage(params, data.message, data.message_type);
-                    }
+                    });
                 });
             }
         });
@@ -2761,6 +2765,23 @@ function validRoom(data, callback){
             });
         }
     });
+}
+
+function userJoinRoom(socket, room_id, callback) {
+    showListRoom(socket);
+    var room = Object.keys(socket.rooms);
+    if (rooms.indexOf(room_id) >= 0) {
+        showListRoom(socket);
+        return callback(true);
+    }else if (rooms.indexOf(room_id) == -1) {
+        socket.join(room_id, function() {
+            showListRoom(socket);
+            return callback(true);
+        });
+    }else{
+        console.log('error join room with ' +room_id);
+        return callback(false);
+    }
 }
 
 function validUserId(data, callback){
@@ -6123,4 +6144,13 @@ function startButton(page_access_token){
 
 function isEmpty (value, trim) {
     return value === void 0 || value === null || value.length === 0 || (trim && $.trim(value) === '');
+}
+
+function showListRoom(socket) {
+    if(isEmpty(socket.rooms)){
+        console.log('room empty or error');
+        return;
+    }
+    var rooms = Object.keys(socket.rooms);
+    console.log('room current', room);
 }
