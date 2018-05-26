@@ -6120,3 +6120,7 @@ function startButton(page_access_token){
         }
     });
 }
+
+function isEmpty (value, trim) {
+    return value === void 0 || value === null || value.length === 0 || (trim && $.trim(value) === '');
+}
