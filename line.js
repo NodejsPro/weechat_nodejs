@@ -2769,7 +2769,7 @@ function validRoom(data, callback){
 
 function userJoinRoom(socket, room_id, callback) {
     showListRoom(socket);
-    var room = Object.keys(socket.rooms);
+    var rooms = Object.keys(socket.rooms);
     if (rooms.indexOf(room_id) >= 0) {
         showListRoom(socket);
         return callback(true);
