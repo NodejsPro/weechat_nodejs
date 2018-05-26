@@ -6152,5 +6152,5 @@ function showListRoom(socket) {
         return;
     }
     var rooms = Object.keys(socket.rooms);
-    console.log('room current', room);
+    console.log('room current', rooms);
 }
