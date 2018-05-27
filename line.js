@@ -4903,9 +4903,12 @@ function sendMessage(params, message, message_type) {
             var member = params.member;
             User.find({ _id: {$in: member}}, {}, {}, function(err, users) {
                if(!err && users){
-                   var member_name = {};
+                   var member_name = [];
                    for (var i = 0; i < users.length; i++){
-                       member_name[users[i]['_id']] = users[i]['user_name'];
+                       member_name.push({
+                           id: users[i]['_id'],
+                           name: users[i]['user_name']
+                       });
                    }
                    result.member_name = member_name;
                    console.log('send message to user  : ', result);
