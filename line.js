@@ -4900,8 +4900,21 @@ function sendMessage(params, message, message_type) {
               'message' : message,
               'created_at' : logCollectionStore.created_at,
             };
-            console.log('send message to user  : ', result);
-            io.to(params.room_id).emit('server_send_message', result);
+            var member = params.member;
+            User.find({ _id: {$in: member}}, {}, {}, function(err, users) {
+               if(!err && users){
+                   var member_name = {};
+                   for (var i = 0; i < users.length; i++){
+                       member_name[users[i]['_id']] = users[i]['user_name'];
+                   }
+                   result.member_name = member_name;
+                   console.log('send message to user  : ', result);
+                   io.to(params.room_id).emit('server_send_message', result);
+                   return;
+               }
+               result.msg_error = 'ko tim thay user';
+                io.to(params.user_id).emit('user_join_room', result);
+            });
         });
     }
 }
