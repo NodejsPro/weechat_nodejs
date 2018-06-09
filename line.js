@@ -69,6 +69,8 @@ var RoomMessageVariable = model.RoomMessageVariable;
 var EfoModule = require('./EfoModule');
 // var CrdPayment = require('./module/payment');
 
+var UserIdsArr = {};
+
 
 const default_variable = ["current_url", "user_first_name", "user_last_name", "user_full_name", "user_gender", "user_locale", "user_timezone", "user_referral", "user_lat", "user_long", "user_display_name", "user_id", "preview_flg"];
 const default_variable_chatwork = ["user_account_id", "user_name", "user_organization_name", "user_organization_id"];
@@ -226,6 +228,29 @@ if(APP_ENV == "embot_dev" || APP_ENV == "embot_staging" ){
     });
 }
 
+app.get('/captcha', function (req, res) {
+    console.log('capchat');
+    //svgCaptcha.loadFont(" https://fonts.googleapis.com/css?family=Crimson+Text|Open+Sans:400,600");
+    var cid = req.query.cid;
+    var uid = req.query.uid;
+    var charPreset = req.query.charPreset;
+    var color = req.query.color;
+    var size = req.query.size;
+    if(typeof charPreset === "undefined"){
+        charPreset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
+    }
+    if(typeof cid !== "undefined" && typeof uid !== "undefined" && mongoose.Types.ObjectId.isValid(cid)){
+        ConnectPage.findOne({_id: cid, deleted_at: null}, function (err, result) {
+            if(result){
+
+            }else{
+                res.sendStatus(403);
+            }
+        });
+    }else{
+        res.sendStatus(403);
+    }
+});
 
 //var io = require('socket.io')(app.server);
 io.attach( server ,{
@@ -399,11 +424,15 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     var user_id = data.user_id;
                     userJoinRoom(socket, user_id, function(success){
                        if(success){
-                           var data_return = {
-                               success: true,
-                           };
-                           io.to(user_id).emit('status_join', data_return);
-                           return;
+                           setNickNameSocket(socket, user_id, function(success){
+                               if(success){
+                                   var data_return = {
+                                       success: true,
+                                   };
+                                   io.to(user_id).emit('status_join', data_return);
+                                   return;
+                               }
+                           });
                        }
                     });
                 }
@@ -415,20 +444,24 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log('user_join_room');
             userJoinRoom(socket, user_id, function(success){
                if(success){
-                   validRoom(data, function( error, result, param){
-                       if(!error && result){
-                           var data_result = {
-                               success: true,
-                               room_id: param.room_id
-                           };
-                           userJoinRoom(socket, param.room_id, function (success) {
-                               if(success){
-                                   io.to(user_id).emit('status_join_room', data_result);
-                                   return;
+                   setNickNameSocket(socket, user_id, function(success){
+                       if(success){
+                           validRoom(data, function( error, result, param){
+                               if(!error && result){
+                                   var data_result = {
+                                       success: true,
+                                       room_id: param.room_id
+                                   };
+                                   userJoinRoom(socket, param.room_id, function (success) {
+                                       if(success){
+                                           io.to(user_id).emit('status_join_room', data_result);
+                                           return;
+                                       }
+                                       data.success = false;
+                                       data.message = "message.not_join_room ," + param.room_id;
+                                       io.to(user_id).emit('status_join_room', data);
+                                   });
                                }
-                               data.success = false;
-                               data.message = "message.not_join_room ," + param.room_id;
-                               io.to(user_id).emit('status_join_room', data);
                            });
                        }
                    });
@@ -529,22 +562,35 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 console.log('data send empty');
                 return;
             }
+            // var clients1 = findClientsSocket(socket, room_id);
+            // var clients2 = findClientsSocket(socket, room_id);
+            // console.log('client1', clients1);
+            // console.log('client2', clients2);
             if(room_id != void 0 && room_id.length > 0){
                 userJoinRoom(socket, user_id, function(success){
-                    getRoom(data, function( error, result, params){
-                        console.log("user_send_message error",error, result, params);
-                        if(!error && result){
-                            userJoinRoom(socket, params.room_id, function (success) {
-                               if(success){
-                                   sendMessage(params, data.message, data.message_type);
-                                   return;
-                               };
-                                data.success = false;
-                                data.message = "message.not_join_room ," + params.room_id;
-                                io.to(user_id).emit('status_join_room', data);
-                            });
-                        }
-                    });
+                    if(success){
+                        setNickNameSocket(socket, user_id, function(success) {
+                            if (success) {
+                                getRoom(data, function( error, result, params){
+                                    console.log("user_send_message error",error, result, params);
+                                    if(!error && result){
+                                        userJoinRoom(socket, params.room_id, function (success) {
+                                            if(success){
+                                                getUserNotExistsRoom(socket, params.room_id, params.member, function(user_id_not_arr){
+                                                    user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
+                                                    params.user_id_not_arr = user_id_not_arr;
+                                                    sendMessage(params, data.message, data.message_type);
+                                                });
+                                            };
+                                            data.success = false;
+                                            data.message = "message.not_join_room ," + params.room_id;
+                                            io.to(user_id).emit('status_join_room', data);
+                                        });
+                                    }
+                                });
+                            }
+                        });
+                    }
                 });
             }
         });
@@ -4913,12 +4959,22 @@ function sendMessage(params, message, message_type) {
                    result.member_name = member_name;
                    console.log('send message to user  : ', result);
                    io.to(params.room_id).emit('server_send_message', result);
+                   sendMessageUserArr(params.user_id_not_arr, result);
                    return;
                }
                result.msg_error = 'ko tim thay user';
                 io.to(params.user_id).emit('user_join_room', result);
             });
         });
+    }
+}
+
+function sendMessageUserArr(user_ids, message) {
+    if(!isEmpty(user_ids) && user_ids.length >0){
+        for(var key in user_ids){
+            io.to(user_ids[key]).emit('server_send_message', message);
+            console.log('send message other room user_id', user_ids[key]);
+        }
     }
 }
 
@@ -6169,4 +6225,105 @@ function showListRoom(socket) {
     }
     var rooms = Object.keys(socket.rooms);
     console.log('room current', rooms);
+}
+
+function findClientsSocket(socket, roomId, user_id, namespace) {
+    // console.log('socket', socket);
+    // var client = socket.adapter.rooms;
+    var client = socket.adapter.rooms[roomId].sockets;
+    var client_key = Object.keys(client);
+    var room_list = socket.rooms;
+    // console.log('io.sockets.clients()', socket.rooms());
+    // console.log('io.sockets.clients(room)', socket.rooms(roomId));
+    console.log('room_id', roomId, 'client', client, 'client_key', client_key, 'room_list', room_list, 'UserIdsArr', UserIdsArr);
+    // socket.adapter.rooms
+    return;
+    var res = []
+        // the default namespace is "/"
+        , ns = io.of(namespace ||"/");
+
+    if (ns) {
+        for (var id in ns.connected) {
+            if(roomId) {
+                var index = ns.connected[id].rooms.indexOf(roomId);
+                if(index !== -1) {
+                    res.push(ns.connected[id]);
+                }
+            } else {
+                res.push(ns.connected[id]);
+            }
+        }
+    }
+    return res;
+}
+
+function setNickNameSocket(socket, user_id, callback) {
+    console.log('socket_id ', socket.id);
+    var nickname_current = socket.nickname;
+    var result = false;
+    if(user_id && mongoose.Types.ObjectId(user_id)){
+        if(isEmpty(nickname_current)){
+            socket.nickname = user_id;
+            UserIdsArr[user_id] = socket.id;
+            result = true;
+            console.log('nickname set', user_id);
+        }else if(!isEmpty(nickname_current) && nickname_current == user_id){
+            result = true;
+            console.log('nickname allway', user_id);
+        }
+    }
+    return callback(result);
+}
+
+function getUserNotExistsRoom(socket, room_id, member, callback){
+    var user_id_not_arr = removeArrayDuplicates(member);
+    if(room_id && mongoose.Types.ObjectId(room_id)){
+        var clients = socket.adapter.rooms[room_id];
+        if(!isEmpty(clients) && !isEmpty(clients.sockets) && !isEmpty(UserIdsArr)){
+            clients = clients.sockets;
+            if(!isEmpty(clients)){
+                for(var i = 0; i < member.length; i++){
+                    var user_item = member[i];
+                    if(!isEmpty(UserIdsArr[user_item])){
+                        var client_id_check = UserIdsArr[user_item];
+                        if(!isEmpty(clients[client_id_check]) && clients[client_id_check]){
+                            user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
+                        }
+                    }else{
+                        user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
+                    }
+                }
+            }
+        }
+    }
+    console.log('member not exits room', user_id_not_arr);
+    return callback(user_id_not_arr);
+}
+
+function removeArrayDuplicates(num) {
+    var x,
+        len=num.length,
+        out=[],
+        obj={};
+
+    for (x =0; x <len; x++) {
+        obj[num[x]]=0;
+    }
+    for (x in obj) {
+        out.push(x);
+    }
+    return out;
+}
+
+function removeElementFromArray(array, element) {
+    var index = array.indexOf(element);
+
+    if (index !== -1) {
+        array.splice(index, 1);
+    }
+    return array;
+}
+
+function getNickNameSocket(socket, user_id) {
+
 }
