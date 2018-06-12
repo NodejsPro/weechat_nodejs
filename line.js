@@ -558,41 +558,35 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log("user_send_message data",data);
             var room_id = data.room_id;
             var user_id = data.user_id;
-            if(isEmpty(room_id) || isEmpty(user_id)){
+            if(isEmpty(room_id) || isEmpty(user_id) || isEmpty(data.message_type)){
                 console.log('data send empty');
                 return;
             }
-            // var clients1 = findClientsSocket(socket, room_id);
-            // var clients2 = findClientsSocket(socket, room_id);
-            // console.log('client1', clients1);
-            // console.log('client2', clients2);
-            if(room_id != void 0 && room_id.length > 0){
-                userJoinRoom(socket, user_id, function(success){
-                    if(success){
-                        setNickNameSocket(socket, user_id, function(success) {
-                            if (success) {
-                                getRoom(data, function( error, result, params){
-                                    console.log("user_send_message error",error, result, params);
-                                    if(!error && result){
-                                        userJoinRoom(socket, params.room_id, function (success) {
-                                            if(success){
-                                                getUserNotExistsRoom(socket, params.room_id, params.member, function(user_id_not_arr){
-                                                    user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
-                                                    params.user_id_not_arr = user_id_not_arr;
-                                                    sendMessage(params, data.message, data.message_type);
-                                                });
-                                            };
-                                            data.success = false;
-                                            data.message = "message.not_join_room ," + params.room_id;
-                                            io.to(user_id).emit('status_join_room', data);
-                                        });
-                                    }
-                                });
-                            }
-                        });
-                    }
-                });
-            }
+            userJoinRoom(socket, user_id, function(success){
+                if(success){
+                    setNickNameSocket(socket, user_id, function(success) {
+                        if (success) {
+                            getRoom(data, function( error, result, params){
+                                console.log("user_send_message error",error, result, params);
+                                if(!error && result){
+                                    userJoinRoom(socket, params.room_id, function (success) {
+                                        if(success){
+                                            getUserNotExistsRoom(socket, params.room_id, params.member, function(user_id_not_arr){
+                                                user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
+                                                params.user_id_not_arr = user_id_not_arr;
+                                                sendMessage(params, data.message, data.message_type);
+                                            });
+                                        }
+                                        data.success = false;
+                                        data.message = "message.not_join_room ," + params.room_id;
+                                        io.to(user_id).emit('status_join_room', data);
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
+            });
         });
 
         //webchat client to server
@@ -2861,8 +2855,7 @@ var getRoom = function(data, callback) {
             io.to(user_id).emit('status_join_room', data);
             return callback(true);
         }
-        console.log('success getroom');
-        var params = createParameterDefault(undefined, room_id, data.user_id, result.member);
+        var params = createParameterDefault(data.message_type, room_id, data.user_id, result.member);
         return callback(false, result, params);
     });
 };
@@ -4917,10 +4910,9 @@ function sendMessageOld(params, type, message, message_type, bid, b_position, bt
 }
 
 function sendMessage(params, message, message_type) {
-    var messageData;
     console.log('func sendMessage: ', params, message, message_type);
-    if(message_type == USER_SEND_TEXT) {
-        console.log('func USER_SEND_TEXT: ');
+    if(message_type == USER_SEND_TEXT || message_type == USER_SEND_FILE) {
+        console.log('func USER_SEND_TEXT or USER_SEND_FILE: ');
         var logCollection = params.logCollection;
         if(!logCollection){
             logCollection = CreateModelLogForName(params.room_id + "_logs");
