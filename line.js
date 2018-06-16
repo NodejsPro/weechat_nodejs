@@ -558,6 +558,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log("user_send_message data",data);
             var room_id = data.room_id;
             var user_id = data.user_id;
+            var message_type = data.message_type;
             if(isEmpty(room_id) || isEmpty(user_id) || isEmpty(data.message_type)){
                 console.log('data send empty');
                 return;
@@ -572,9 +573,9 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                     userJoinRoom(socket, params.room_id, function (success) {
                                         if(success){
                                             getUserNotExistsRoom(socket, params.room_id, params.member, function(user_id_not_arr){
+                                                console.log('getUserNotExistsRoom', user_id_not_arr);
                                                 user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
                                                 params.user_id_not_arr = user_id_not_arr;
-                                                var message_type = params.message_type;
                                                 switch (message_type){
                                                     case USER_SEND_FILE:
                                                         var message = data.message;
@@ -2771,7 +2772,7 @@ function validRoom(data, callback){
             io.to(user_id).emit('status_join_room', data);
             return callback(true);
         }
-        var query = {member: {$all : member, $size : 2, room_type: room_type}, deleted_at: null}
+        var query = {member: {$all : member, $size : 2},room_type: room_type, deleted_at: null}
     }
     console.log('validRoom find user', data);
     User.findOne({_id: user_id, deleted_at: null}, function (err, result) {
@@ -2881,6 +2882,7 @@ var getRoom = function(data, callback) {
     var room_id = data.room_id;
     console.log('user_id: ', user_id, 'room_id: ', room_id);
     Room.findOne({_id : room_id, member : {$in: [user_id]}, deleted_at: null}, function (err, result) {
+        console.log('getRoom', result);
         if(err || !result){
             console.log('error getroom');
             data.success = 0;
