@@ -417,7 +417,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('user_join', function (data) {
-            console.log('event user_join ');
+            console.log('event user_join ', data);
             showListRoom(socket);
             validUserId(data, function (error, result, params) {
                 if(!error && result){
@@ -441,7 +441,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('user_join_room', function (data) {
             var user_id = data.user_id;
-            console.log('user_join_room');
+            console.log('user_join_room', data);
             userJoinRoom(socket, user_id, function(success){
                if(success){
                    setNickNameSocket(socket, user_id, function(success){
@@ -574,7 +574,27 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                             getUserNotExistsRoom(socket, params.room_id, params.member, function(user_id_not_arr){
                                                 user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
                                                 params.user_id_not_arr = user_id_not_arr;
-                                                sendMessage(params, data.message, data.message_type);
+                                                var message_type = params.message_type;
+                                                switch (message_type){
+                                                    case USER_SEND_FILE:
+                                                        var message = data.message;
+                                                        if(!isEmpty(message) && Array.isArray(message)){
+                                                            var msg = [];
+                                                            message.forEach(function(row) {
+                                                                var obj = {
+                                                                  'path' : !isEmpty(row.path) ?  row.path : '',
+                                                                  'name_origin' : !isEmpty(row.name_origin) ?  row.name_origin : '',
+                                                                };
+                                                                msg.push(obj);
+                                                            });
+                                                            sendMessage(params, data.message, data.message_type);
+                                                        }
+
+                                                        break;
+                                                    case USER_SEND_TEXT:
+                                                        sendMessage(params, data.message, data.message_type);
+                                                        break;
+                                                }
                                             });
                                         }
                                         data.success = false;
@@ -2736,7 +2756,7 @@ function validRoom(data, callback){
         return callback(true);
     }
     if(room_id){
-        var query = {_id: room_id, deleted_at: null};
+        var query = {_id: room_id, room_type: room_type, deleted_at: null};
     }else {
         if (!room_type || !room_type_arr.indexOf(room_type)) {
             data.success = 0;
@@ -2751,7 +2771,7 @@ function validRoom(data, callback){
             io.to(user_id).emit('status_join_room', data);
             return callback(true);
         }
-        var query = {member: {$all : member, $size : 2}, deleted_at: null}
+        var query = {member: {$all : member, $size : 2, room_type: room_type}, deleted_at: null}
     }
     console.log('validRoom find user', data);
     User.findOne({_id: user_id, deleted_at: null}, function (err, result) {
@@ -2802,6 +2822,19 @@ function validRoom(data, callback){
                     io.to(user_id).emit('status_join_room', data);
                     return callback(true);
                 }
+            });
+        }else{
+            Room.findOne(query, function (err, result) {
+                if (!err && result) {
+                    params.room_id = result._id;
+                    console.log('room true', result);
+                    return callback(false, data, params);
+                }
+                console.log('member_validate_3');
+                data.success = 0;
+                data.message = 'message.room_not_exits';
+                io.to(user_id).emit('status_join_room', data);
+                return callback(true);
             });
         }
     });
