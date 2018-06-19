@@ -135,6 +135,8 @@ var redis = new Redis({
     host: config.get('redisPushHost')
 });
 var g_bot_language = 'ja';
+
+const server_url = config.get('serverURL');
 redis.subscribe('notification');
 redis.on("message", function(channel, message) {
     if(typeof cluster.worker !== "undefined" && typeof cluster.worker.id !== "undefined"){
@@ -4980,7 +4982,8 @@ function sendMessage(params, message, message_type) {
                    for (var i = 0; i < users.length; i++){
                        member_name.push({
                            id: users[i]['_id'],
-                           name: users[i]['user_name']
+                           name: users[i]['user_name'],
+                           avatar: setAvatar(users[i]['avatar'])
                        });
                    }
                    result.member_name = member_name;
@@ -4994,6 +4997,15 @@ function sendMessage(params, message, message_type) {
             });
         });
     }
+}
+
+function setAvatar(avatar_url) {
+    if(!isEmpty(avatar_url)){
+        if(avatar_url.indexof(avatar_url) == -1){
+            avatar_url = server_url + '/' + avatar_url;
+        }
+    }
+    return avatar_url;
 }
 
 function sendMessageUserArr(user_ids, message) {
