@@ -44,6 +44,11 @@ var Zipcode = model.Zipcode;
 var PrefJp = model.PrefJp;
 var PrefCityJp = model.PrefCityJp;
 
+var moment = require('moment');
+
+var date_format_global = 'YYYY-MM-DD HH:mm:ss';
+var date_format_mini_global = 'YYYY-MM-DD';
+
 var Room = model.Room;
 
 //var EfoCv = model.EfoCv;
@@ -4973,7 +4978,7 @@ function sendMessage(params, message, message_type) {
               'room_id' : params.room_id,
               'message_type' : message_type,
               'message' : message,
-              'created_at' : logCollectionStore.created_at,
+              'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
             };
             var member = params.member;
             User.find({ _id: {$in: member}}, {}, {}, function(err, users) {

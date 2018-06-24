@@ -3,7 +3,7 @@
     "appSecret": "319c0f5bb0c5f9196832152840336ff4",
     "pageAccessToken": "EAADoECGlcLYBAO0tTlpZBqhUXf0WOgmAw21O2ta0WJZCZBaAogPLiw7vmZBSfufc9UQNdLyRBdgy2dwioURSWWo82wXK37g6ZCwYDXWzKqrZACYg6E31qP7bxMW9HB44JUZBdLOibprn75kALhQdmAk8Sppkf7Hpwu4m3auLzM6fwZDZD",
     "validationToken": "QEEl99CA4cZCCFvyhpOlzr2JKXk9v6sWIZC3JE",
-    "serverURL": "https://admin.botchan.chat/",
+    "serverURL": "http://weechat_laravel.local.vn",
     "dbURL" : "mongodb://:@127.0.0.1:27017/weechat?authSource=admin",
     "redisHost" : "127.0.0.1",
     "redisPushHost" : "127.0.0.1",
@@ -16,7 +16,7 @@
     "sendgrid_api_key" : "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",
     "ssl_passphrase" : "wevnalukiuki",
     "mail_from" : "no-reply@embot.chat",
-    "timezone" : "Asia/Tokyo",
+    "timezone" : "Asia/Ho_Chi_Minh",
     "app_version" : "2.2",
     "embed_version" : "1.0",
     "mail_host" : "10.2.26.4"
