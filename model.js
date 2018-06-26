@@ -18,6 +18,23 @@ var UserSchema = new Schema({
     updated_at : Date
 });
 
+var UnreadMessageSchema = new Schema({
+    room_id: String,
+    user_id: String,
+    count: Number,
+    created_at : Date,
+    updated_at : Date
+}, { collection: 'unread_messages' });
+
+var LastMessageSchema = new Schema({
+    room_id: String,
+    user_id: String,
+    message_type: String,
+    message : Schema.Types.Mixed,
+    created_at : Date,
+    updated_at : Date,
+}, { collection: 'last_messages' });
+
 var TotalUserChatSchema = new Schema({
     user_id: String,
     plan: String,
@@ -699,6 +716,8 @@ exports.EfoCaptcha = mongoose.model('EfoCaptcha', EfoCaptchaSchema);
 exports.EfoCart = mongoose.model('EfoCart', EfoCartSchema);
 
 exports.Room = mongoose.model('Room', RoomSchema);
+exports.UnreadMessage = mongoose.model('UnreadMessage', UnreadMessageSchema);
+exports.LastMessage = mongoose.model('LastMessage', LastMessageSchema);
 
 exports.RoomList = mongoose.model('RoomList', RoomListSchema);
 exports.RoomMessageVariable = mongoose.model('RoomMessageVariable', RoomMessageVariableSchema);

@@ -43,6 +43,8 @@ var BotNoReply = model.BotNoReply;
 var Zipcode = model.Zipcode;
 var PrefJp = model.PrefJp;
 var PrefCityJp = model.PrefCityJp;
+var UnreadMessage = model.UnreadMessage;
+var LastMessage = model.LastMessage;
 
 var moment = require('moment');
 
@@ -462,6 +464,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                    userJoinRoom(socket, param.room_id, function (success) {
                                        if(success){
                                            io.to(user_id).emit('status_join_room', data_result);
+                                           resetUnreadMessage(param);
                                            return;
                                        }
                                        data.success = false;
@@ -579,10 +582,12 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                 if(!error && result){
                                     userJoinRoom(socket, params.room_id, function (success) {
                                         if(success){
-                                            getUserNotExistsRoom(socket, params.room_id, params.member, function(user_id_not_arr){
+                                            getUserNotExistsRoom(socket, params.room_id, params.member, function(user_id_not_arr, client_in_room){
                                                 console.log('getUserNotExistsRoom', user_id_not_arr);
                                                 user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
                                                 params.user_id_not_arr = user_id_not_arr;
+                                                params.client_in_room = client_in_room;
+                                                console.log('parama, ', params);
                                                 switch (message_type){
                                                     case USER_SEND_FILE:
                                                         var message = data.message;
@@ -1424,10 +1429,16 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('disconnecting', function () {
+            console.log('disconnecting');
             var rooms = Object.keys(socket.rooms);
             if (rooms) {
                 rooms.forEach(function (value) {
                     socket.leave(value);
+                    if(!isEmpty(UserIdsArr[value])){
+                        console.log(UserIdsArr);
+                        delete UserIdsArr[value];
+                        console.log(UserIdsArr);
+                    }
                 });
             }
         });
@@ -4992,14 +5003,74 @@ function sendMessage(params, message, message_type) {
                        });
                    }
                    result.member_name = member_name;
+                   var client_in_room = params.client_in_room;
+                   if(!isEmpty(client_in_room)){
+                       result.user_read = client_in_room;
+                   }
                    console.log('send message to user  : ', result);
                    io.to(params.room_id).emit('server_send_message', result);
-                   sendMessageUserArr(params.user_id_not_arr, result);
+                   updateLastMessage(params, result);
+                   var user_id_not_arr = params.user_id_not_arr;
+                   if(!isEmpty(user_id_not_arr)){
+                       console.log('+++updateUnreadMessage');
+                       sendMessageUserArr(params.user_id_not_arr, result);
+                       updateUnreadMessage(params);
+                   }
                    return;
                }
                result.msg_error = 'ko tim thay user';
                 io.to(params.user_id).emit('user_join_room', result);
             });
+        });
+    }
+}
+
+function updateLastMessage(params, msg_data){
+    var now = new Date();
+    LastMessage.findOne({room_id: params.room_id}, function(err, result) {
+        if(err){
+            if (err) throw err;
+        }
+        // Nếu tìm thấy update, ngược lại create
+        if(result){
+            result.updated_at = now;
+            result.user_id = params.user_id;
+            result.message_type = msg_data.message_type;
+            result.message = msg_data.message;
+            result.save();
+        }else{
+            var LastMessageSave = new LastMessage({
+                room_id: params.room_id,
+                user_id: params.user_id,
+                message_type : msg_data.message_type,
+                message : msg_data.message,
+                created_at : now,
+                updated_at : now
+            });
+            LastMessageSave.save(function(err) {
+                if (err) throw err;
+            });
+        }
+    });
+}
+
+function updateUnreadMessage(params){
+    console.log('-----------run updateUnreadMessage');
+    var now = new Date();
+
+    var data_list_update = UnreadMessage.collection.initializeOrderedBulkOp();
+    var data_ids = params.user_id_not_arr;
+    for (var i = 0; i < data_ids.length; i++) {
+        data_list_update.find({room_id: params.room_id, user_id : data_ids[i]})
+            .upsert()
+            .update({ $inc: {count: 1}, $set: {room_id: params.room_id, user_id: data_ids[i], updated_at : now}});
+    }
+
+    if(data_list_update && data_list_update.s && data_list_update.s.currentBatch
+        && data_list_update.s.currentBatch.operations
+        && data_list_update.s.currentBatch.operations.length > 0){
+        data_list_update.execute(function (error) {
+            console.log(error);
         });
     }
 }
@@ -6271,6 +6342,20 @@ function showListRoom(socket) {
     console.log('room current', rooms);
 }
 
+function resetUnreadMessage(params) {
+    var now = new Date();
+    UnreadMessage.findOne({room_id: params.room_id, user_id: params.user_id}, function(err, result) {
+        if(err){
+            if (err) throw err;
+        }
+        // Nếu tìm thấy reset
+        if(result){
+            result.count = 0;
+            result.save();
+        }
+    });
+}
+
 function findClientsSocket(socket, roomId, user_id, namespace) {
     // console.log('socket', socket);
     // var client = socket.adapter.rooms;
@@ -6321,27 +6406,38 @@ function setNickNameSocket(socket, user_id, callback) {
 
 function getUserNotExistsRoom(socket, room_id, member, callback){
     var user_id_not_arr = removeArrayDuplicates(member);
+    var client_in_room = [];
     if(room_id && mongoose.Types.ObjectId(room_id)){
         var clients = socket.adapter.rooms[room_id];
         if(!isEmpty(clients) && !isEmpty(clients.sockets) && !isEmpty(UserIdsArr)){
+            console.log('---check usser in room is room----- ');
             clients = clients.sockets;
             if(!isEmpty(clients)){
+                console.log('UserIdsArr ', UserIdsArr, 'client', clients);
                 for(var i = 0; i < member.length; i++){
                     var user_item = member[i];
+                    console.log('user_item: ', i, user_item);
                     if(!isEmpty(UserIdsArr[user_item])){
+                        console.log('user ', user_item, 'dang online');
                         var client_id_check = UserIdsArr[user_item];
                         if(!isEmpty(clients[client_id_check]) && clients[client_id_check]){
                             user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
+                            console.log('user ', user_item, 'dang trong room');
+                            client_in_room.push(user_item);
+                        }else{
+                            // user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
                         }
                     }else{
-                        user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
+                        console.log('trung hop la ');
+                        // user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
+                        // client_in_room.push([user_item] = UserIdsArr[user_item];
                     }
                 }
             }
         }
     }
     console.log('member not exits room', user_id_not_arr);
-    return callback(user_id_not_arr);
+    return callback(user_id_not_arr, client_in_room);
 }
 
 function removeArrayDuplicates(num) {
