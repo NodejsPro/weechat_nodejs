@@ -55,28 +55,15 @@ var Room = model.Room;
 
 //var EfoCv = model.EfoCv;
 var CreateModelLogForName = model.CreateModelLogForName;
-var CreateModelUserProfileForName = model.CreateModelUserProfileForName;
 var CreateModelEfoCvForName = model.CreateModelEfoCvForName;
-var CreateModelMessageVariableForName = model.CreateModelMessageVariableForName;
-var CreateModelScenarioTotalForName = model.CreateModelScenarioTotalForName;
 //var CreateModelUserActiveForName = model.CreateModelUserActiveForName;
-var CreateModelUseScenarioForName = model.CreateModelUseScenarioForName;
-var TotalUserChat = model.TotalUserChat;
-var EfoAnalytic = model.EfoAnalytic;
-var EfoCookie = model.EfoCookie;
-var EfoCaptcha = model.EfoCaptcha;
 
 var EfoCart = model.EfoCart;
-var EfoValidateEmail = model.EfoValidateEmail;
 
 var RoomList = model.RoomList;
-var RoomMemberProfile = model.RoomMemberProfile;
-var RoomMessageVariable = model.RoomMessageVariable;
-
-var EfoModule = require('./EfoModule');
-// var CrdPayment = require('./module/payment');
 
 var UserIdsArr = {};
+var KeyByRoom = {};
 
 
 const default_variable = ["current_url", "user_first_name", "user_last_name", "user_full_name", "user_gender", "user_locale", "user_timezone", "user_referral", "user_lat", "user_long", "user_display_name", "user_id", "preview_flg"];
@@ -180,8 +167,6 @@ var transporter = mailer.createTransport({
 });
 
 
-
-
 // var sg = require('sendgrid')(config.get('sendgrid_api_key'));
 
 //const GOOGLE_API_KEY = config.get('googleapi_api_key');
@@ -216,14 +201,12 @@ io.adapter(sredis({
     port: config.get('redisPort'),
     host: config.get('redisHost')}));
 
-
 var io_socket;
 var app = express();
 //var server = http.createServer(app);
 var server = http.createServer(app, function(req, res) {
     res.end('worker: ' + cluster.worker.id);
 });
-
 
 if(APP_ENV == "embot_dev" || APP_ENV == "embot_staging" ){
     var options = {
@@ -267,7 +250,6 @@ io.attach( server ,{
     origin: '*'
 });
 //var isWorker = sticky.listen(server, config.get('socketPort'));
-
 
 //server.listen(config.get('socketPort'), function () {
 //    var host = server.address().address;
@@ -317,87 +299,6 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         console.log("unhandledRejection");
         console.log(err);
         saveException(err);
-    });
-
-    app.get('/captcha', function (req, res) {
-        //svgCaptcha.loadFont(" https://fonts.googleapis.com/css?family=Crimson+Text|Open+Sans:400,600");
-        var cid = req.query.cid;
-        var uid = req.query.uid;
-        var charPreset = req.query.charPreset;
-        var color = req.query.color;
-        var size = req.query.size;
-        if(typeof charPreset === "undefined"){
-            charPreset = "ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890";
-        }
-        if(typeof cid !== "undefined" && typeof uid !== "undefined" && mongoose.Types.ObjectId.isValid(cid)){
-            ConnectPage.findOne({_id: cid, deleted_at: null}, function (err, result) {
-                if(result){
-                    var option = {size: size, noise: 1, charPreset: charPreset};
-                    if(color){
-                        option.color = true;
-                    }
-                    var captcha = svgCaptcha.create(option);
-                    //req.session.captcha = captcha.text;
-                    var now = new Date();
-                    EfoCaptcha.update({
-                            cid: cid,
-                            uid: uid
-                        }, {
-                            $set: {
-                                text: captcha.text,
-                                updated_at: now
-                            },
-                            $setOnInsert: {created_at: now}
-                        },
-                        {upsert: true, multi: false}, function (err) {
-                            if (err) throw err;
-                            res.type('svg');
-                            res.status(200).send(captcha.data);
-                        });
-                }else{
-                    res.sendStatus(403);
-                }
-            });
-        }else{
-            res.sendStatus(403);
-        }
-    });
-
-    app.get('/botchanevent', function (req, res) {
-        console.log(req.query);
-        var connect_page_id = req.query.connect_page_id;
-        var user_id = req.query.user_id;
-        var action_name = req.query.action_name;
-        if(connect_page_id && mongoose.Types.ObjectId.isValid(connect_page_id)){
-            ConnectPage.findOne({_id: connect_page_id, deleted_at: null}, function (err, result) {
-                if(result){
-                    if(result.sns_type == SNS_TYPE_WEBCHAT){
-                        UserProfile.findOne({
-                            connect_page_id: connect_page_id,
-                            user_id: user_id
-                        }, function (err, result) {
-                            //console.log(result);
-                            if (result) {
-                                //io_socket.to(user_id).emit('server_send_btag_event', {"action_name" : action_name});
-                            }
-                        });
-                    }else if(result.sns_type == SNS_TYPE_EFO){
-                        var logUserProfileName = connect_page_id + "_user_profiles";
-                        var logUserProfileCollection = CreateModelUserProfileForName(logUserProfileName);
-                        logUserProfileCollection.findOne({
-                            connect_page_id: connect_page_id,
-                            user_id: user_id
-                        }, function (err, result) {
-                            //console.log(result);
-                            if (result) {
-                                //io_socket.to(user_id).emit('server_send_btag_event', {"action_name" : action_name});
-                            }
-                        });
-                    }
-                }
-            });
-        }
-        res.status(200).send("");
     });
 
     app.get('/captchapreview', function (req, res) {
@@ -856,39 +757,6 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             });
         });
 
-        socket.on('efo_user_start', function (data) {
-            //console.log("efo_user_start");
-            socket.join(data.user_id);
-            var connect_page_id = data.connect_page_id;
-            if (!connect_page_id || !mongoose.Types.ObjectId.isValid(connect_page_id)) {
-                data.new_flg = 0;
-                io.to(data.user_id).emit('efo_bot_start', data);
-                return true;
-            }
-
-            var logUserProfileName = connect_page_id + "_user_profiles";
-            var logUserProfileCollection = CreateModelUserProfileForName(logUserProfileName);
-
-            logUserProfileCollection.findOne({
-                connect_page_id: connect_page_id,
-                user_id: data.user_id
-            }, function (err, result) {
-                //console.log(result);
-                if (result && result.new_flg == 1) {
-                    data.new_flg = 1;
-                    result.new_flg = undefined;
-                    result.save();
-
-                    //io.to(data.user_id).emit('efo_bot_start', data);
-                    io.to(socket.id).emit('efo_bot_start', data);
-                } else {
-                    data.new_flg = 0;
-                    //io.to(data.user_id).emit('efo_bot_start', data);
-                    io.to(socket.id).emit('efo_bot_start', data);
-                }
-            });
-        });
-
         socket.on('efo_join', function (data) {
             //console.log("efo_join");
             //console.log(data);
@@ -1013,275 +881,6 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     socket.emit('efo_status_join', data);
                 }
             });
-        });
-
-        socket.on('efo_user_send_captcha', function (data) {
-            //console.log(data);
-            var cid = data.connect_page_id;
-            var uid =  data.uid;
-            var text =  data.text;
-            var rooms = Object.keys(socket.rooms);
-            if (rooms.indexOf(uid) == -1) {
-                socket.join(uid);
-            }
-
-            if(typeof cid !== "undefined" && typeof uid !== "undefined" && mongoose.Types.ObjectId.isValid(cid)) {
-                ConnectPage.findOne({_id: cid, deleted_at: null}, function (err, result) {
-                    if (result) {
-                        EfoCaptcha.findOne({cid: cid, uid: uid, text: text}, function (err, result) {
-                            if(result){
-                                EfoCaptcha.remove({cid: cid, uid: uid}, function(err) {
-                                    if (err) throw err;
-                                });
-                                data.success = 1;
-                                io.to(socket.id).emit('efo_bot_send_captcha', data);
-                            }else {
-                                data.success = 0;
-                                io.to(socket.id).emit('efo_bot_send_captcha', data);
-                            }
-                        });
-                    }else {
-                        data.success = 0;
-                        io.to(socket.id).emit('efo_bot_send_captcha', data);
-                    }
-                });
-            }else{
-                data.success = 0;
-                io.to(socket.id).emit('efo_bot_send_captcha', data);
-            }
-
-        });
-
-        socket.on('efo_user_send_message', function (data) {
-            var rooms = Object.keys(socket.rooms);
-            if (rooms.indexOf(data.user_id) == -1) {
-                socket.join(data.user_id);
-            }
-            var answers = data.answer;
-            var question_edit_flg = data.question_edit_flg;
-            var question_answer_count = (typeof data.question_count !== "undefined") ? data.question_count : 0;
-            var b_position = data.b_position;
-
-            updateUserEfoLastTime(data.connect_page_id, data.user_id);
-
-            validConnectPageIdEfo(data, function (err, event, params) {
-                if (!err){
-                    if (typeof answers !== 'undefined' && Array.isArray(answers) && answers.length > 0) {
-                        var logCollectionName = params.connect_page_id + "_logs";
-                        var logCollection = CreateModelLogForName(logCollectionName);
-
-                        params.logCollection = logCollection;
-                        //console.log(params);
-                        params.question_edit_flg = question_edit_flg;
-                        params.question_answer_count = question_answer_count;
-                        updateEfoPosition(params, b_position, function (result) {
-                            var log_message_id = data.log_message_id;
-                            var user_id = data.user_id;
-                            logCollection.findOne({_id: log_message_id}, function (err, result) {
-                                if (result) {
-                                    var now = new Date();
-                                    var logUserProfileCollection = CreateModelUserProfileForName(params.connect_page_id + "_user_profiles");
-                                    params.logUserProfileCollection = logUserProfileCollection;
-                                    logUserProfileCollection.update({
-                                            connect_page_id: params.connect_page_id,
-                                            user_id: params.user_id
-                                        }, {
-                                            $inc: {unread_cnt: 1},
-                                            $set: {
-                                                scenario_id: result.scenario_id,
-                                                last_time_at: now.getTime(),
-                                                updated_at: now
-                                            },
-                                            $setOnInsert: {created_at: now}
-                                        },
-                                        {upsert: true, multi: false}, function (err) {
-                                            if (err) throw err;
-                                        });
-                                    var message = result.message;
-                                    var variable_arr = [];
-                                    for (var i in message) {
-                                        var obj = message[i];
-                                        var variable_id = obj.variable_id;
-                                        var list = obj.list;
-                                        var answer = answers[i];
-                                        var type = obj.type;
-                                        var template_type = obj.template_type;
-                                        //console.log("variable_id=" + variable_id);
-                                        //console.log(list);
-                                        //console.log(type);
-                                        if (answer !== 'undefined') {
-                                            obj.answer = answer;
-                                            if(type == EFO_USER_CREDITCARD){
-                                                CrdPayment.getAmount(params, function (amount) {
-                                                    if(amount > 0){
-                                                        params.amount = amount;
-                                                        params.cart_info = answer;
-                                                        CrdPayment.executePayment(params, function (error, result) {
-                                                            if(error){
-                                                                console.log("efo executePayment");
-                                                                console.log(result);
-                                                                result.log_message_id = log_message_id;
-                                                                io.to(params.user_id).emit('efo_bot_send_message_error', result);
-                                                            }else{
-                                                                efoAfterClickNext(params);
-                                                            }
-                                                        });
-                                                    }
-                                                });
-                                                return;
-                                            }
-                                        }
-                                    }
-                                    if (variable_arr.length > 0) {
-                                        var user_variable = [];
-                                        var user_variable_ids = [];
-
-                                        variable_arr.forEach(function (arr) {
-                                            user_variable[arr["variable_id"]] = arr["value"];
-                                            user_variable_ids.push(arr["variable_id"]);
-                                        });
-
-                                        ApiConnect.find({connect_page_id: params.connect_page_id}, function(err, apiResults) {
-                                            if (err) throw err;
-                                            if (apiResults && apiResults.length > 0) {
-                                                var matchApiResult = null;
-                                                for (var p = 0; p < apiResults.length; p++) {
-                                                    var row1 = apiResults[p];
-                                                    var variable_list = [];
-                                                    var api_params = row1.request;
-                                                    if (api_params && api_params.length > 0) {
-                                                        api_params.forEach(function (row2) {
-                                                            variable_list.push(row2.value.toString());
-                                                        });
-                                                    }
-                                                    if (variable_list.length > 0 && variable_list.length == user_variable_ids.length) {
-                                                        var array_diff = getArrayDiff(variable_list, user_variable_ids);
-                                                        if (array_diff.length == 0) {
-                                                            matchApiResult = row1;
-                                                            break;
-                                                        }
-                                                    }
-                                                }
-                                                if (matchApiResult) {
-                                                    var send_data = {};
-                                                    var url_params = matchApiResult.request;
-                                                    if (url_params && url_params.length > 0) {
-                                                        for (var i = 0, size = url_params.length; i < size; i++) {
-                                                            var api_key = url_params[i].param.toString();
-                                                            var api_variable = url_params[i].value.toString();
-                                                            var api_variable_type = url_params[i].variable_type.toString();
-                                                            if (api_variable_type == "002") {
-                                                                send_data[api_key] = api_variable;
-                                                            }
-                                                            else if (typeof user_variable[api_variable] !== "undefined" && typeof user_variable[api_variable][0] !== "undefined") {
-                                                                send_data[api_key] = user_variable[api_variable][0];
-                                                            }
-                                                        }
-                                                    }
-                                                    console.log("send_data");
-                                                    console.log(send_data);
-                                                    sendRequestApiEfo(matchApiResult, send_data, function (err, result) {
-                                                        console.log(err);
-                                                        if (!err) {
-                                                            console.log(result.success);
-                                                            if (result.success == true) {
-                                                                Q.all(variable_arr.map(efoSaveVariable))
-                                                                    .then(function (data) {
-                                                                        logCollection.findOneAndUpdate({_id: log_message_id}, {
-                                                                            $set: {
-                                                                                message: message,
-                                                                                updated_at: new Date()
-                                                                            }
-                                                                        }, {upsert: false}, function (err, result) {
-                                                                            if (err) throw err;
-                                                                            result.message = message;
-                                                                            result.start_flg = 1;
-                                                                            if (params.preview_flg === undefined) {
-                                                                                io.to(params.connect_page_id).emit('receive_new_message', result);
-                                                                            }
-
-                                                                            socket.broadcast.to(params.user_id).emit('efo_bot_other_user_answer', {
-                                                                                result: result,
-                                                                                question_edit_flg: question_edit_flg,
-                                                                                question_count: question_answer_count
-                                                                            });
-                                                                            efoAfterClickNext(params);
-                                                                        });
-                                                                    });
-                                                            } else {
-                                                                if (typeof result.message !== "undefined") {
-                                                                    result.log_message_id = log_message_id;
-                                                                    io.to(params.user_id).emit('efo_bot_send_message_error', result);
-                                                                } else {
-                                                                    io.to(params.user_id).emit('efo_bot_send_message_error', {"message": "The error failed to connect to api", "log_message_id" : log_message_id});
-                                                                }
-                                                                return;
-                                                            }
-                                                        } else {
-                                                            io.to(params.user_id).emit('efo_bot_send_message_error', {"message": "The error failed to connect to api", "log_message_id" : log_message_id});
-                                                            return;
-                                                        }
-                                                    });
-                                                    return;
-                                                }
-                                            }
-                                            Q.all(variable_arr.map(efoSaveVariable))
-                                                .then(function (data) {
-                                                    logCollection.findOneAndUpdate({_id: log_message_id}, {
-                                                        $set: {
-                                                            message: message,
-                                                            updated_at: new Date()
-                                                        }
-                                                    }, {upsert: false}, function (err, result) {
-                                                        if (err) throw err;
-                                                        result.message = message;
-                                                        result.start_flg = 1;
-                                                        if(params.preview_flg === undefined){
-                                                            io.to(params.connect_page_id).emit('receive_new_message', result);
-                                                        }
-
-                                                        socket.broadcast.to(params.user_id).emit('efo_bot_other_user_answer', {
-                                                            result: result,
-                                                            question_edit_flg: question_edit_flg,
-                                                            question_count: question_answer_count
-                                                        });
-                                                        efoAfterClickNext(params);
-                                                    });
-                                                });
-                                        });
-                                    } else {
-                                        logCollection.findOneAndUpdate({_id: log_message_id}, {
-                                            $set: {
-                                                message: message,
-                                                updated_at: new Date()
-                                            }
-                                        }, {upsert: false}, function (err, result) {
-                                            if (err) throw err;
-                                            result.message = message;
-                                            result.start_flg = 1;
-                                            if(params.preview_flg === undefined){
-                                                io.to(params.connect_page_id).emit('receive_new_message', result);
-                                            }
-                                            socket.broadcast.to(params.user_id).emit('efo_bot_other_user_answer', {
-                                                result: result,
-                                                question_edit_flg: question_edit_flg,
-                                                question_count: question_answer_count
-                                            });
-                                            efoAfterClickNext(params);
-                                        });
-                                    }
-                                }
-                            });
-                        });
-                    }
-                    else {
-                        saveException({"type" : "answers", "efo_user_send_message" : answers, "params" : params});
-                        params.start_flg = 1;
-                        efoAfterClickNext(params);
-                    }
-                }
-            });
-
         });
 
         socket.on('efo_document_event', function (data) {
@@ -1684,17 +1283,6 @@ var getConnectPageBySecretKey = function(secret_key, sns_type) {
     });
 };
 
-var getUserPosition = function(connect_page_id, user_id){
-    return Q.Promise(function (resolve, reject) {(UserPosition.findOne({connect_page_id: connect_page_id, user_id: user_id}).exec())
-        .then(function(result) {
-            if(result){
-                return resolve(result);
-            }
-            return reject(result);
-        });
-    });
-};
-
 var redisPublicMessage = function(row){
     console.log("redisPublicMessage=");
     console.log(row);
@@ -1896,8 +1484,6 @@ var getLogChatMessage = function(connect_page_id) {
     });
 };
 
-
-
 function efoAfterClickNext(params){
     var logEfoCvCollection = params.logEfoCvCollection;
     if(!logEfoCvCollection){
@@ -1939,8 +1525,6 @@ function efoAfterClickNext(params){
  * https://developers.facebook.com/docs/graph-api/webhooks#setup
  *
  */
-
-
 
 /*
  * Account Link Event
@@ -3015,7 +2599,6 @@ var stepA = function(page_id) {
     //return d.promise;
 };
 
-
 //同期処理
 var stepB = function(val) {
     var d = Q.defer();
@@ -3257,158 +2840,6 @@ var getAllVariableValueNew = function(param) {
     });
 };
 
-function getAllVariableValue(params, callback) {
-    var preview_flg = undefined;
-    var variable_result = [];
-    if(params.sns_type == SNS_TYPE_CHATWORK){
-        RoomMemberProfile.findOne({ connect_page_id: params.connect_page_id, room_id: params.page_id, user_account_id: params.from_account_id}, function(err, result) {
-            if (err) throw err;
-            if(result) {
-                default_variable_chatwork.forEach(function (variable) {
-                    if (result[variable]) {
-                        variable_result[variable] =  result[variable];
-                    }
-                });
-            }
-            Variable.find({ connect_page_id: params.connect_page_id}, function(err, result) {
-                if (err) throw err;
-                if (result && result.length > 0) {
-                    var variable_id_arr = [];
-                    for (var i=0, size = result.length; i < size; i++) {
-                        variable_id_arr[result[i]._id] = result[i].variable_name;
-                    }
-                    RoomMessageVariable.find({connect_page_id: params.connect_page_id, room_id: params.page_id, user_account_id: params.from_account_id}, function(err, result) {
-                        if (err) throw err;
-                        if (result && result.length > 0) {
-                            for (var i=0, size = result.length; i < size; i++) {
-                                var variable = variable_id_arr[result[i].variable_id];
-                                variable_result[variable] = result[i].variable_value;
-                                var tmp_variable = result[i].variable_value;
-                                if(tmp_variable instanceof Array){
-                                    tmp_variable = arrayUnique(tmp_variable);
-                                }
-                                variable_result[result[i].variable_id] = tmp_variable;
-                            }
-                        }
-                        return callback(null,  {"variable_result" : variable_result, "preview_flg" : preview_flg});
-                    });
-                }else{
-                    return callback(null,  {"variable_result" : variable_result, "preview_flg" : preview_flg});
-                }
-            });
-        });
-    }
-    else{
-        UserProfile.findOne({ connect_page_id: params.connect_page_id, user_id:  params.user_id}, function(err, result) {
-            if (err) throw err;
-            if (result) {
-                preview_flg = result.preview_flg;
-                default_variable.forEach(function (variable) {
-                    if (result[variable]) {
-                        variable_result[variable] =  result[variable];
-                    }
-                });
-            }
-            Variable.find({ connect_page_id: params.connect_page_id}, function(err, result) {
-                if (err) throw err;
-                if (result && result.length > 0) {
-                    var variable_id_arr = [];
-                    for (var i=0, size = result.length; i < size; i++) {
-                        variable_id_arr[result[i]._id] = result[i].variable_name;
-                    }
-                    MessageVariable.find({ connect_page_id: params.connect_page_id, user_id:  params.user_id}, function(err, result) {
-                        if (err) throw err;
-                        if (result && result.length > 0) {
-                            for (var i=0, size = result.length; i < size; i++) {
-                                var variable = variable_id_arr[result[i].variable_id];
-                                variable_result[variable] = result[i].variable_value;
-                                var tmp_variable = result[i].variable_value;
-                                if(tmp_variable instanceof Array){
-                                    tmp_variable = arrayUnique(tmp_variable);
-                                }
-                                variable_result[result[i].variable_id] = tmp_variable;
-                            }
-                        }
-                        return callback(null, {"variable_result" : variable_result, "preview_flg" : preview_flg});
-                    });
-                }else{
-                    return callback(null, {"variable_result" : variable_result, "preview_flg" : preview_flg});
-                }
-            });
-        });
-    }
-
-}
-
-function getAllVariableValueEfo(params, callback) {
-    if(!params.isGetVariable) return callback(null, params.user_variable);
-
-    var variable_result = [];
-    var logUserProfileCollection = params.logUserProfileCollection;
-    if(!logUserProfileCollection) {
-        logUserProfileCollection = CreateModelUserProfileForName(params.connect_page_id + "_user_profiles");
-    }
-    logUserProfileCollection.findOne({ connect_page_id: params.connect_page_id, user_id:  params.user_id}, function(err, result) {
-        if (err) throw err;
-        if (result) {
-            default_variable.forEach(function (variable) {
-                if (result[variable]) {
-                    variable_result[variable] =  result[variable];
-                }
-            });
-        }
-        Variable.find({ connect_page_id: params.connect_page_id}, function(err, result) {
-            if (err) throw err;
-            if (result && result.length > 0) {
-                var variable_id_arr = [];
-                for (var i=0, size = result.length; i < size; i++) {
-                    variable_id_arr[result[i]._id] = result[i].variable_name;
-                }
-                var logMessageVariableCollection = params.logMessageVariableCollection;
-                if(!logMessageVariableCollection) {
-                    logMessageVariableCollection = CreateModelMessageVariableForName(params.connect_page_id + "_message_variables");
-                }
-
-                logMessageVariableCollection.find({connect_page_id: params.connect_page_id, user_id:  params.user_id}, function(err, result) {
-                    if (err) throw err;
-                    if (result && result.length > 0) {
-                        for (var i=0, size = result.length; i < size; i++) {
-                            var variable = variable_id_arr[result[i].variable_id];
-                            variable_result[variable] = result[i].variable_value;
-                            var tmp_variable = result[i].variable_value;
-                            if(tmp_variable instanceof Array){
-                                tmp_variable = arrayUnique(tmp_variable);
-                            }
-                            variable_result[result[i].variable_id] = tmp_variable;
-                        }
-                    }
-                    return callback(null, variable_result);
-                });
-            }else{
-                return callback(null, variable_result);
-            }
-        });
-    });
-}
-
-function getVariableFromText(msgText){
-    var variable_arr = [];
-    var matches_arr = msgText.match(/\{\{[^\}]+\}\}/gi);
-    if(matches_arr){
-        matches_arr.forEach(function(row) {
-            var variable = row.replace( /\{\{/g , "");
-            variable = variable.replace( /\}\}/g , "");
-            variable_arr.push(variable);
-        });
-        if(variable_arr.length > 0) {
-            variable_arr = variable_arr.filter(function (x, i, self) {
-                return self.indexOf(x) === i;
-            });
-        }
-    }
-    return variable_arr;
-}
-
 function getArrayDiff(arr1, arr2) {
     var newArr = [];
     for(var a = 0 ; a < arr1.length; a++){
@@ -3482,7 +2913,6 @@ function preg_quote (str, delimiter) {
     // *     returns 3: '\\\.\+\*\?\[\^\]\$\(\)\{\}\=\!\<\>\|\:'
     return (str + '').replace(new RegExp('[.\\\\+*?\\[\\^\\]$(){}=!<>|:\\' + (delimiter || '') + '-]', 'g'), '\\$&');
 }
-
 
 //type = ボタン or カルーセル  URL上の変数参照
 function variableUrlToValue(params, row){
@@ -3566,8 +2996,6 @@ function lineVariableUrlToValue(params, row){
     return row;
 }
 
-
-
 //クイック返信でクリックしたボタンの値を変数に保存する
 function saveQuickReplyToVariable(params, variable_id, msgText){
     console.log("saveQuickReplyToVariable");
@@ -3614,42 +3042,6 @@ function saveCarouselToVariable(params, variable_id, item_id){
                 });
         }
     });
-}
-
-function saveUserSpeechVariable(params, msgText, callback){
-    console.log("saveUserSpeechVariable");
-    if(params.variable_id){
-        Variable.findOne({ _id: params.variable_id, connect_page_id: params.connect_page_id}, function(err, result) {
-            if (err) throw err;
-            if(result){
-                var now = new Date();
-                if(params.sns_type != SNS_TYPE_CHATWORK){
-                    MessageVariable.update({connect_page_id: result.connect_page_id, user_id: params.user_id, variable_id: result._id}, {$set: {page_id: params.page_id, variable_value: msgText, created_at : now, updated_at : now}},
-                        {upsert: true, multi: false}, function (err) {
-                            if (err) throw err;
-                            return callback(true);
-                        });
-                }else{
-                    var msgText_arr = msgText.split(/\r\n|\r|\n/);
-                    if(msgText_arr.length > 0){
-                        msgText_arr[0] = "";
-                        msgText = msgText_arr.join('');
-                    }
-
-                    RoomMessageVariable.update({connect_page_id: result.connect_page_id, room_id: params.page_id, user_account_id: params.from_account_id, variable_id: result._id}, {$set: {variable_value: msgText, created_at : now, updated_at : now}},
-                        {upsert: true, multi: false}, function (err) {
-                            if (err) throw err;
-                            return callback(true);
-                        });
-                }
-
-            }else{
-                return callback(true);
-            }
-        });
-    }else{
-        return callback(true);
-    }
 }
 
 //シナリオ接続
@@ -3860,7 +3252,6 @@ function getStartScenarioId(params, callback){
     });
 }
 
-
 //function getStartScenario(params, payload){
 //  //console.log("connect_page_id="+connect_page_id);
 //  Scenario.findOne({ connect_page_id: params.connect_page_id, start_flg : 1, deleted_at: null}, function(err, result) {
@@ -3930,127 +3321,6 @@ function checkScenarioCondition(params, scenarioResult){
                 }
             }
         }
-    }
-    return true;
-}
-
-function getBotMessageEfo(params, data){
-    var size = data.length;
-    var old_bot_message = params.old_bot_message;
-
-    var msg_arr =[];
-    var question_pass_count = 0;
-    var cv_flg = 1;
-    var logCollection = params.logCollection;
-    if(!logCollection){
-        logCollection = CreateModelLogForName(params.connect_page_id + "_logs");
-        params.logCollection = logCollection;
-    }
-
-    var logMessageVariableCollection = CreateModelMessageVariableForName(params.connect_page_id + "_message_variables");
-    var isGetVariable = false;
-    var isEnd = true;
-
-    var saved_variable_arr = [];
-    if(old_bot_message && old_bot_message.length > 0){
-        for (var k=0; k < old_bot_message.length; k++) {
-            var send_msg = old_bot_message[k];
-            if(send_msg.message_type == MESSAGE_USER){
-                var isMatch = checkFilterEfo(params.user_variable, send_msg);
-                if(isMatch){
-                    var send_message = send_msg.data[0].message;
-                    for (var m in send_message) {
-                        var send_obj = send_message[m];
-                        if ((typeof send_obj.variable_id !== 'undefined') && send_obj.variable_id.length > 0 && mongoose.Types.ObjectId.isValid(send_obj.variable_id)){
-                            saved_variable_arr.push(send_obj.variable_id);
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    var isGetMessageUser = false;
-    for (var i=0; i < size; i++) {
-        var msg = data[i];
-        if(msg.message_type == MESSAGE_BOT && !isGetMessageUser){
-            var isMatchFilterBot = checkFilterEfo(params.user_variable, msg);
-            if(isMatchFilterBot){
-                msg_arr.push(msg);
-                continue;
-            }
-            logCollection.remove({connect_page_id: params.connect_page_id, user_id: params.user_id, bid: msg._id, b_position: msg.position}, function(err) {
-                if (err) throw err;
-            });
-        }else if(msg.message_type == MESSAGE_USER){
-            //console.log("isMatchFilter=" + isMatchFilter);
-            if(!isGetMessageUser){
-                var isMatchFilter = checkFilterEfo(params.user_variable, msg);
-                if(isMatchFilter){
-                    isEnd = false;
-                    msg_arr.push(msg);
-                    cv_flg = 0;
-                    isGetMessageUser = true;
-                    //break;
-                }
-            }
-
-            if(!isGetMessageUser){
-                logCollection.remove({connect_page_id: params.connect_page_id, user_id: params.user_id, bid: msg._id, b_position: msg.position}, function(err) {
-                    if (err) throw err;
-                });
-                question_pass_count ++;
-            }
-
-            if( (typeof msg.data[0] !== 'undefined') && (typeof msg.data[0].message !== 'undefined') ){
-                var message = msg.data[0].message;
-                for (var j in message){
-                    var obj = message[j];
-                    if ((typeof obj.variable_id !== 'undefined') && obj.variable_id.length > 0 && mongoose.Types.ObjectId.isValid(obj.variable_id)){
-                        var index = -1;
-                        if(saved_variable_arr.length > 0){
-                            index = saved_variable_arr.indexOf(obj.variable_id);
-                        }
-                        if(index == -1){
-                            isGetVariable = true;
-                            logMessageVariableCollection.remove({connect_page_id: params.connect_page_id, user_id: params.user_id, variable_id: obj.variable_id}, function(err) {
-                                if (err) throw err;
-                            });
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return {"msg_arr" : msg_arr, "question_pass_count" : question_pass_count, "cv_flg" : cv_flg, "isGetVariable" : isGetVariable, "isEnd" : isEnd};
-}
-
-function checkFilterEfo2(params, user_msg){
-    var filter = ((typeof user_msg.filter !== 'undefined') ? user_msg.filter : []);
-    if(filter.length > 0){
-        var variables = params.user_variable;
-        var match_value_cnt = 0;
-        var user_variable_value = "";
-        for (var i = 0; i < filter.length; i++)
-        {
-            var row = filter[i];
-            var variable = row.condition;
-            var variable_value = row.value;
-            var compare = row.compare;
-            user_variable_value = "";
-            if(typeof variables[variable] !== 'undefined'){
-                user_variable_value = variables[variable];
-            }
-            if((compare == "is" && user_variable_value == variable_value) || (compare == "isNot" && user_variable_value != variable_value)){
-                match_value_cnt++;
-            }else if(compare == "including" && user_variable_value.length > 0 && variable_value.length > 0 && user_variable_value.indexOf(variable_value) > -1){
-                match_value_cnt++;
-            }
-        }
-        if(match_value_cnt == filter.length){
-            return true;
-        }
-        return false;
     }
     return true;
 }
@@ -4522,227 +3792,6 @@ function sendMessageWebchat(params, msg_arr){
     }
 }
 
-function sendMultiMessageEfo(params, data){
-    params.isGetVariable = true;
-    getAllVariableValueEfo(params, function (err, user_variable) {
-        if (!err) {
-            params.user_variable = user_variable;
-            var result = getBotMessageEfo(params, data);
-            params.isGetVariable = result.isGetVariable;
-            var isEnd = result.isEnd;
-            var msg_arr = result.msg_arr;
-            params.cv_flg = result.cv_flg;
-
-            //if(result.question_pass_count > 0){
-            //    io.to(params.user_id).emit('efo_bot_send_question_pass', {"question_pass_count" : result.question_pass_count});
-            //}
-
-            if(msg_arr.length == 0){
-                saveUserPosition(params, -1);
-                io.to(params.user_id).emit('efo_bot_send_question_end');
-                return;
-            }
-
-            updateUserScenarioEfo(params);
-            //var time_cnt = 0;
-            getAllVariableValueEfo(params, function (err, user_variable) {
-                params.user_variable = user_variable;
-                for (var i=0; i < msg_arr.length; i++) {
-                    var msg = msg_arr[i];
-                    //time_cnt = i;
-                    //console.log(params);
-                    //if(params.new_conversation_flg == 1){
-                    //    time_cnt = i+1;
-                    //}
-                    setTimeout(function(record) {
-                        var row = record.data[0];
-                        var type = record.message_type;
-                        //console.log("type=" + type);
-                        //console.log(record);
-                        if(type == MESSAGE_BOT){
-                            if(row.message && row.message[0]){
-                                //console.log(params.user_variable);
-                                var content_type = row.message[0].type;
-                                if(content_type == EFO_BOT_TEXT){
-                                    row.message[0].content =  variableTextToValueArray(row.message[0].content, params.user_variable);
-                                    sendMessage(params, row ? row.type : USER_TYPE_TEXT,  row.message, record.message_type, record._id, record.position);
-                                }else if(content_type == EFO_BOT_MAIL){
-                                    if(params.scenario_type == "002"){
-                                        EfoCart.find({cid: params.connect_page_id, uid: params.user_id}, {data : 1, _id : 0 }, {sort: {updated_at: 1}}, function(err, result_cart){
-                                            if (err) throw err;
-                                            var cart_arr = [];
-                                            if(result_cart && result_cart.length > 0){
-                                                result_cart.forEach(function (row) {
-                                                    if(row.data && row.data.name){
-                                                        cart_arr.push("ID：" + row.data.id + "  Name：" + row.data.name);
-                                                    }
-                                                });
-                                            }
-                                            params.user_variable["request_document"] = cart_arr.join("\n");
-                                            sendEmail(params, row.message[0].mail);
-                                        });
-                                    }else{
-                                        sendEmail(params, row.message[0].mail);
-                                    }
-
-                                }else if(content_type == EFO_BOT_FILE){
-                                    sendMessage(params, row ? row.type : USER_TYPE_TEXT,  row.message, record.message_type, record._id, record.position);
-                                }
-                            }
-                        }else{
-                            var msg = row.message;
-                            if(msg && msg[0]){
-                                msg.forEach(function (row) {
-                                    if(row.type == EFO_USER_TERMS){
-                                        row.content =  variableTextToValueArray(row.content, params.user_variable);
-                                    }else if(row.type == EFO_USER_INPUT_TEXTAREA){
-                                        row.placeholder =  variableTextToValueArray(row.placeholder, params.user_variable);
-                                    }
-                                });
-                            }
-                            sendMessage(params, row ? row.type : USER_TYPE_TEXT,  row.message, record.message_type, record._id, record.position, record.btn_next, record.input_requiment_flg);
-                        }
-                        //row = variableUrlToValue(params, row);
-                        //row.answer = variableTextToValue(row.answer, params.user_variable);
-                    }, 1000 * i, msg);
-                }
-                if(result.cv_flg == 1){
-                    setTimeout(function() {
-                        io.to(params.user_id).emit('efo_bot_send_question_end');
-                    }, 1000 * (msg_arr.length - 1) + 200);
-                }
-
-                var last_msg = msg_arr[msg_arr.length - 1];
-                if(last_msg){
-                    params.current_scenario_id = last_msg.scenario_id;
-                    saveUserPosition(params, last_msg.position);
-                    //if(params.question_edit_flg && !isEnd){
-                        //console.log("getCountQuestionEfo");
-                        //console.log(params);
-                        //getCountQuestionEfo(params.user_variable, params.question_answer_count, params.current_scenario_id, params.user_id, last_msg.position);
-                    //}
-                    if(result.cv_flg != 1){
-                        getCountQuestionEfo(params.user_variable, params.question_answer_count, params.current_scenario_id, params.user_id, last_msg.position);
-                    }
-                }else{
-                    saveUserPosition(params, -1);
-                }
-            });
-            
-        }});
-}
-
-function sendMultiMessageWebchat(params, data, new_position, messages){
-    var msg_arr = getBotMessage(data, new_position);
-    if(msg_arr.length == 0){
-        saveUserPosition(params, -1);
-        return;
-    }
-    getAllVariableValue(params, function (err, result1) {
-        if (!err) {
-            if(!messages){
-                messages = [];
-            }
-            params.user_variable = result1.variable_result;
-            params.preview_flg = result1.preview_flg;
-            for (var i=0; i < msg_arr.length; i++) {
-                var msg = msg_arr[i];
-                var row = msg.data[0];
-                var messages = [];
-                if(row.type == BOT_TYPE_TEXT){
-                    if(row.message && row.message.text){
-                        row.message.text = variableTextToValue(row.message.text, params.user_variable);
-                        messages.push(
-                            row.message
-                        );
-                        setTimeout(function(row1, messages1) {
-                            sendMessage(params, row1 ? row1.type : USER_TYPE_TEXT,  messages1);
-                        }, 400 * i, row, messages);
-                    }
-                }
-                else if(row.type == BOT_TYPE_API){
-                    getApiConnect(params, row.message.api);
-                }else if(row.type == BOT_TYPE_QUICK_REPLIES){
-                    row = variableUrlToValue(params, row);
-                    messages.push(
-                        row.message
-                    );
-                    setTimeout(function(row1, msg1,  messages1) {
-                        sendMessage(params, row1 ? row1.type : USER_TYPE_TEXT,  messages1);
-                        params.current_scenario_id = msg1.scenario_id;
-                        saveUserPosition(params, msg1.position);
-                    }, 400 * i, row, msg, messages);
-                    return;
-                }
-                else if(row.type == BOT_TYPE_SCENARIO){
-                    //sendMessage(params, row ? row.type : USER_TYPE_TEXT,  messages);
-                    //params.current_scenario_id = row.message.scenario;
-                    //connectScenario(params);
-                    setTimeout(function(row1, messages1) {
-                        sendMessage(params, row1 ? row1.type : USER_TYPE_TEXT,  messages1);
-                        params.current_scenario_id = row1.message.scenario;
-                        connectScenario(params);
-                    }, 400 * i, row, messages);
-                    return;
-                }else if(row.type == BOT_TYPE_BUTTON || row.type == BOT_TYPE_GENERIC){
-                    row = variableUrlToValue(params, row);
-                    messages.push(
-                        row.message
-                    );
-                    //sendMessage(params, row ? row.type : USER_TYPE_TEXT,  messages);
-                    setTimeout(function(row1, messages1) {
-                        sendMessage(params, row1 ? row1.type : USER_TYPE_TEXT,  messages1);
-                    }, 400 * i, row, messages);
-
-                }else if(row.type == BOT_TYPE_MAIL){
-                    sendEmail(params, row.message.mail);
-                }
-                else{
-                    messages.push(
-                        row.message
-                    );
-                    //sendMessage(params, row ? row.type : USER_TYPE_TEXT,  messages);
-                    setTimeout(function(row1, messages1) {
-                        sendMessage(params, row1 ? row1.type : USER_TYPE_TEXT,  messages1);
-                    }, 400 * i, row, messages);
-
-                }
-            }
-            var last_msg = msg_arr[msg_arr.length - 1];
-            if(last_msg){
-                params.current_scenario_id = last_msg.scenario_id;
-                saveUserPosition(params, last_msg.position);
-            }else{
-                saveUserPosition(params, -1);
-            }
-        }});
-}
-
-function sendMessageChatwork(params, data, index){
-    var size = data.length;
-    if(size > 0 && !index){
-        var msg = data[size - 1];
-        index = 0;
-        saveUserPosition(params, msg.position);
-    }
-    if(size > 0 && index < size){
-        var msg1 = data[index];
-        var row = msg1.data[0];
-        callSendAPIChatworkCallback(params, row.type, row.message, index, function (next_index) {
-            sendMessageChatwork(params, data, next_index);
-        });
-        return;
-    }
-
-    if(params.connect_scenario_id){
-        params.current_scenario_id = params.connect_scenario_id;
-        params.connect_scenario_id = undefined;
-        connectScenario(params);
-    }
-}
-
-
-
 function sendMessageFacebook(params, data, index){
     var size = data.length;
     if(size > 0 && !index){
@@ -5115,7 +4164,6 @@ function convertTextMessage(sns_type, messageText){
     return messages;
 }
 
-
 /*
  * Call the Send API. The message data goes in the body. If successful, we'll
  * get the message id in a response
@@ -5182,36 +4230,6 @@ function callSendAPICallback(params, message_type, message, index, callback) {
     });
 }
 
-function getChatworkMember(params){
-    var headers = {
-        'X-ChatWorkToken': params.page_access_token
-    };
-    request({
-        uri: 'https://api.chatwork.com/v2/rooms/' + params.page_id + '/members',
-        method: 'GET',
-        headers: headers
-    }, function (error, response, body) {
-        var now = new Date();
-        if (!error && response.statusCode == 200) {
-            //console.log(body[0]);
-            var result = JSON.parse(body);
-            if(result.length > 0){
-                for(var i = 0; i < result.length; i++){
-                    console.log(result[i]);
-                    var row = result[i];
-                    RoomMemberProfile.findOneAndUpdate({ connect_page_id: params.connect_page_id, room_id: params.page_id, user_account_id: row.account_id}, {$set:
-                    {user_name: row.name, user_organization_name: row.organization_name, user_organization_id: row.organization_id, avatar_image_url: row.avatar_image_url,  updated_at : now}, $setOnInsert: {created_at: now}}, { upsert: true }, function(err, result) {
-                        if (err) throw err;
-                    });
-                }
-            }
-        } else {
-            console.log("error");
-        }
-    });
-}
-
-
 function callSendAPIChatworkCallback(params, message_type, message, index, callback) {
 
     if(typeof message.text === 'undefined' || message.text.length == 0){
@@ -5237,7 +4255,6 @@ function callSendAPIChatworkCallback(params, message_type, message, index, callb
         return callback(index);
     });
 }
-
 
 function callSendLineReplyAPI(params, message_type, messageData) {
     var headers = {
@@ -5356,14 +4373,6 @@ function updateUserLastTime(connect_page_id, user_id){
     });
 }
 
-function updateUserEfoLastTime(connect_page_id, user_id){
-    var logUserProfileCollection = CreateModelUserProfileForName(connect_page_id + "_user_profiles");
-    var now = new Date();
-    logUserProfileCollection.findOneAndUpdate({connect_page_id: connect_page_id, user_id: user_id}, { $set: {last_active_at: now.getTime(), updated_at : now, start_flg: 1}}, { upsert: false }, function(err, result) {
-        if (err) throw err;
-    });
-}
-
 function saveUserProfileWebchat(params){
     var now = new Date();
     if(params.connect_page_id && params.user_id){
@@ -5415,57 +4424,6 @@ function saveUserProfileWebchat(params){
     }
 }
 
-function saveUserProfileEfo(params){
-    var now = new Date();
-    if(params.connect_page_id && params.user_id){
-        var logUserProfileName = params.connect_page_id + "_user_profiles";
-        var logUserProfileCollection = CreateModelUserProfileForName(logUserProfileName);
-
-        logUserProfileCollection.findOne({connect_page_id: params.connect_page_id, user_id: params.user_id }, function(err, result) {
-            if (err) throw err;
-            if(result){
-                result.current_url = params.current_url;
-                result.last_active_at = now.getTime();
-                result.updated_at = now;
-                result.user_locale = params.language;
-                if(typeof params.start_flg !== 'undefined'){
-                    result.start_flg = params.start_flg;
-                }
-                result.save();
-            }else{
-                logUserProfileCollection.find({connect_page_id : params.connect_page_id, preview_flg: null}).count(function (err, count) {
-                    var userProfile = new logUserProfileCollection({
-                        connect_page_id: params.connect_page_id,
-                        page_id: params.page_id,
-                        user_id: params.user_id,
-                        user_full_name : params.user_full_name,
-                        user_email : params.user_email,
-                        number_index : count + 1,
-                        last_active_at: now.getTime(),
-                        user_referral: params.ref,
-                        current_url: params.current_url,
-                        user_locale: params.language,
-                        unread_cnt: 0,
-                        start_flg: (typeof params.start_flg !== 'undefined') ? params.start_flg : 0,
-                        preview_flg:  (typeof params.preview_flg !== 'undefined' &&  params.preview_flg != null) ? 1 : undefined,
-                        created_at : now,
-                        updated_at : now
-                    });
-                    userProfile.save(function(err) {
-                        if (err) throw err;
-                        //send event to conversation
-                        io.to(params.connect_page_id).emit('receive_new_user', userProfile);
-                        if(!params.limit_user_chat){
-                            params.new_conversation_flg = 1;
-                            connectScenarioEfo(params);
-                        }
-                    });
-                });
-            }
-        });
-    }
-}
-
 function saveUserProfile(params, referral){
   UserProfile.findOne({ connect_page_id: params.connect_page_id, user_id: params.user_id}, function(err, result) {
     if (err) throw err;
@@ -5480,77 +4438,6 @@ function saveUserLineProfile(params, page_access_token){
         if (err) throw err;
         callAPILineGetUserProfile(params, page_access_token, result);
     });
-}
-
-function saveUserChatworkProfile(params, page_access_token){
-    //console.log("saveUserLineProfile = " + page_access_token);
-    UserProfile.findOne({ connect_page_id: params.connect_page_id, user_id: params.user_id}, function(err, result) {
-        if (err) throw err;
-        callAPILineGetUserProfile(params, page_access_token, result);
-    });
-}
-
-//function newUserProfile(params){
-//    UserProfile.findOne({ connect_page_id: params.connect_page_id, user_id: params.user_id}, function(err, result) {
-//        if (err) throw err;
-//        if(!result){
-//            var ref = '';
-//            callSendAPIGetUserProfile(params, ref, result);
-//        }else{
-//            if(params.payload && params.payload == "GET_STARTED_PAYLOAD"){
-//                getStartScenario(params, params.payload);
-//            }
-//        }
-//    });
-//}
-
-function updateUserScenario(params){
-    if(params.current_scenario_id && mongoose.Types.ObjectId.isValid(params.current_scenario_id) && params.preview_flg == undefined){
-        var now = new Date();
-        var date = moment().tz(TIMEZONE).format("YYYY-MM-DD"); //dateFormat(now, "yyyy-mm-dd");
-        if( typeof params.notification_id === "undefined"){
-            UserScenario.update({connect_page_id: params.connect_page_id, user_id: params.user_id, scenario_id: params.current_scenario_id, date: date}, {$inc: {count: 1}, $set: {updated_at : now}, $setOnInsert: {created_at: now}  },
-                {upsert: true, multi: false}, function (err) {
-                    if (err) throw err;
-                });
-
-            var logScenarioTotalCollection = CreateModelScenarioTotalForName(params.connect_page_id + "_scenario_totals");
-            logScenarioTotalCollection.update({connect_page_id: params.connect_page_id, scenario_id: params.current_scenario_id, date: date}, {$inc: {count: 1}},
-                {upsert: true, multi: false}, function (err) {
-                    if (err) throw err;
-                });
-
-            //var logUserActiveCollection = CreateModelUserActiveForName(params.connect_page_id + "_user_actives");
-            //logUserActiveCollection.update({connect_page_id: params.connect_page_id, user_id: params.user_id, date: date}, {} ,
-            //    {upsert: true, multi: false}, function (err) {
-            //        if (err) throw err;
-            //    });
-
-            var logUserScenarioCollection = CreateModelUseScenarioForName(params.connect_page_id + "_user_scenarios");
-            logUserScenarioCollection.update({connect_page_id: params.connect_page_id, user_id: params.user_id, date: date}, {$inc: {count: 1}},
-                {upsert: true, multi: false}, function (err) {
-                    if (err) throw err;
-                });
-        }
-        //UnreadMessage.update({connect_page_id: params.connect_page_id, user_id: params.user_id}, {$set: {scenario_id: params.current_scenario_id, last_time_at: now, updated_at : now}, $setOnInsert: {created_at: now}  },
-        //    {upsert: true, multi: false}, function (err) {
-        //        if (err) throw err;
-        //    });
-    }
-}
-
-function updateUserScenarioEfo(params){
-    if(params.current_scenario_id && mongoose.Types.ObjectId.isValid(params.current_scenario_id)){
-        var now = new Date();
-        var logUserProfileCollection = params.logUserProfileCollection;
-        if(!logUserProfileCollection) {
-            logUserProfileCollection = CreateModelUserProfileForName(params.connect_page_id + "_user_profiles");
-        }
-        logUserProfileCollection.update({connect_page_id: params.connect_page_id, user_id: params.user_id}, {$set: {cv_flg: params.cv_flg, scenario_id: params.current_scenario_id, last_time_at: now.getTime(), updated_at : now}, $setOnInsert: {created_at: now}  },
-            {upsert: true, multi: false}, function (err) {
-                if (err) throw err;
-            });
-    }
 }
 
 function saveLogChatMessage(params, message_type, type, message, time_of_message, payload, error_flg, error_message){
@@ -5816,15 +4703,6 @@ function getCountQuestionEfo(variable_arr, question_answer_count, current_scenar
     });
 }
 
-//function saveEfoUserPosition(params) {
-//    //console.log("saveUserPosition");
-//    var now = new Date();
-//    EfoCv.update({connect_page_id: params.connect_page_id, user_id: params.user_id}, {$inc: {answer_count: 1}, $set: {updated_at : now}, $setOnInsert: {created_at: now}},
-//        {upsert: true, multi: false}, function (err) {
-//            if (err) throw err;
-//        });
-//}
-
 function callSendAPIGetUserProfile(params, referral, profile) {
   request({
     uri: 'https://graph.facebook.com/v2.6/' + params.user_id,
@@ -5905,7 +4783,6 @@ function callSendAPIGetUserProfile(params, referral, profile) {
   });
 }
 
-
 function saveRefToVariable(params, variable_name, variable_value){
     console.log("saveRefToVariable");
     Variable.findOne({  connect_page_id: params.connect_page_id, variable_name: variable_name}, function(err, result) {
@@ -5917,7 +4794,6 @@ function saveRefToVariable(params, variable_name, variable_value){
         }
     });
 }
-
 
 function callAPILineGetUserProfile(params, page_access_token, profile) {
     var headers = {
@@ -6208,7 +5084,6 @@ function removeVariableWhenFullSlotVariable(params){
     });
 }
 
-
 function checkSlotVariable(params){
     getAllVariableValue(params, function (err, result1) {
         params.user_variable = result1.variable_result;
@@ -6246,7 +5121,6 @@ function connectActionSlotVariable(params, slot_result){
         connectScenario(params);
     }
 }
-
 
 function subscribedApps(page_access_token){
     request({
@@ -6466,4 +5340,21 @@ function removeElementFromArray(array, element) {
 
 function getNickNameSocket(socket, user_id) {
 
+}
+
+function checkUserKey(user_id, key){
+    var room_obj = {};
+    if(!isEmpty(KeyByRoom)){
+        Object.keys(KeyByRoom).forEach(function (room_id) {
+            var room = KeyByRoom[room_id];
+            if(!isEmpty(room[user_id])){
+                room[user_id] = key;
+                KeyByRoom[room_id][user_id] = key;
+                Object.keys(room).forEach(function (user_id) {
+                    
+                });
+            }
+        });
+    }
+    return
 }
