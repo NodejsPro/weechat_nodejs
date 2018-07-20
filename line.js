@@ -77,6 +77,12 @@ var EfoModule = require('./EfoModule');
 // var CrdPayment = require('./module/payment');
 
 var UserIdsArr = {};
+// user đang có key secret nào
+// format: {user_id_1: key_1; user_id_2: key_2}
+var UserKey = {};
+// trong room đang có user nào online, offline
+// format: {room_id_1 : {user_id_1: true, user_id_2: false}, room_id_2: {user_id_2 : false, user_id_3: true}} ( true: user online, false: offline)
+var UserRoom = {};
 
 
 const default_variable = ["current_url", "user_first_name", "user_last_name", "user_full_name", "user_gender", "user_locale", "user_timezone", "user_referral", "user_lat", "user_long", "user_display_name", "user_id", "preview_flg"];
@@ -6466,4 +6472,114 @@ function removeElementFromArray(array, element) {
 
 function getNickNameSocket(socket, user_id) {
 
+}
+
+// Cập nhật lại trạng thái user: is_login: false => true nếu login thành công
+function validUserLogin(user_id, key, callback) {
+    if(!isEmpty(user_id) && mongoose.Types.ObjectId(user_id) && !isEmpty(key)){
+        User.findOneAndUpdate({_id: user_id, is_login: false, deleted_at: null}, { $set: { is_login: true } }, { new: true }, function(err, result) {
+            if(!err && result){
+                setUserKey('', user_id, key);
+                setUserStatus(user_id);
+                callback(true);
+            }
+        });
+    }
+    return callback(false);
+}
+
+// Cập nhật lại
+function validAllUserOffline(user_id) {
+    var user_room_key = {},
+        room_id_arr = [];
+    for (var room_id in UserRoom) {
+        var room_current = UserRoom[room_id];
+        if(!isEmpty(room_current[user_id])){
+            room_id_arr.push(room_id);
+        }
+    }
+    if(room_id_arr.length > 0){
+        Room.find({_id: {$in: room_id_arr}, deleted_at: null}, function (err, rooms) {
+            if(!err && rooms){
+                rooms.forEach(function (row) {
+                    var share_key = true;
+                    if(!row[_user_id]){
+                        share_key = false;
+                    }
+                });
+
+
+                for (var _user_id in room_current) {
+
+                }
+                if(share_key){
+                    //user_room_key[room_id] = UserRoom[room_id];
+                    //call event user_share_key
+                }
+
+            }
+        });
+    }
+    return user_room_key;
+}
+
+function checkUserRoomOnline(room_id) {
+    var status = false;
+    if(!isEmpty(UserRoom[room_id])){
+        status = true;
+        var room_current = UserRoom[room_id];
+        for (var user_id in room_current) {
+            if(!room_current[user_id]){
+                status = false;
+            }
+        }
+    }
+    return status;
+}
+
+function setUserStatus(user_id) {
+    for (var room_id in UserRoom) {
+        var room_current = UserRoom[room_id];
+        if(!isEmpty(room_current[user_id])){
+            UserRoom[room_id][user_id] = true;
+        }
+    }
+}
+
+function setUserKey(socket, user_id, key) {
+    if(!isEmpty(UserKey[user_id])){
+        UserKey[user_id] = key;
+    }
+}
+
+function getUserRoomKey(room_id){
+    var room_user_key = {};
+    if(!isEmpty(UserRoom[room_id])){
+        var room_current = UserRoom[room_id];
+        for (var user_id in room_current) {
+            if(!isEmpty(UserKey[user_id]) && !isEmpty(room_current[user_id]) && room_current[user_id]){
+                room_user_key[user_id] = UserKey[user_id]; 
+            }else{
+                console.log('user_share_key error room_id', room_id, 'room_current', room_current);
+            }
+        }
+    }
+    return room_user_key;
+}
+
+function setUserInRoom(room_id, user_id, user_status){
+    if(!isEmpty(UserRoom[room_id]) && user_id){
+        var room_current = UserRoom[room_id];
+        if(!isEmpty(room_current[user_id])){
+            UserRoom[room_id][user_id] = user_status;
+        }
+    }
+}
+
+function getUserInRoom(room_id) {
+    var user_room = {};
+    if(!isEmpty(UserRoom[room_id])){
+        user_room = UserRoom[room_id];
+    }
+    return user_room;
 }
