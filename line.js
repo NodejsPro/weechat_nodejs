@@ -5522,24 +5522,6 @@ function validAllUserOffline(user_id) {
     return user_room_key;
 }
 
-var check_user_key = checkUserRoomOnline(current_room_id);
-if(check_user_key){
-    // share key
-    console.log('room: '. current_room_id, ' vua share key');
-    io.to(room_id).emit('user_share_key', user_room);
-    // update share key flg cho user
-    result.share_key_flag = true;
-    result.save();
-    return callback(false, data, params);
-}else{
-    var message = {
-        message: "user chua share key",
-        success: false
-    };
-    io.to(room_id).emit('status_join_room', message);
-    return callback(true, data, params);
-}
-
 function checkUserRoomOnline(room_id) {
     var status = false;
     if(!isEmpty(UserRoom[room_id])){
