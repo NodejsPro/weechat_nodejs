@@ -2600,7 +2600,7 @@ var getRoom = function(data, callback) {
             io.to(user_id).emit('status_join_room', data);
             return callback(true);
         }
-        if(isEmpty(result.share_key_flag)){
+        if(isEmpty(result.share_key_flag) || !result.share_key_flag){
             console.log('room chua share key');
             data.success = 0;
             data.message = 'message.room_not_share_key';
