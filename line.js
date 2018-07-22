@@ -342,11 +342,13 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                        if(success){
                            setNickNameSocket(socket, user_id, function(success){
                                if(success){
-                                   var data_return = {
-                                       success: true,
-                                   };
-                                   io.to(user_id).emit('status_join', data_return);
-                                   return;
+                                   sendKeyUserInRoom(data, function(success){
+                                       var data_return = {
+                                           success: true,
+                                       };
+                                       io.to(user_id).emit('status_join', data_return);
+                                       return;
+                                   });
                                }
                            });
                        }
@@ -2404,9 +2406,36 @@ function validRoom(data, callback){
             console.log('query', query);
             Room.findOne(query, function (err, result) {
                 if (!err && result) {
-                    params.room_id = result._id;
-                    console.log('room true', result);
-                    return callback(false, data, params);
+                    // nếu room đã tồn tại và đã share key
+                    var room_id = result._id;
+                    updateUserRoom(room_id, member);
+                    if(result.share_key_flag){
+                        console.log('room: '. result._id, ' da share key');
+                        params.room_id = room_id;
+                        console.log('room true', result);
+                        return callback(false, data, params);
+                    }else{
+                    // nếu chưa share key => check member có online hết ko
+                        var current_room_id = room_id;
+                        var user_room = getUserRoomKey(room_id);
+                        var check_user_key = checkUserRoomOnline(current_room_id);
+                        if(check_user_key){
+                        // share key
+                            console.log('room: '. room_id, ' vua share key');
+                            io.to(room_id).emit('user_share_key', user_room);
+                            // update share key flg cho user
+                            result.share_key_flag = true;
+                            result.save();
+                            return callback(false, data, params);
+                        }else{
+                            var message = {
+                               message: "user chua share key",
+                                success: false
+                            };
+                            io.to(room_id).emit('status_join_room', message);
+                            return callback(true, data, params);
+                        }
+                    }
                 }else if(user.authority == USER_AUTHORITY_SUPER_ADMIN || (contact instanceof Array  && contact.length > 0 &&
                         ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0)))){
                     var now = new Date();
@@ -2415,13 +2444,33 @@ function validRoom(data, callback){
                         user_id: user_id,
                         member: member,
                         room_type: room_type,
+                        share_key_flag: false,
                         created_at : now,
                         updated_at : now
                     });
                     roomStore.save(function(err, roomStore) {
                         if (err) throw err;
                         console.log('room true store');
+                        var current_room_id = roomStore._id;
                         params.room_id = roomStore._id;
+
+                        updateUserRoom(current_room_id, member);
+                        var check_user_key = checkUserRoomOnline(current_room_id);
+                        if(check_user_key){
+                            // share key
+                            result.share_key_flag = true;
+                            result.save();
+                            io.to(room_id).emit('user_share_key', user_room);
+                            return callback(false, data, params);
+                        }else{
+                            var message = {
+                                message: "user chua share key",
+                                success: false
+                            };
+                            io.to(room_id).emit('status_join_room', message);
+                            return callback(true, data, params);
+                        }
+
                         return callback(false, data, params);
                     });
                 }else {
@@ -2435,9 +2484,30 @@ function validRoom(data, callback){
         }else{
             Room.findOne(query, function (err, result) {
                 if (!err && result) {
-                    params.room_id = result._id;
-                    console.log('room true', result);
-                    return callback(false, data, params);
+                    if(result.share_key_flag){
+                        params.room_id = result._id;
+                        updateUserRoom(result._id, member);
+                        console.log('room true', result);
+                        return callback(false, data, params);
+                    }else{
+                        var check_user_key = checkUserRoomOnline(room_id);
+                        if(check_user_key){
+                            // share key
+                            var user_room = getUserRoomKey(room_id);
+                            io.to(room_id).emit('user_share_key', user_room);
+
+                            params.room_id = result._id;
+                            console.log('room true', result);
+                            return callback(false, data, params);
+                        }else{
+                            var message = {
+                                message: "user chua share key",
+                                success: false
+                            };
+                            io.to(room_id).emit('status_join_room', message);
+                            return callback(true, data, params);
+                        }
+                    }
                 }
                 console.log('member_validate_3');
                 data.success = 0;
@@ -2491,6 +2561,32 @@ function validUserId(data, callback){
     });
 }
 
+function  sendKeyUserInRoom(data, params, callback) {
+    var user_id = data.user_id;
+    var room_id_arr = setUserStatus(user_id);
+    Room.find({_id: {$in: room_id_arr}, share_key_flag: true, deleted_at: null}, function (err, rooms) {
+        console.log('rooms : ', rooms);
+        if(!err && rooms){
+            rooms.forEach(function (room) {
+                var member = room.member;
+                var room_id= room._id;
+                console.log('room_id', room_id, 'member', member);
+                // check all member_onine
+                var room_flg = checkUserRoomOnline(room_id);
+                if(room_flg){
+                    room.save();
+                    var user_room_key = getUserRoomKey(room_id);
+                    io.to(room_id).emit('user_share_key', user_room_key);
+                    io.to(user_id).emit('user_share_key', user_room_key);
+                    room.share_key_flag = true;
+                }
+            });
+            return callback(true);
+        }
+        return callback(false);
+    });
+}
+
 var getRoom = function(data, callback) {
     var user_id = data.user_id;
     var room_id = data.room_id;
@@ -2501,6 +2597,13 @@ var getRoom = function(data, callback) {
             console.log('error getroom');
             data.success = 0;
             data.message = 'message.room_not-exits';
+            io.to(user_id).emit('status_join_room', data);
+            return callback(true);
+        }
+        if(isEmpty(result.share_key_flag)){
+            console.log('room chua share key');
+            data.success = 0;
+            data.message = 'message.room_not_share_key';
             io.to(user_id).emit('status_join_room', data);
             return callback(true);
         }
@@ -5419,6 +5522,24 @@ function validAllUserOffline(user_id) {
     return user_room_key;
 }
 
+var check_user_key = checkUserRoomOnline(current_room_id);
+if(check_user_key){
+    // share key
+    console.log('room: '. current_room_id, ' vua share key');
+    io.to(room_id).emit('user_share_key', user_room);
+    // update share key flg cho user
+    result.share_key_flag = true;
+    result.save();
+    return callback(false, data, params);
+}else{
+    var message = {
+        message: "user chua share key",
+        success: false
+    };
+    io.to(room_id).emit('status_join_room', message);
+    return callback(true, data, params);
+}
+
 function checkUserRoomOnline(room_id) {
     var status = false;
     if(!isEmpty(UserRoom[room_id])){
@@ -5430,16 +5551,20 @@ function checkUserRoomOnline(room_id) {
             }
         }
     }
+    console.log('status', status);
     return status;
 }
 
 function setUserStatus(user_id) {
+    var room_id_arr = [];
     for (var room_id in UserRoom) {
         var room_current = UserRoom[room_id];
         if(!isEmpty(room_current[user_id])){
             UserRoom[room_id][user_id] = true;
+            room_id_arr.push(room_id);
         }
     }
+    return room_id_arr;
 }
 
 function setUserKey(socket, user_id, key) {
@@ -5478,4 +5603,29 @@ function getUserInRoom(room_id) {
         user_room = UserRoom[room_id];
     }
     return user_room;
+}
+
+function array_diff(a1, a2) {
+    var result = [];
+    for (var i = 0; i < a1.length; i++) {
+        if (a2.indexOf(a1[i]) === -1) {
+            result.push(a1[i]);
+        }
+    }
+    return result;
+}
+
+function updateUserRoom(room_id, member){
+    var room_current = {};
+    if(!isEmpty(UserRoom[room_id])){
+        room_current = UserRoom[room_id];
+    }
+    for(var i = 0; i < member.length; i++){
+        var status = true;
+        if(isEmpty(UserKey[member[i]])){
+            status = false;
+        }
+        room_current[member[i]] = status;
+    }
+    UserRoom[room_id] = room_current;
 }
