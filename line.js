@@ -2571,21 +2571,24 @@ function validUserId(data, callback){
 function  sendKeyUserInRoom(data, params, callback) {
     var user_id = data.user_id;
     var room_id_arr = setUserStatus(user_id);
-    Room.find({_id: {$in: room_id_arr}, share_key_flag: true, deleted_at: null}, function (err, rooms) {
+    Room.find({_id: {$in: room_id_arr}, deleted_at: null}, function (err, rooms) {
         console.log('rooms : ', rooms);
         if(!err && rooms){
             rooms.forEach(function (room) {
-                var member = room.member;
-                var room_id= room._id;
-                console.log('room_id', room_id, 'member', member);
-                // check all member_onine
-                var room_flg = checkUserRoomOnline(room_id);
-                if(room_flg){
-                    room.save();
-                    var user_room_key = getUserRoomKey(room_id);
-                    io.to(room_id).emit('user_share_key', user_room_key);
-                    io.to(user_id).emit('user_share_key', user_room_key);
-                    room.share_key_flag = true;
+                if(isEmpty(room.share_key_flag) || !room.share_key_flag){
+                    var member = room.member;
+                    var room_id= room._id;
+                    console.log('room_id', room_id, 'member', member, ' check all user online');
+                    // check all member_onine
+                    var room_flg = checkUserRoomOnline(room_id);
+                    if(room_flg){
+                        var user_room_key = getUserRoomKey(room_id);
+                        for(var i = 0; i < member.length; i++){
+                            io.to(member[i]).emit('user_share_key', user_room_key);
+                        }
+                        room.share_key_flag = true;
+                        room.save();
+                    }
                 }
             });
             return callback(true);
