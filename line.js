@@ -2409,6 +2409,7 @@ function validRoom(data, callback){
                     // nếu room đã tồn tại và đã share key
                     var room_id = result._id;
                     updateUserRoom(room_id, member);
+                    console.log('user in room', UserRoom[room_id]);
                     if(result.share_key_flag){
                         console.log('room: '. result._id, ' da share key');
                         params.room_id = room_id;
@@ -2432,7 +2433,9 @@ function validRoom(data, callback){
                                message: "user chua share key",
                                 success: false
                             };
-                            io.to(room_id).emit('status_join_room', message);
+                            for(var i = 0; i < member.length; i++){
+                                io.to(member[i]).emit('status_join_room', message);
+                            }
                             return callback(true, data, params);
                         }
                     }
@@ -2467,7 +2470,9 @@ function validRoom(data, callback){
                                 message: "user chua share key",
                                 success: false
                             };
-                            io.to(room_id).emit('status_join_room', message);
+                            for(var i = 0; i < member.length; i++){
+                                io.to(member[i]).emit('status_join_room', message);
+                            };
                             return callback(true, data, params);
                         }
 
@@ -2504,7 +2509,9 @@ function validRoom(data, callback){
                                 message: "user chua share key",
                                 success: false
                             };
-                            io.to(room_id).emit('status_join_room', message);
+                            for(var i = 0; i < member.length; i++){
+                                io.to(member[i]).emit('status_join_room', message);
+                            }
                             return callback(true, data, params);
                         }
                     }
