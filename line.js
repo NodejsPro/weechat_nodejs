@@ -342,7 +342,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                        if(success){
                            setNickNameSocket(socket, user_id, function(success){
                                if(success){
-                                   sendKeyUserInRoom(data, function(success){
+                                   sendKeyUserInRoom(data, params, function(success){
                                        var data_return = {
                                            success: true,
                                        };
