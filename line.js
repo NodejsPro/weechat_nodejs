@@ -1041,14 +1041,14 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             if (rooms) {
                 rooms.forEach(function (value) {
                     socket.leave(value);
-                    console.log(value);
+                    console.log('value', value);
                     if(!isEmpty(UserIdsArr[value])){
                         console.log(UserIdsArr);
                         delete UserIdsArr[value];
                         console.log(UserIdsArr);
                     }
-                    if(!isEmpty(UserKey[value])){
-
+                    if(!isEmpty(UserRoom[value])){
+                        setUserStatus(value);
                     }
                 });
             }
@@ -2426,11 +2426,12 @@ function validRoom(data, callback){
                         var check_user_key = checkUserRoomOnline(current_room_id);
                         if(check_user_key){
                         // share key
-                            console.log('room: '. room_id, ' vua share key');
+                            console.log('room: ', room_id, ' vua share key');
                             io.to(room_id).emit('user_share_key', user_room);
                             // update share key flg cho user
                             result.share_key_flag = true;
                             result.save();
+                            deleteAllUserInRoom(room_id);
                             return callback(false, data, params);
                         }else{
                             var message = {
@@ -2468,6 +2469,7 @@ function validRoom(data, callback){
                             result.share_key_flag = true;
                             result.save();
                             io.to(room_id).emit('user_share_key', user_room);
+                            deleteAllUserInRoom(current_room_id);
                             return callback(false, data, params);
                         }else{
                             var message = {
@@ -2507,6 +2509,7 @@ function validRoom(data, callback){
 
                             params.room_id = result._id;
                             console.log('room true', result);
+                            deleteAllUserInRoom(room_id);
                             return callback(false, data, params);
                         }else{
                             var message = {
@@ -2593,6 +2596,7 @@ function  sendKeyUserInRoom(data, params, callback) {
                         }
                         room.share_key_flag = true;
                         room.save();
+                        deleteAllUserInRoom(room_id);
                     }
                 }
             });
@@ -5636,4 +5640,18 @@ function updateUserRoom(room_id, member){
         room_current[member[i]] = status;
     }
     UserRoom[room_id] = room_current;
+}
+
+function deleteAllUserInRoom(room_id){
+    console.log('-------------delete key in room------------');
+    console.log('----', room_id, UserRoom[room_id]);
+    if(!isEmpty(UserRoom[room_id])){
+        var room_current = UserRoom[room_id];
+        Object.keys(room_current).forEach(function(row) {
+            if(!isEmpty(UserKey[row])){
+                delete UserKey[row];
+            }
+        });
+        delete UserRoom[room_id];
+    }
 }
