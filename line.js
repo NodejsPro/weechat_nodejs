@@ -329,7 +329,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         console.log("connection worker =" + cluster.worker.id);
 
         socket.on('disconnect', function () {
-            //console.log('client disconnected');
+            console.log('client disconnected');
         });
 
         socket.on('user_join', function (data) {
@@ -1041,10 +1041,14 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             if (rooms) {
                 rooms.forEach(function (value) {
                     socket.leave(value);
+                    console.log(value);
                     if(!isEmpty(UserIdsArr[value])){
                         console.log(UserIdsArr);
                         delete UserIdsArr[value];
                         console.log(UserIdsArr);
+                    }
+                    if(!isEmpty(UserKey[value])){
+
                     }
                 });
             }
@@ -2411,7 +2415,7 @@ function validRoom(data, callback){
                     updateUserRoom(room_id, member);
                     console.log('user in room', UserRoom[room_id]);
                     if(result.share_key_flag){
-                        console.log('room: '. result._id, ' da share key');
+                        console.log('room: '. room_id, ' da share key');
                         params.room_id = room_id;
                         console.log('room true', result);
                         return callback(false, data, params);
@@ -2556,8 +2560,9 @@ function validUserId(data, callback){
             // update login user
             result.is_login = true;
             result.save();
-            //update key user
             setUserKey('', user_id, key);
+            //update key user
+            console.log('user key: ', user_id, key, UserKey);
             var params = createParameterDefault(result.sns_type, result._id, data.user_id, result.page_id);
             return callback(false, data, params);
         }else{
@@ -5533,6 +5538,8 @@ function validAllUserOffline(user_id) {
 }
 
 function checkUserRoomOnline(room_id) {
+    console.log('----------------checkUserRoomOnline---------------------');
+    console.log(room_id);
     var status = false;
     if(!isEmpty(UserRoom[room_id])){
         status = true;
@@ -5548,6 +5555,8 @@ function checkUserRoomOnline(room_id) {
 }
 
 function setUserStatus(user_id) {
+    console.log('----------------setUserStatus---------------------');
+    console.log(user_id);
     var room_id_arr = [];
     for (var room_id in UserRoom) {
         var room_current = UserRoom[room_id];
@@ -5560,15 +5569,21 @@ function setUserStatus(user_id) {
 }
 
 function setUserKey(socket, user_id, key) {
-    if(!isEmpty(UserKey[user_id])){
+    console.log('------------------setUserKey-----------------');
+    console.log(socket, user_id, key);
+    console.log('setUserKey', UserKey, UserKey[user_id]);
+    if(isEmpty(UserKey[user_id])){
         UserKey[user_id] = key;
     }
 }
 
 function getUserRoomKey(room_id){
     var room_user_key = {};
+    console.log('----------------getUserRoomKey---------------------');
+    console.log(room_id);
     if(!isEmpty(UserRoom[room_id])){
         var room_current = UserRoom[room_id];
+        console.log(UserKey, room_current, user_id);
         for (var user_id in room_current) {
             if(!isEmpty(UserKey[user_id]) && !isEmpty(room_current[user_id]) && room_current[user_id]){
                 room_user_key[user_id] = UserKey[user_id]; 
@@ -5608,6 +5623,7 @@ function array_diff(a1, a2) {
 }
 
 function updateUserRoom(room_id, member){
+    console.log('----------------update user room---------------------');
     var room_current = {};
     if(!isEmpty(UserRoom[room_id])){
         room_current = UserRoom[room_id];
