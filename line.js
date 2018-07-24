@@ -2362,7 +2362,7 @@ function validRoom(data, callback){
     var room_type = data.room_type;
     var member = data.member;
     var room_type_arr = [ROOM_TYPE_ONE_MANY, ROOM_TYPE_ONE_ONE];
-    console.log('validRoom');
+    console.log('-------------------validRoom---------------------');
     if(!user_id || !mongoose.Types.ObjectId.isValid(user_id)){
         data.success = 0;
         data.message = 'message.user_id_validate';
@@ -2405,7 +2405,7 @@ function validRoom(data, callback){
             var u2 = member[1];
             var contact = user.contact != void 0 ? user.contact : [];
             //console.log(user._id, result._id, contact, u1, contact.indexOf(u2), u2, contact.indexOf(u1));
-            console.log('---------------', user);
+            console.log('---------------Room 1-1', user);
             console.log('user.authority: ', user.authority , USER_AUTHORITY_SUPER_ADMIN);
             console.log('query', query);
             Room.findOne(query, function (err, result) {
@@ -2413,9 +2413,10 @@ function validRoom(data, callback){
                     // nếu room đã tồn tại và đã share key
                     var room_id = result._id;
                     updateUserRoom(room_id, member);
+                    console.log('update status user in room');
                     console.log('user in room', UserRoom[room_id]);
                     if(result.share_key_flag){
-                        console.log('room: '. room_id, ' da share key');
+                        console.log('room: ',room_id, ' da share key');
                         params.room_id = room_id;
                         console.log('room true', result);
                         return callback(false, data, params);
@@ -2493,6 +2494,7 @@ function validRoom(data, callback){
                 }
             });
         }else{
+            console.log('---------------Room 1-n', user);
             Room.findOne(query, function (err, result) {
                 if (!err && result) {
                     if(result.share_key_flag){
@@ -2534,6 +2536,7 @@ function validRoom(data, callback){
 }
 
 function userJoinRoom(socket, room_id, callback) {
+    console.log('-----------------user join room-----------------------');
     showListRoom(socket);
     var rooms = Object.keys(socket.rooms);
     if (rooms.indexOf(room_id) >= 0) {
@@ -2551,6 +2554,7 @@ function userJoinRoom(socket, room_id, callback) {
 }
 
 function validUserId(data, callback){
+    console.log('-----------------valid user id-----------------------');
     var user_id = data.user_id,
         key = data.key;
     if(!user_id || !mongoose.Types.ObjectId.isValid(user_id) || isEmpty(key)){
@@ -2578,6 +2582,7 @@ function validUserId(data, callback){
 
 function  sendKeyUserInRoom(data, params, callback) {
     var user_id = data.user_id;
+    console.log('-----------------sendKeyUserInRoom-----------------------');
     var room_id_arr = setUserStatus(user_id);
     Room.find({_id: {$in: room_id_arr}, deleted_at: null}, function (err, rooms) {
         console.log('rooms : ', rooms);
@@ -2590,6 +2595,7 @@ function  sendKeyUserInRoom(data, params, callback) {
                     // check all member_onine
                     var room_flg = checkUserRoomOnline(room_id);
                     if(room_flg){
+                        console.log('----send key for all user online');
                         var user_room_key = getUserRoomKey(room_id);
                         for(var i = 0; i < member.length; i++){
                             io.to(member[i]).emit('user_share_key', user_room_key);
