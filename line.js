@@ -2415,7 +2415,7 @@ function validRoom(data, callback){
                     updateUserRoom(room_id, member);
                     console.log('update status user in room');
                     console.log('user in room', UserRoom[room_id]);
-                    if(result.share_key_flag){
+                    if(result.share_key_flg){
                         console.log('room: ',room_id, ' da share key');
                         params.room_id = room_id;
                         console.log('room true', result);
@@ -2430,7 +2430,7 @@ function validRoom(data, callback){
                             console.log('room: ', room_id, ' vua share key');
                             io.to(room_id).emit('user_share_key', user_room);
                             // update share key flg cho user
-                            result.share_key_flag = true;
+                            result.share_key_flg = true;
                             result.save();
                             deleteAllUserInRoom(room_id);
                             return callback(false, data, params);
@@ -2453,7 +2453,7 @@ function validRoom(data, callback){
                         user_id: user_id,
                         member: member,
                         room_type: room_type,
-                        share_key_flag: false,
+                        share_key_flg: false,
                         created_at : now,
                         updated_at : now
                     });
@@ -2467,7 +2467,7 @@ function validRoom(data, callback){
                         var check_user_key = checkUserRoomOnline(current_room_id);
                         if(check_user_key){
                             // share key
-                            result.share_key_flag = true;
+                            result.share_key_flg = true;
                             result.save();
                             io.to(room_id).emit('user_share_key', user_room);
                             deleteAllUserInRoom(current_room_id);
@@ -2497,7 +2497,7 @@ function validRoom(data, callback){
             console.log('---------------Room 1-n', user);
             Room.findOne(query, function (err, result) {
                 if (!err && result) {
-                    if(result.share_key_flag){
+                    if(result.share_key_flg){
                         params.room_id = result._id;
                         updateUserRoom(result._id, member);
                         console.log('room true', result);
@@ -2588,7 +2588,7 @@ function  sendKeyUserInRoom(data, params, callback) {
         console.log('rooms : ', rooms);
         if(!err && rooms){
             rooms.forEach(function (room) {
-                if(isEmpty(room.share_key_flag) || !room.share_key_flag){
+                if(isEmpty(room.share_key_flg) || !room.share_key_flg){
                     var member = room.member;
                     var room_id= room._id;
                     console.log('room_id', room_id, 'member', member, ' check all user online');
@@ -2600,7 +2600,7 @@ function  sendKeyUserInRoom(data, params, callback) {
                         for(var i = 0; i < member.length; i++){
                             io.to(member[i]).emit('user_share_key', user_room_key);
                         }
-                        room.share_key_flag = true;
+                        room.share_key_flg = true;
                         room.save();
                         deleteAllUserInRoom(room_id);
                     }
@@ -2625,7 +2625,7 @@ var getRoom = function(data, callback) {
             io.to(user_id).emit('status_join_room', data);
             return callback(true);
         }
-        if(isEmpty(result.share_key_flag) || !result.share_key_flag){
+        if(isEmpty(result.share_key_flg) || !result.share_key_flg){
             console.log('room chua share key');
             data.success = 0;
             data.message = 'message.room_not_share_key';
