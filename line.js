@@ -70,7 +70,10 @@ var UserKey = {};
 // trong room đang có user nào online, offline
 // format: {room_id_1 : {user_id_1: true, user_id_2: false}, room_id_2: {user_id_2 : false, user_id_3: true}} ( true: user online, false: offline)
 var UserRoom = {};
+//format {user_id_1: 123456, user_id_2: 234567}
+var UserTime = {};
 
+const TIME_USER_LOGOUT = 60000;// 1 phút
 
 const default_variable = ["current_url", "user_first_name", "user_last_name", "user_full_name", "user_gender", "user_locale", "user_timezone", "user_referral", "user_lat", "user_long", "user_display_name", "user_id", "preview_flg"];
 const default_variable_chatwork = ["user_account_id", "user_name", "user_organization_name", "user_organization_id"];
@@ -342,6 +345,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                        if(success){
                            setNickNameSocket(socket, user_id, function(success){
                                if(success){
+                                   setUserTime(user_id);
                                    sendKeyUserInRoom(data, params, function(success){
                                        var data_return = {
                                            success: true,
@@ -372,6 +376,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                    };
                                    userJoinRoom(socket, param.room_id, function (success) {
                                        if(success){
+                                           setUserTime(user_id);
                                            io.to(user_id).emit('status_join_room', data_result);
                                            resetUnreadMessage(param);
                                            return;
@@ -1047,8 +1052,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                         delete UserIdsArr[value];
                         console.log(UserIdsArr);
                     }
-                    if(!isEmpty(UserRoom[value])){
-                        setUserStatus(value);
+                    if(!isEmpty(UserRoom[value]) || !isEmpty(UserKey[value])){
+                        setTimeout(function () {
+                            setUserOffline(value)
+                        }, TIME_USER_LOGOUT);
                     }
                 });
             }
@@ -1372,6 +1379,26 @@ function setPushMessageLine(row){
             });
         }
     });
+}
+
+function setUserOffline(user_id) {
+    var current_time = new Date();
+    current_time = current_time.getTime();
+    console.log('---------------------setUserOffline---------------------');
+    console.log('user_id', user_id, UserTime, UserTime[user_id], current_time, UserTime[user_id] - current_time);
+    var time_secound = TIME_USER_LOGOUT/1000;
+    console.log(!isEmpty(UserTime[user_id]), current_time - UserTime[user_id], TIME_USER_LOGOUT);
+    if(!isEmpty(UserTime[user_id]) && (current_time - UserTime[user_id] > TIME_USER_LOGOUT)){
+        console.log('start set user offline');
+        setUserStatus(user_id, false);
+        deleteUserKey(user_id);
+        User.findOne({_id: user_id, deleted_at: null, }, function (err, result) {
+            if(!err && result){
+                result.is_login = false;
+                result.save();
+            }
+        });
+    }
 }
 
 function getLineUserProfileLimit(params, send_message, index){
@@ -4205,6 +4232,7 @@ function sendMessage(params, message, message_type) {
                        sendMessageUserArr(params.user_id_not_arr, result);
                        updateUnreadMessage(params);
                    }
+                   setUserTime(params.user_id);
                    return;
                }
                result.msg_error = 'ko tim thay user';
@@ -5560,18 +5588,21 @@ function checkUserRoomOnline(room_id) {
             }
         }
     }
-    console.log('status', status);
+    console.log('all member online', status);
     return status;
 }
 
-function setUserStatus(user_id) {
+function setUserStatus(user_id, status) {
     console.log('----------------setUserStatus---------------------');
     console.log(user_id);
+    if(isEmpty(status)){
+        status = true;
+    }
     var room_id_arr = [];
     for (var room_id in UserRoom) {
         var room_current = UserRoom[room_id];
         if(!isEmpty(room_current[user_id])){
-            UserRoom[room_id][user_id] = true;
+            UserRoom[room_id][user_id] = status;
             room_id_arr.push(room_id);
         }
     }
@@ -5660,4 +5691,23 @@ function deleteAllUserInRoom(room_id){
         });
         delete UserRoom[room_id];
     }
+}
+
+function deleteUserKey(user_id) {
+    console.log('---------------------deleteUserKey---------------------');
+    console.log('user_id', user_id);
+    if(!isEmpty(UserKey[user_id])){
+        delete UserKey[user_id];
+        console.log('delete user key success');
+        return true;
+    }
+    console.log('delete user key false');
+    return false;
+}
+
+function setUserTime(user_id) {
+    var current_time = new Date();
+    current_time = current_time.getTime();
+    UserTime[user_id] = current_time;
+    console.log('current_time', current_time, UserTime);
 }

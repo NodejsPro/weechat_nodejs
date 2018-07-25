@@ -13,7 +13,7 @@ var UserSchema = new Schema({
     contact: Array,
     user_name: String,
     code: String,
-    is_login: String,
+    is_login: Number,
     created_at : Date,
     updated_at : Date
 });
