@@ -16,13 +16,8 @@ var moment = require('moment-timezone');
 
 var i18n = require("i18n");
 var User = model.User;
-var ConnectPage = model.ConnectPage;
-var BotMessage = model.BotMessage;
-var UserProfile = model.UserProfile;
-var UserPosition = model.UserPosition;
 var LogChatMessage = model.LogChatMessage;
 var NotificationHistory = model.NotificationHistory;
-var Variable = model.Variable;
 var Exception = model.Exception;
 var UnreadMessage = model.UnreadMessage;
 var LastMessage = model.LastMessage;
@@ -33,15 +28,6 @@ var date_format_global = 'YYYY-MM-DD HH:mm:ss';
 var date_format_mini_global = 'YYYY-MM-DD';
 
 var Room = model.Room;
-
-//var EfoCv = model.EfoCv;
-var CreateModelLogForName = model.CreateModelLogForName;
-var CreateModelEfoCvForName = model.CreateModelEfoCvForName;
-//var CreateModelUserActiveForName = model.CreateModelUserActiveForName;
-
-var EfoCart = model.EfoCart;
-
-var RoomList = model.RoomList;
 
 var UserIdsArr = {};
 var KeyByRoom = {};
@@ -294,20 +280,18 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 if(!error && result){
                     var user_id = data.user_id;
                     userJoinRoom(socket, user_id, function(success){
-                       if(success){
-                           setNickNameSocket(socket, user_id, function(success){
-                               if(success){
-                                   setUserTime(user_id);
-                                   sendKeyUserInRoom(data, params, function(success){
-                                       var data_return = {
-                                           success: true,
-                                       };
-                                       io.to(user_id).emit('status_join', data_return);
-                                       return;
-                                   });
-                               }
-                           });
-                       }
+                        if(success){
+                            setNickNameSocket(socket, user_id, function(success){
+                                if(success){
+                                    setUserTime(user_id);
+                                    var data_return = {
+                                        success: true,
+                                    };
+                                    io.to(user_id).emit('status_join', data_return);
+                                    return;
+                                }
+                            });
+                        }
                     });
                 }
             });
@@ -315,33 +299,33 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('user_join_room', function (data) {
             var user_id = data.user_id;
-            console.log('user_join_room', data);
+            console.log('------------------------------user_join_room------------------------------', data);
             userJoinRoom(socket, user_id, function(success){
-               if(success){
-                   setNickNameSocket(socket, user_id, function(success){
-                       if(success){
-                           validRoom(data, function( error, result, param){
-                               if(!error && result){
-                                   var data_result = {
-                                       success: true,
-                                       room_id: param.room_id
-                                   };
-                                   userJoinRoom(socket, param.room_id, function (success) {
-                                       if(success){
-                                           setUserTime(user_id);
-                                           io.to(user_id).emit('status_join_room', data_result);
-                                           resetUnreadMessage(param);
-                                           return;
-                                       }
-                                       data.success = false;
-                                       data.message = "message.not_join_room ," + param.room_id;
-                                       io.to(user_id).emit('status_join_room', data);
-                                   });
-                               }
-                           });
-                       }
-                   });
-               }
+                if(success){
+                    setNickNameSocket(socket, user_id, function(success){
+                        if(success){
+                            validRoom(data, function( error, result, param){
+                                if(!error && result){
+                                    var data_result = {
+                                        success: true,
+                                        room_id: param.room_id
+                                    };
+                                    userJoinRoom(socket, param.room_id, function (success) {
+                                        if(success){
+                                            setUserTime(user_id);
+                                            io.to(user_id).emit('status_join_room', data_result);
+                                            resetUnreadMessage(param);
+                                            return;
+                                        }
+                                        data.success = false;
+                                        data.message = "message.not_join_room ," + param.room_id;
+                                        io.to(user_id).emit('status_join_room', data);
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
             });
         });
 
@@ -376,8 +360,8 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                                             var msg = [];
                                                             message.forEach(function(row) {
                                                                 var obj = {
-                                                                  'path' : !isEmpty(row.path) ?  row.path : '',
-                                                                  'name_origin' : !isEmpty(row.name_origin) ?  row.name_origin : '',
+                                                                    'path' : !isEmpty(row.path) ?  row.path : '',
+                                                                    'name_origin' : !isEmpty(row.name_origin) ?  row.name_origin : '',
                                                                 };
                                                                 msg.push(obj);
                                                             });
@@ -472,9 +456,9 @@ if (!sticky.listen(server, config.get('socketPort'))) {
     });
 
     app.post('/webhook/chatwork', function (req, res) {{
-            console.error("Failed validation secret_key.");
-            res.sendStatus(403);
-        }
+        console.error("Failed validation secret_key.");
+        res.sendStatus(403);
+    }
     });
 
     app.post('/webhook/line', function (req, res) {
@@ -696,137 +680,154 @@ function validRoom(data, callback){
         }
         var user = result;
         if(room_type == ROOM_TYPE_ONE_ONE){
-            var u1 = member[0];
-            var u2 = member[1];
-            var contact = user.contact != void 0 ? user.contact : [];
-            //console.log(user._id, result._id, contact, u1, contact.indexOf(u2), u2, contact.indexOf(u1));
-            console.log('---------------Room 1-1', user);
-            console.log('user.authority: ', user.authority , USER_AUTHORITY_SUPER_ADMIN);
-            console.log('query', query);
-            Room.findOne(query, function (err, result) {
-                if (!err && result) {
-                    // nếu room đã tồn tại và đã share key
-                    var room_id = result._id;
-                    updateUserRoom(room_id, member);
-                    console.log('update status user in room');
-                    console.log('user in room', UserRoom[room_id]);
-                    if(result.share_key_flg){
-                        console.log('room: ',room_id, ' da share key');
-                        params.room_id = room_id;
-                        console.log('room true', result);
-                        return callback(false, data, params);
-                    }else{
-                    // nếu chưa share key => check member có online hết ko
-                        var current_room_id = room_id;
-                        var user_room = getUserRoomKey(room_id);
-                        var check_user_key = checkUserRoomOnline(current_room_id);
-                        if(check_user_key){
-                        // share key
-                            console.log('room: ', room_id, ' vua share key');
-                            io.to(room_id).emit('user_share_key', user_room);
-                            // update share key flg cho user
-                            result.share_key_flg = true;
-                            result.save();
-                            deleteAllUserInRoom(room_id);
-                            return callback(false, data, params);
-                        }else{
-                            var message = {
-                               message: "user chua share key",
-                                success: false
-                            };
-                            for(var i = 0; i < member.length; i++){
-                                io.to(member[i]).emit('status_join_room', message);
-                            }
-                            return callback(true, data, params);
-                        }
-                    }
-                }else if(user.authority == USER_AUTHORITY_SUPER_ADMIN || (contact instanceof Array  && contact.length > 0 &&
-                        ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0)))){
-                    var now = new Date();
-                    var roomStore = new Room({
-                        name: member.join('_'),
-                        user_id: user_id,
-                        member: member,
-                        room_type: room_type,
-                        share_key_flg: false,
-                        created_at : now,
-                        updated_at : now
-                    });
-                    roomStore.save(function(err, roomStore) {
-                        if (err) throw err;
-                        console.log('room true store');
-                        var current_room_id = roomStore._id;
-                        params.room_id = roomStore._id;
+            validRoomOneOne(data, user, query, params, function (success) {
 
-                        updateUserRoom(current_room_id, member);
-                        var check_user_key = checkUserRoomOnline(current_room_id);
-                        if(check_user_key){
-                            // share key
-                            result.share_key_flg = true;
-                            result.save();
-                            io.to(room_id).emit('user_share_key', user_room);
-                            deleteAllUserInRoom(current_room_id);
-                            return callback(false, data, params);
-                        }else{
-                            var message = {
-                                message: "user chua share key",
-                                success: false
-                            };
-                            for(var i = 0; i < member.length; i++){
-                                io.to(member[i]).emit('status_join_room', message);
-                            };
-                            return callback(true, data, params);
-                        }
-
-                        return callback(false, data, params);
-                    });
-                }else {
-                    console.log('member_validate_2');
-                    data.success = 0;
-                    data.message = 'message.member_validate_2';
-                    io.to(user_id).emit('status_join_room', data);
-                    return callback(true);
-                }
             });
         }else{
-            console.log('---------------Room 1-n', user);
-            Room.findOne(query, function (err, result) {
-                if (!err && result) {
-                    if(result.share_key_flg){
-                        params.room_id = result._id;
-                        updateUserRoom(result._id, member);
-                        console.log('room true', result);
-                        return callback(false, data, params);
-                    }else{
-                        var check_user_key = checkUserRoomOnline(room_id);
-                        if(check_user_key){
-                            // share key
-                            var user_room = getUserRoomKey(room_id);
-                            io.to(room_id).emit('user_share_key', user_room);
+            validRoomOneMany(data, user, query, params, function(success){
 
-                            params.room_id = result._id;
-                            console.log('room true', result);
-                            deleteAllUserInRoom(room_id);
-                            return callback(false, data, params);
-                        }else{
-                            var message = {
-                                message: "user chua share key",
-                                success: false
-                            };
-                            for(var i = 0; i < member.length; i++){
-                                io.to(member[i]).emit('status_join_room', message);
-                            }
-                            return callback(true, data, params);
-                        }
-                    }
-                }
-                console.log('member_validate_3');
-                data.success = 0;
-                data.message = 'message.room_not_exits';
-                io.to(user_id).emit('status_join_room', data);
-                return callback(true);
             });
         }
+    });
+}
+
+function validRoomOneOne(data, user, query, params, callback){
+    var member = data.member;
+    var u1 = member[0];
+    var u2 = member[1];
+    var contact = user.contact != void 0 ? user.contact : [];
+    //console.log(user._id, result._id, contact, u1, contact.indexOf(u2), u2, contact.indexOf(u1));
+    console.log('---------------Room 1-1', user);
+    console.log('user.authority: ', user.authority , USER_AUTHORITY_SUPER_ADMIN);
+    console.log('query', query);
+    Room.findOne(query, function (err, result) {
+        if (!err && result) {
+            // nếu room đã tồn tại và đã share key
+            var room_id = result._id;
+            updateUserRoom(room_id, member);
+            console.log('update status user in room');
+            console.log('user in room', UserRoom[room_id]);
+            if(result.share_key_flg){
+                console.log('room: ',room_id, ' da share key');
+                params.room_id = room_id;
+                console.log('room true', result);
+                return callback(false, data, params);
+            }else{
+                // nếu chưa share key => check member có online hết ko
+                var current_room_id = room_id;
+                var user_room = getUserRoomKey(room_id);
+                var check_user_key = checkUserRoomOnline(current_room_id);
+                if(check_user_key){
+                    // share key
+                    console.log('room: ', room_id, ' vua share key');
+                    io.to(room_id).emit('user_share_key', user_room);
+                    // update share key flg cho user
+                    result.share_key_flg = true;
+                    result.save();
+                    deleteAllUserInRoom(room_id);
+                    return callback(false, data, params);
+                }else{
+                    var message = {
+                        message: "user chua share key",
+                        success: false
+                    };
+                    for(var i = 0; i < member.length; i++){
+                        io.to(member[i]).emit('status_join_room', message);
+                    }
+                    return callback(true, data, params);
+                }
+            }
+        }else if(user.authority == USER_AUTHORITY_SUPER_ADMIN || (contact instanceof Array  && contact.length > 0 &&
+            ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0)))){
+            var now = new Date();
+            var roomStore = new Room({
+                name: member.join('_'),
+                user_id: user_id,
+                member: member,
+                room_type: room_type,
+                share_key_flg: false,
+                created_at : now,
+                updated_at : now
+            });
+            roomStore.save(function(err, roomStore) {
+                if (err) throw err;
+                console.log('room true store');
+                var current_room_id = roomStore._id;
+                params.room_id = roomStore._id;
+
+                updateUserRoom(current_room_id, member);
+                var check_user_key = checkUserRoomOnline(current_room_id);
+                if(check_user_key){
+                    // share key
+                    result.share_key_flg = true;
+                    result.save();
+                    io.to(room_id).emit('user_share_key', user_room);
+                    deleteAllUserInRoom(current_room_id);
+                    return callback(false, data, params);
+                }else{
+                    var message = {
+                        message: "user chua share key",
+                        success: false
+                    };
+                    for(var i = 0; i < member.length; i++){
+                        io.to(member[i]).emit('status_join_room', message);
+                    };
+                    return callback(true, data, params);
+                }
+
+                return callback(false, data, params);
+            });
+        }else {
+            console.log('member_validate_2');
+            data.success = 0;
+            data.message = 'message.member_validate_2';
+            io.to(user_id).emit('status_join_room', data);
+            return callback(true);
+        }
+    });
+}
+
+function validRoomOneMany(data, user, query, params, callback){
+    console.log('---------------Room 1-n', user);
+    var room_id = data.room_id;
+    var user_id = data.user_id;
+    var room_type = data.room_type;
+    var member = data.member;
+    Room.findOne(query, function (err, result) {
+        if (!err && result) {
+            if(result.share_key_flg){
+                params.room_id = result._id;
+                updateUserRoom(result._id, member);
+                console.log('room true', result);
+                return callback(false, data, params);
+            }else{
+                var check_user_key = checkUserRoomOnline(room_id);
+                if(check_user_key){
+                    // share key
+                    var user_room = getUserRoomKey(room_id);
+                    io.to(room_id).emit('user_share_key', user_room);
+
+                    params.room_id = result._id;
+                    console.log('room true', result);
+                    deleteAllUserInRoom(room_id);
+                    return callback(false, data, params);
+                }else{
+                    var message = {
+                        message: "user chua share key",
+                        success: false
+                    };
+                    for(var i = 0; i < member.length; i++){
+                        io.to(member[i]).emit('status_join_room', message);
+                    }
+                    return callback(true, data, params);
+                }
+            }
+        }
+        console.log('member_validate_3');
+        data.success = 0;
+        data.message = 'message.room_not_exits';
+        io.to(user_id).emit('status_join_room', data);
+        return callback(true);
     });
 }
 
@@ -850,9 +851,8 @@ function userJoinRoom(socket, room_id, callback) {
 
 function validUserId(data, callback){
     console.log('-----------------valid user id-----------------------');
-    var user_id = data.user_id,
-        key = data.key;
-    if(!user_id || !mongoose.Types.ObjectId.isValid(user_id) || isEmpty(key)){
+    var user_id = data.user_id;
+    if(!user_id || !mongoose.Types.ObjectId.isValid(user_id)){
         data.success = 0;
         io.to(user_id).emit('status_join', data);
         return callback(true);
@@ -862,9 +862,7 @@ function validUserId(data, callback){
             // update login user
             result.is_login = true;
             result.save();
-            setUserKey('', user_id, key);
             //update key user
-            console.log('user key: ', user_id, key, UserKey);
             var params = createParameterDefault(result.sns_type, result._id, data.user_id, result.page_id);
             return callback(false, data, params);
         }else{
@@ -947,10 +945,10 @@ var stepA = function(page_id) {
     return Q.Promise(function (resolve, reject) {(ConnectPage.findOne({page_id: page_id, sns_type: SNS_TYPE_FACEBOOK, deleted_at: null}).exec())
         .then(function(result) {
             return reject(result);
-           if(result){
-               return resolve(result);
-           }
-           return reject(result);
+            if(result){
+                return resolve(result);
+            }
+            return reject(result);
         });
     });
 
@@ -972,9 +970,9 @@ var stepB = function(val) {
 };
 
 function listen () {
-  app.listen(app.get('port'), function() {
-    console.log('Node app is running on port', app.get('port'));
-  });
+    app.listen(app.get('port'), function() {
+        console.log('Node app is running on port', app.get('port'));
+    });
 }
 
 function sendMessage(params, message, message_type) {
@@ -1000,41 +998,41 @@ function sendMessage(params, message, message_type) {
             if (err) throw err;
             console.log('logCollectionStore store');
             var result = {
-              'user_id' : params.user_id,
-              'room_id' : params.room_id,
-              'message_type' : message_type,
-              'message' : message,
-              'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
+                'user_id' : params.user_id,
+                'room_id' : params.room_id,
+                'message_type' : message_type,
+                'message' : message,
+                'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
             };
             var member = params.member;
             User.find({ _id: {$in: member}}, {}, {}, function(err, users) {
-               if(!err && users){
-                   var member_name = [];
-                   for (var i = 0; i < users.length; i++){
-                       member_name.push({
-                           id: users[i]['_id'],
-                           name: users[i]['user_name'],
-                           avatar: setAvatar(users[i]['avatar'])
-                       });
-                   }
-                   result.member_name = member_name;
-                   var client_in_room = params.client_in_room;
-                   if(!isEmpty(client_in_room)){
-                       result.user_read = client_in_room;
-                   }
-                   console.log('send message to user  : ', result);
-                   io.to(params.room_id).emit('server_send_message', result);
-                   updateLastMessage(params, result);
-                   var user_id_not_arr = params.user_id_not_arr;
-                   if(!isEmpty(user_id_not_arr)){
-                       console.log('+++updateUnreadMessage');
-                       sendMessageUserArr(params.user_id_not_arr, result);
-                       updateUnreadMessage(params);
-                   }
-                   setUserTime(params.user_id);
-                   return;
-               }
-               result.msg_error = 'ko tim thay user';
+                if(!err && users){
+                    var member_name = [];
+                    for (var i = 0; i < users.length; i++){
+                        member_name.push({
+                            id: users[i]['_id'],
+                            name: users[i]['user_name'],
+                            avatar: setAvatar(users[i]['avatar'])
+                        });
+                    }
+                    result.member_name = member_name;
+                    var client_in_room = params.client_in_room;
+                    if(!isEmpty(client_in_room)){
+                        result.user_read = client_in_room;
+                    }
+                    console.log('send message to user  : ', result);
+                    io.to(params.room_id).emit('server_send_message', result);
+                    updateLastMessage(params, result);
+                    var user_id_not_arr = params.user_id_not_arr;
+                    if(!isEmpty(user_id_not_arr)){
+                        console.log('+++updateUnreadMessage');
+                        sendMessageUserArr(params.user_id_not_arr, result);
+                        updateUnreadMessage(params);
+                    }
+                    setUserTime(params.user_id);
+                    return;
+                }
+                result.msg_error = 'ko tim thay user';
                 io.to(params.user_id).emit('user_join_room', result);
             });
         });
@@ -1110,23 +1108,23 @@ function sendMessageUserArr(user_ids, message) {
 }
 
 function saveNotificationHistory(connect_page_id, page_id, notification_id, data, user_list, send_count, push_time){
-  var now = new Date();
-  var notificationHistory = new NotificationHistory({
-    connect_page_id: connect_page_id,
-    page_id: page_id,
-    notification_id: notification_id,
-    data: data,
-    send_count: send_count,
-    user_list: user_list,
-    read_count: 0,
-    time_of_message: now.getTime(),
-    push_time: push_time,
-    created_at : now,
-    updated_at : now
-  });
-  notificationHistory.save(function(err) {
-    if (err) throw err;
-  });
+    var now = new Date();
+    var notificationHistory = new NotificationHistory({
+        connect_page_id: connect_page_id,
+        page_id: page_id,
+        notification_id: notification_id,
+        data: data,
+        send_count: send_count,
+        user_list: user_list,
+        read_count: 0,
+        time_of_message: now.getTime(),
+        push_time: push_time,
+        created_at : now,
+        updated_at : now
+    });
+    notificationHistory.save(function(err) {
+        if (err) throw err;
+    });
 }
 
 function updateNotification(params){
@@ -1142,7 +1140,7 @@ function updateNotification(params){
 }
 
 function saveLogChatMessage(params, message_type, type, message, time_of_message, payload, error_flg, error_message){
-  var now = new Date();
+    var now = new Date();
     if(params.preview_flg == undefined &&  params.sns_type != SNS_TYPE_CHATWORK && params.sns_type != SNS_TYPE_EFO && (!error_flg || params.background_flg != 1)){
         var date = moment().tz(TIMEZONE).format("YYYY-MM-DD"); //dateFormat(now, "yyyy-mm-dd");
         UserProfile.findOne({connect_page_id: params.connect_page_id, user_id: params.user_id}, function(err, result) {
@@ -1183,106 +1181,106 @@ function saveLogChatMessage(params, message_type, type, message, time_of_message
         });
     }
 
-   var insert_data = {
-       connect_page_id: params.connect_page_id + "",
-       page_id: params.page_id,
-       user_id: params.user_id,
-       scenario_id: params.current_scenario_id,
-       message_type: message_type,
-       notification_id: params.notification_id,
-       type: type,
-       message: message,
-       input_requiment_flg:  (( typeof params.input_requiment_flg !== 'undefined') ? params.input_requiment_flg : undefined),
-       time_of_message: time_of_message,
-       payload:  (( typeof payload !== 'undefined') ? payload : ''),
-       error_flg: error_flg,
-       background_flg: (message_type == BOT_TYPE_MAIL) ? 1 : params.background_flg,
-       user_said: ((typeof params.user_said !== 'undefined') ? params.user_said : undefined),
-       bid: ((typeof params.bid !== 'undefined') ? params.bid : undefined),
-       b_position: ((typeof params.b_position    !== 'undefined') ? params.b_position : undefined),
-       error_message: error_message,
-       btn_next: ((typeof params.btn_next !== 'undefined') ? params.btn_next : undefined),
-       created_at : now,
-       updated_at : now
-   };
+    var insert_data = {
+        connect_page_id: params.connect_page_id + "",
+        page_id: params.page_id,
+        user_id: params.user_id,
+        scenario_id: params.current_scenario_id,
+        message_type: message_type,
+        notification_id: params.notification_id,
+        type: type,
+        message: message,
+        input_requiment_flg:  (( typeof params.input_requiment_flg !== 'undefined') ? params.input_requiment_flg : undefined),
+        time_of_message: time_of_message,
+        payload:  (( typeof payload !== 'undefined') ? payload : ''),
+        error_flg: error_flg,
+        background_flg: (message_type == BOT_TYPE_MAIL) ? 1 : params.background_flg,
+        user_said: ((typeof params.user_said !== 'undefined') ? params.user_said : undefined),
+        bid: ((typeof params.bid !== 'undefined') ? params.bid : undefined),
+        b_position: ((typeof params.b_position    !== 'undefined') ? params.b_position : undefined),
+        error_message: error_message,
+        btn_next: ((typeof params.btn_next !== 'undefined') ? params.btn_next : undefined),
+        created_at : now,
+        updated_at : now
+    };
 
 
-  params.background_flg = undefined;
-  //collection(params.connect_page_id + "_logs").insertOne(insert_data);
-  var logChatMessage;
-  if(params.sns_type == SNS_TYPE_CHATWORK){
-      insert_data.room_id = params.page_id;
-      insert_data.page_id = undefined;
-      insert_data.time_of_message = undefined;
-      insert_data.send_time = time_of_message;
-      insert_data.message_id = params.message_id;
-      logChatMessage = new LogChatMessage(insert_data);
-      logChatMessage.save(function(err) {
-          if (err) throw err;
-          if(logChatMessage.background_flg != 1){
+    params.background_flg = undefined;
+    //collection(params.connect_page_id + "_logs").insertOne(insert_data);
+    var logChatMessage;
+    if(params.sns_type == SNS_TYPE_CHATWORK){
+        insert_data.room_id = params.page_id;
+        insert_data.page_id = undefined;
+        insert_data.time_of_message = undefined;
+        insert_data.send_time = time_of_message;
+        insert_data.message_id = params.message_id;
+        logChatMessage = new LogChatMessage(insert_data);
+        logChatMessage.save(function(err) {
+            if (err) throw err;
+            if(logChatMessage.background_flg != 1){
 
-          }
-      });
-  }
-  else if(params.sns_type == SNS_TYPE_EFO){
-      var logCollection = params.logCollection;
-      if(!logCollection){
-          logCollection = CreateModelLogForName(params.connect_page_id + "_logs");
-      }
-      logChatMessage = new logCollection(insert_data);
-      logChatMessage.save(function(err) {
-          if (err) throw err;
-          if(logChatMessage.background_flg != 1){
-              if( (params.sns_type == SNS_TYPE_WEBCHAT || params.sns_type == SNS_TYPE_EFO) && params.start_flg){
-                  logChatMessage.start_flg = 1;
-              }
+            }
+        });
+    }
+    else if(params.sns_type == SNS_TYPE_EFO){
+        var logCollection = params.logCollection;
+        if(!logCollection){
+            logCollection = CreateModelLogForName(params.connect_page_id + "_logs");
+        }
+        logChatMessage = new logCollection(insert_data);
+        logChatMessage.save(function(err) {
+            if (err) throw err;
+            if(logChatMessage.background_flg != 1){
+                if( (params.sns_type == SNS_TYPE_WEBCHAT || params.sns_type == SNS_TYPE_EFO) && params.start_flg){
+                    logChatMessage.start_flg = 1;
+                }
 
-              if(params.preview_flg === undefined){
-                  io.to(params.connect_page_id).emit('receive_new_message', logChatMessage);
-              }
-              if(params.sns_type == SNS_TYPE_EFO){
-                  if(typeof params.question_count !== "undefined"){
-                      logChatMessage.question_count = params.question_count;
-                  }
-                  io.to(params.user_id).emit('efo_bot_send_message', logChatMessage);
-              }
-          }
-      });
-  }else{
-      logChatMessage = new LogChatMessage(insert_data);
-      logChatMessage.save(function(err) {
-          if (err) throw err;
-          if(logChatMessage.background_flg != 1){
-              if( (params.sns_type == SNS_TYPE_WEBCHAT || params.sns_type == SNS_TYPE_EFO) && params.start_flg){
-                  logChatMessage.start_flg = 1;
-              }
-              if(params.preview_flg === undefined){
-                  io.to(params.connect_page_id).emit('receive_new_message', logChatMessage);
-              }
-              if(params.sns_type == SNS_TYPE_EFO){
-                  if(typeof params.question_count !== "undefined"){
-                      logChatMessage.question_count = params.question_count;
-                  }
-                  io.to(params.user_id).emit('efo_bot_send_message', logChatMessage);
-              }
-              if(params.sns_type == SNS_TYPE_WEBCHAT){
-                  if(type == USER_TYPE && payload){
-                      //console.log(logChatMessage);
-                      io.to(params.user_id).emit('webchat_bot_send_message', {message: logChatMessage.message,
-                          log_message_id: logChatMessage._id, type: USER_TYPE, message_type: MESSAGE_USER_PAYLOAD, user_id: params.user_id, connect_page_id: params.connect_page_id});
-                  }else if(type == BOT_TYPE){
-                      io.to(params.user_id).emit('webchat_bot_send_message', {message: logChatMessage.message,
-                          log_message_id: logChatMessage._id, type: BOT_TYPE, user_id: params.user_id, connect_page_id: params.connect_page_id});
-                  }
-              }
-              if(params.keyword_scenario_id){
-                  params.current_scenario_id = params.keyword_scenario_id;
-                  params.keyword_scenario_id = undefined;
-                  connectScenario(params);
-              }
-          }
-      });
-  }
+                if(params.preview_flg === undefined){
+                    io.to(params.connect_page_id).emit('receive_new_message', logChatMessage);
+                }
+                if(params.sns_type == SNS_TYPE_EFO){
+                    if(typeof params.question_count !== "undefined"){
+                        logChatMessage.question_count = params.question_count;
+                    }
+                    io.to(params.user_id).emit('efo_bot_send_message', logChatMessage);
+                }
+            }
+        });
+    }else{
+        logChatMessage = new LogChatMessage(insert_data);
+        logChatMessage.save(function(err) {
+            if (err) throw err;
+            if(logChatMessage.background_flg != 1){
+                if( (params.sns_type == SNS_TYPE_WEBCHAT || params.sns_type == SNS_TYPE_EFO) && params.start_flg){
+                    logChatMessage.start_flg = 1;
+                }
+                if(params.preview_flg === undefined){
+                    io.to(params.connect_page_id).emit('receive_new_message', logChatMessage);
+                }
+                if(params.sns_type == SNS_TYPE_EFO){
+                    if(typeof params.question_count !== "undefined"){
+                        logChatMessage.question_count = params.question_count;
+                    }
+                    io.to(params.user_id).emit('efo_bot_send_message', logChatMessage);
+                }
+                if(params.sns_type == SNS_TYPE_WEBCHAT){
+                    if(type == USER_TYPE && payload){
+                        //console.log(logChatMessage);
+                        io.to(params.user_id).emit('webchat_bot_send_message', {message: logChatMessage.message,
+                            log_message_id: logChatMessage._id, type: USER_TYPE, message_type: MESSAGE_USER_PAYLOAD, user_id: params.user_id, connect_page_id: params.connect_page_id});
+                    }else if(type == BOT_TYPE){
+                        io.to(params.user_id).emit('webchat_bot_send_message', {message: logChatMessage.message,
+                            log_message_id: logChatMessage._id, type: BOT_TYPE, user_id: params.user_id, connect_page_id: params.connect_page_id});
+                    }
+                }
+                if(params.keyword_scenario_id){
+                    params.current_scenario_id = params.keyword_scenario_id;
+                    params.keyword_scenario_id = undefined;
+                    connectScenario(params);
+                }
+            }
+        });
+    }
 
 }
 
@@ -1434,7 +1432,7 @@ function checkUserKey(user_id, key){
                 room[user_id] = key;
                 KeyByRoom[room_id][user_id] = key;
                 Object.keys(room).forEach(function (user_id) {
-                    
+
                 });
             }
         });
@@ -1542,7 +1540,7 @@ function getUserRoomKey(room_id){
         console.log(UserKey, room_current, user_id);
         for (var user_id in room_current) {
             if(!isEmpty(UserKey[user_id]) && !isEmpty(room_current[user_id]) && room_current[user_id]){
-                room_user_key[user_id] = UserKey[user_id]; 
+                room_user_key[user_id] = UserKey[user_id];
             }else{
                 console.log('user_share_key error room_id', room_id, 'room_current', room_current);
             }

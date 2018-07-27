@@ -677,55 +677,14 @@ mongoose.connect(config.get('dbURL'), options, function(err) {
 
 
 exports.User = mongoose.model('User', UserSchema);
-exports.Connect = mongoose.model('Connect', ConnectSchema);
-exports.ConnectPage = mongoose.model('ConnectPage', ConnectPageSchema);
-
-exports.Library = mongoose.model('Library', LibrarySchema);
-exports.Api = mongoose.model('Api', ApiSchema);
-
-//exports.UserMessage = mongoose.model('UserMessage', UserMessageSchema);
-exports.BotMessage = mongoose.model('BotMessage', BotMessageSchema);
-exports.UserProfile = mongoose.model('UserProfile', UserProfileSchema);
-exports.UserPosition = mongoose.model('UserPosition', UserPositionSchema);
 exports.LogChatMessage = mongoose.model('LogChatMessage', LogChatMessageSchema);
-exports.Scenario = mongoose.model('Scenario', ScenarioSchema);
-exports.NotificationHistory = mongoose.model('NotificationHistory', NotificationHistorySchema);
-exports.Variable = mongoose.model("Variable", VariableSchema);
-exports.MessageVariable = mongoose.model('MessageVariable', MessageVariableSchema);
-exports.Slot = mongoose.model('Slot', SlotSchema);
-exports.Email = mongoose.model('Mail', MailSchema);
-exports.BotLastTime = mongoose.model('BotLastTime', BotLastTimeSchema);
-exports.Menu = mongoose.model('Menu', MenuSchema);
+exports.NotificationHistory = mongoose.model('NotificationHistory', NotificationHistorySchema)
 exports.Exception = mongoose.model('Exception', ExceptionSchema);
-exports.Plan = mongoose.model('Plan', PlanSchema);
-exports.Nlp = mongoose.model('Nlp', NlpSchema);
-
-exports.SessionUser = mongoose.model('SessionUser', SessionUserSchema);
-exports.SessionScenario = mongoose.model('SessionScenario', SessionScenarioSchema);
-exports.UserScenario = mongoose.model('UserScenario', UserScenarioSchema);
-exports.BotNoReply = mongoose.model('BotNoReply', BotNoReplySchema);
-exports.Zipcode = mongoose.model('Zipcode', ZipcodeSchema);
-exports.PrefJp = mongoose.model('PrefJp', PrefJpSchema);
-exports.PrefCityJp = mongoose.model('PrefCityJp', PrefCityJpSchema);
-
-exports.LogReportTotalDate = mongoose.model('LogReportTotalDate', LogReportTotalDateSchema);
-
-exports.TotalUserChat = mongoose.model('TotalUserChat', TotalUserChatSchema);
-exports.EfoAnalytic = mongoose.model('EfoAnalytic', EfoAnalyticSchema);
-exports.EfoCookie = mongoose.model('EfoCookie', EfoCookieSchema);
-exports.EfoCaptcha = mongoose.model('EfoCaptcha', EfoCaptchaSchema);
-exports.EfoCart = mongoose.model('EfoCart', EfoCartSchema);
 
 exports.Room = mongoose.model('Room', RoomSchema);
 exports.UnreadMessage = mongoose.model('UnreadMessage', UnreadMessageSchema);
 exports.LastMessage = mongoose.model('LastMessage', LastMessageSchema);
 
-exports.RoomList = mongoose.model('RoomList', RoomListSchema);
-exports.RoomMessageVariable = mongoose.model('RoomMessageVariable', RoomMessageVariableSchema);
-exports.RoomMemberProfile = mongoose.model('RoomMemberProfile', RoomMemberProfileSchema);
-exports.PaymentGateway = mongoose.model('PaymentGateway', PGatewaySchema);
-exports.EfoPOrder = mongoose.model('EfoPOrder', EfoPOrderSchema);
-exports.EfoPOrderHistory = mongoose.model('EfoPOrderHistory', EfoPOrderHistorySchema);
 
 exports.CreateModelLogForName = createModelLogForName;
 exports.CreateModelUserProfileForName = createModelUserProfileForName;
