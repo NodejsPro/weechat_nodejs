@@ -324,12 +324,15 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                        room_id: param.room_id
                                    };
                                    userJoinRoom(socket, param.room_id, function (success) {
+                                       console.log('userJoinRoom success', success);
                                        if(success){
+                                           console.log('send status true');
                                            setUserTime(user_id);
                                            io.to(user_id).emit('status_join_room', data_result);
                                            resetUnreadMessage(param);
                                            return;
                                        }
+                                       console.log('send status false');
                                        data.success = false;
                                        data.message = "message.not_join_room ," + param.room_id;
                                        io.to(user_id).emit('status_join_room', data);
@@ -669,7 +672,7 @@ function validRoom(data, callback){
     var room_type = data.room_type;
     var member = data.member;
     var room_type_arr = [ROOM_TYPE_ONE_MANY, ROOM_TYPE_ONE_ONE];
-    console.log('validRoom');
+    console.log('---------------------validRoom-----------------------');
     if(!user_id || !mongoose.Types.ObjectId.isValid(user_id)){
         data.success = 0;
         data.message = 'message.user_id_validate';
@@ -767,11 +770,13 @@ function userJoinRoom(socket, room_id, callback) {
     showListRoom(socket);
     var rooms = Object.keys(socket.rooms);
     if (rooms.indexOf(room_id) >= 0) {
+        console.log('room_id ton tai');
         showListRoom(socket);
         return callback(true);
     }else if (rooms.indexOf(room_id) == -1) {
         socket.join(room_id, function() {
             showListRoom(socket);
+            console.log('room_id vua enjoin');
             return callback(true);
         });
     }else{
