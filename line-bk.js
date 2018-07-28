@@ -297,11 +297,14 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                        if(success){
                            setNickNameSocket(socket, user_id, function(success){
                                if(success){
-                                   var data_return = {
-                                       success: true,
-                                   };
-                                   io.to(user_id).emit('status_join', data_return);
-                                   return;
+                                   setUserTime(user_id);
+                                   sendKeyUserInRoom(data, params, function(success){
+                                       var data_return = {
+                                           success: true,
+                                       };
+                                       io.to(user_id).emit('status_join', data_return);
+                                       return;
+                                   });
                                }
                            });
                        }
@@ -654,7 +657,7 @@ function validRoom(data, callback){
     var room_type = data.room_type;
     var member = data.member;
     var room_type_arr = [ROOM_TYPE_ONE_MANY, ROOM_TYPE_ONE_ONE];
-    console.log('validRoom');
+    console.log('-------------------validRoom---------------------');
     if(!user_id || !mongoose.Types.ObjectId.isValid(user_id)){
         data.success = 0;
         data.message = 'message.user_id_validate';
@@ -697,29 +700,84 @@ function validRoom(data, callback){
             var u2 = member[1];
             var contact = user.contact != void 0 ? user.contact : [];
             //console.log(user._id, result._id, contact, u1, contact.indexOf(u2), u2, contact.indexOf(u1));
-            console.log('---------------', user);
+            console.log('---------------Room 1-1', user);
             console.log('user.authority: ', user.authority , USER_AUTHORITY_SUPER_ADMIN);
             console.log('query', query);
             Room.findOne(query, function (err, result) {
                 if (!err && result) {
-                    params.room_id = result._id;
-                    console.log('room true', result);
-                    return callback(false, data, params);
+                    // nếu room đã tồn tại và đã share key
+                    var room_id = result._id;
+                    updateUserRoom(room_id, member);
+                    console.log('update status user in room');
+                    console.log('user in room', UserRoom[room_id]);
+                    if(result.share_key_flg){
+                        console.log('room: ',room_id, ' da share key');
+                        params.room_id = room_id;
+                        console.log('room true', result);
+                        return callback(false, data, params);
+                    }else{
+                    // nếu chưa share key => check member có online hết ko
+                        var current_room_id = room_id;
+                        var user_room = getUserRoomKey(room_id);
+                        var check_user_key = checkUserRoomOnline(current_room_id);
+                        if(check_user_key){
+                        // share key
+                            console.log('room: ', room_id, ' vua share key');
+                            io.to(room_id).emit('user_share_key', user_room);
+                            // update share key flg cho user
+                            result.share_key_flg = true;
+                            result.save();
+                            deleteAllUserInRoom(room_id);
+                            return callback(false, data, params);
+                        }else{
+                            var message = {
+                               message: "user chua share key",
+                                success: false
+                            };
+                            for(var i = 0; i < member.length; i++){
+                                io.to(member[i]).emit('status_join_room', message);
+                            }
+                            return callback(true, data, params);
+                        }
+                    }
                 }else if(user.authority == USER_AUTHORITY_SUPER_ADMIN || (contact instanceof Array  && contact.length > 0 &&
-                    ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0)))){
+                        ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0)))){
                     var now = new Date();
                     var roomStore = new Room({
                         name: member.join('_'),
                         user_id: user_id,
                         member: member,
                         room_type: room_type,
+                        share_key_flg: false,
                         created_at : now,
                         updated_at : now
                     });
                     roomStore.save(function(err, roomStore) {
                         if (err) throw err;
                         console.log('room true store');
+                        var current_room_id = roomStore._id;
                         params.room_id = roomStore._id;
+
+                        updateUserRoom(current_room_id, member);
+                        var check_user_key = checkUserRoomOnline(current_room_id);
+                        if(check_user_key){
+                            // share key
+                            result.share_key_flg = true;
+                            result.save();
+                            io.to(room_id).emit('user_share_key', user_room);
+                            deleteAllUserInRoom(current_room_id);
+                            return callback(false, data, params);
+                        }else{
+                            var message = {
+                                message: "user chua share key",
+                                success: false
+                            };
+                            for(var i = 0; i < member.length; i++){
+                                io.to(member[i]).emit('status_join_room', message);
+                            };
+                            return callback(true, data, params);
+                        }
+
                         return callback(false, data, params);
                     });
                 }else {
@@ -731,11 +789,36 @@ function validRoom(data, callback){
                 }
             });
         }else{
+            console.log('---------------Room 1-n', user);
             Room.findOne(query, function (err, result) {
                 if (!err && result) {
-                    params.room_id = result._id;
-                    console.log('room true', result);
-                    return callback(false, data, params);
+                    if(result.share_key_flg){
+                        params.room_id = result._id;
+                        updateUserRoom(result._id, member);
+                        console.log('room true', result);
+                        return callback(false, data, params);
+                    }else{
+                        var check_user_key = checkUserRoomOnline(room_id);
+                        if(check_user_key){
+                            // share key
+                            var user_room = getUserRoomKey(room_id);
+                            io.to(room_id).emit('user_share_key', user_room);
+
+                            params.room_id = result._id;
+                            console.log('room true', result);
+                            deleteAllUserInRoom(room_id);
+                            return callback(false, data, params);
+                        }else{
+                            var message = {
+                                message: "user chua share key",
+                                success: false
+                            };
+                            for(var i = 0; i < member.length; i++){
+                                io.to(member[i]).emit('status_join_room', message);
+                            }
+                            return callback(true, data, params);
+                        }
+                    }
                 }
                 console.log('member_validate_3');
                 data.success = 0;
@@ -834,6 +917,13 @@ var getRoom = function(data, callback) {
             console.log('error getroom');
             data.success = 0;
             data.message = 'message.room_not-exits';
+            io.to(user_id).emit('status_join_room', data);
+            return callback(true);
+        }
+        if(isEmpty(result.share_key_flg) || !result.share_key_flg){
+            console.log('room chua share key');
+            data.success = 0;
+            data.message = 'message.room_not_share_key';
             io.to(user_id).emit('status_join_room', data);
             return callback(true);
         }
@@ -1344,7 +1434,7 @@ function checkUserKey(user_id, key){
                 room[user_id] = key;
                 KeyByRoom[room_id][user_id] = key;
                 Object.keys(room).forEach(function (user_id) {
-
+                    
                 });
             }
         });
@@ -1452,7 +1542,7 @@ function getUserRoomKey(room_id){
         console.log(UserKey, room_current, user_id);
         for (var user_id in room_current) {
             if(!isEmpty(UserKey[user_id]) && !isEmpty(room_current[user_id]) && room_current[user_id]){
-                room_user_key[user_id] = UserKey[user_id];
+                room_user_key[user_id] = UserKey[user_id]; 
             }else{
                 console.log('user_share_key error room_id', room_id, 'room_current', room_current);
             }
