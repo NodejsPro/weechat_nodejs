@@ -1720,7 +1720,7 @@ function isEmptyMongodbID(id){
 }
 
 function sendEventSocket(room_id, event_name, data){
-    io.to(user_id).emit('status_join_room', data);
+    io.to(room_id).emit(event_name, data);
 }
 
 function createParameterDefault(room_type, room_id, user_id, member){
