@@ -466,6 +466,21 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     saveException(err);
                 });
         });
+
+        socket.on('user_logout', function(data){
+            console.log('---------------------------------user logout---------------------------');
+            var user_id = data.user_id;
+            if(isEmptyMongodbID(user_id)){
+                console.log('user_logout miss params');
+                var data_return = {
+                  'success' : false,
+                  'message' : 'user_logout miss params'
+                };
+                sendEventSocket(user_id, 'status_user_logout', data_return);
+                return;
+            }
+            doUserLogout();
+        });
     });
 
     app.post('/webhook/chatwork', function (req, res) {{
@@ -787,6 +802,27 @@ function validUserId(data, callback){
         }else{
             data.success = 0;
             io.to(user_id).emit('status_join', data);
+            return callback(true);
+        }
+    });
+}
+
+function doUserLogout(data, callback){
+    var user_id = data.user_id;
+    var data_return = {};
+    User.findOne({_id: user_id, deleted_at: null}, function (err, user) {
+        if (!err && user) {
+            // update login user
+            user.is_login = false;
+            user.save();
+            console.log('user_logout success');
+            data_return['success'] = true;
+            sendEventSocket(user_id, 'status_user_logout', data_return);
+            return callback(false);
+        }else{
+            data_return.success = false;
+            data_return['message'] = 'user not exits';
+            sendEventSocket(user_id, 'status_user_logout', data_return);
             return callback(true);
         }
     });
@@ -1535,4 +1571,24 @@ function setUserTime(user_id) {
     current_time = current_time.getTime();
     UserTime[user_id] = current_time;
     console.log('current_time', current_time, UserTime);
+}
+
+function isEmptyMongodbID(id){
+    if(isEmpty(id) || !mongoose.Types.ObjectId(id)){
+        return true;
+    }
+    return false;
+}
+
+function sendEventSocket(room_id, event_name, data){
+    io.to(user_id).emit('status_join_room', data);
+}
+
+function createParameterDefault(room_type, room_id, user_id, member){
+    var params = {};
+    params.room_type = room_type;
+    params.room_id = room_id;
+    params.user_id = user_id;
+    params.member = member;
+    return params;
 }
