@@ -489,7 +489,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log('---------------------------------event_ex_key_step1---------------------------');
             validRoomEx(data, function(error, room){
                 if(!error && room){
-                    do_ex_key_step(data, 'event_ex_key_step1');
+                    do_ex_key_step(data, 'on_event_ex_key_step1');
                 }
             });
         });
@@ -498,7 +498,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log('---------------------------------event_ex_key_step2---------------------------');
             validRoomEx(data, function(error, room){
                 if(!error && room){
-                    do_ex_key_step(data, 'event_ex_key_step2');
+                    do_ex_key_step(data, 'on_event_ex_key_step2');
                 }
             });
         });
@@ -507,7 +507,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log('---------------------------------event_ex_key_step3---------------------------');
             validRoomEx(data, function(error, room){
                 if(!error && room){
-                    do_ex_key_step(data, 'event_ex_key_step3');
+                    do_ex_key_step(data, 'on_event_ex_key_step3');
                 }
             });
         });
@@ -516,7 +516,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log('---------------------------------event_ex_key_step4---------------------------');
             validRoomEx(data, function(error, room){
                 if(!error && room){
-                    do_ex_key_step(data, 'event_ex_key_step4');
+                    do_ex_key_step(data, 'on_event_ex_key_step4');
                 }
             });
         });
