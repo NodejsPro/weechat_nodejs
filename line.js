@@ -757,7 +757,7 @@ function validRoom(data, callback){
     var member = data.member;
     var room_type_arr = [ROOM_TYPE_ONE_MANY, ROOM_TYPE_ONE_ONE];
     console.log('---------------------validRoom-----------------------');
-    if(!isEmptyMongodbID(user_id)){
+    if(isEmptyMongodbID(user_id)){
         data.success = 0;
         data.message = 'user id miss';
         console.log('user_id miss');
