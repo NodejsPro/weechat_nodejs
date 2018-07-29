@@ -890,10 +890,8 @@ function validUserId(data, callback){
             // update login user
             result.is_login = true;
             result.save();
-            setUserKey('', user_id, key);
-            //update key user
-            console.log('user key: ', user_id, key, UserKey);
-            var params = createParameterDefault(result.sns_type, result._id, data.user_id, result.page_id);
+            //update key user room_type, room_id, user_id, member
+            var params = createParameterDefault(null, result._id, data.user_id, null);
             return callback(false, data, params);
         }else{
             data.success = 0;
