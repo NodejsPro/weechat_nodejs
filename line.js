@@ -493,7 +493,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             validRoomEx(data, function(error, room){
                 if(!error && room){
                     if (isEmpty(room.share_key_flg) || !room.share_key_flg) {
-                        do_ex_key_step(data, 'on_event_ex_key_step1');
+                        do_ex_key_step(data, 'on_event_ex_key_step1', socket);
                     } else {
                         var data_return = {
                             'success' : true,
@@ -509,7 +509,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log('---------------------------------event_ex_key_step2---------------------------');
             validRoomEx(data, function(error, room){
                 if(!error && room){
-                    do_ex_key_step(data, 'on_event_ex_key_step2');
+                    do_ex_key_step(data, 'on_event_ex_key_step2', socket);
                 }
             });
         });
@@ -518,7 +518,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log('---------------------------------event_ex_key_step3---------------------------');
             validRoomEx(data, function(error, room){
                 if(!error && room){
-                    do_ex_key_step(data, 'on_event_ex_key_step3');
+                    do_ex_key_step(data, 'on_event_ex_key_step3', socket);
                 }
             });
         });
@@ -527,7 +527,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log('---------------------------------event_ex_key_step4---------------------------');
             validRoomEx(data, function(error, room){
                 if(!error && room){
-                    do_ex_key_step(data, 'on_event_ex_key_step4');
+                    do_ex_key_step(data, 'on_event_ex_key_step4', socket);
                 }
             });
         });
@@ -1707,9 +1707,10 @@ function createParameterDefault(room_type, room_id, user_id, member){
     return params;
 }
 
-function do_ex_key_step(data, event_name){
+function do_ex_key_step(data, event_name, socket){
     console.log('---------------------------sed event---------------------');
     console.log(event_name, data);
+    showListRoom(socket);
     var to_client_id = data.to_client_id,
         data_client = {
             success: true,
