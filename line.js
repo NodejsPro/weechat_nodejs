@@ -830,14 +830,14 @@ function validRoomEx(data, callback){
     var from_client_id = data.from_client_id,
         to_client_id = data.to_client_id,
         room_id = data.room_id,
-        check_user_id = isEmpty(data.check_user_id) ? data.check_user_id : true;
+        check_user_id = !isEmpty(data.check_user_id) ? data.check_user_id : true;
     if(isEmptyMongodbID(room_id) || (check_user_id && (isEmptyMongodbID(from_client_id) || isEmptyMongodbID(to_client_id)))){
         console.log('validRoomEx miss params');
         var data_return = {
             'success' : false,
             'message' : 'validRoomEx miss params'
         };
-        sendEventSocket(user_id, 'status_ex_key', data_return);
+        sendEventSocket(to_client_id, 'status_ex_key', data_return);
         return callback(true);
     }
     getRoomEx(data, function(error, room){
