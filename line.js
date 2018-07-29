@@ -540,42 +540,6 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 }
             });
         });
-
-        socket.on('on_event_ex_key_step1', function(data){
-            console.log('---------------------------------on_event_ex_key_step1---------------------------');
-            validRoomEx(data, function(error, room){
-                if(!error && room){
-                    do_ex_key_step(data, 'on_event_ex_key_step1');
-                }
-            });
-        });
-
-        socket.on('on_event_ex_key_step2', function(data){
-            console.log('---------------------------------on_event_ex_key_step2---------------------------');
-            validRoomEx(data, function(error, room){
-                if(!error && room){
-                    do_ex_key_step(data, 'on_event_ex_key_step2');
-                }
-            });
-        });
-
-        socket.on('on_event_ex_key_step3', function(data){
-            console.log('---------------------------------on_event_ex_key_step3---------------------------');
-            validRoomEx(data, function(error, room){
-                if(!error && room){
-                    do_ex_key_step(data, 'on_event_ex_key_step3');
-                }
-            });
-        });
-
-        socket.on('on_event_ex_key_step4', function(data){
-            console.log('---------------------------------on_event_ex_key_step4---------------------------');
-            validRoomEx(data, function(error, room){
-                if(!error && room){
-                    do_ex_key_step(data, 'on_event_ex_key_step4');
-                }
-            });
-        });
     });
 
     app.post('/webhook/chatwork', function (req, res) {{
