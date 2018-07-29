@@ -489,7 +489,15 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log('---------------------------------event_ex_key_step1---------------------------');
             validRoomEx(data, function(error, room){
                 if(!error && room){
-                    do_ex_key_step(data, 'on_event_ex_key_step1');
+                    if (isEmpty(room.share_key_flg) || !room.share_key_flg) {
+                        do_ex_key_step(data, 'on_event_ex_key_step1');
+                    } else {
+                        var data_return = {
+                            'success' : true,
+                            'message' : 'share key success',
+                        };
+                        sendEventSocket(data.room_id, 'event_ex_key_success', data_return);
+                    }
                 }
             });
         });
