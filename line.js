@@ -32,6 +32,9 @@ var moment = require('moment');
 var date_format_global = 'YYYY-MM-DD HH:mm:ss';
 var date_format_mini_global = 'YYYY-MM-DD';
 
+var kue = require('kue'),
+    queue = kue.createQueue();
+
 var Room = model.Room;
 
 //var EfoCv = model.EfoCv;
@@ -288,7 +291,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('user_join', function (data) {
-            console.log('event user_join ', data);
+            console.log('----------------------------------socket user_join---------------------------', data);
             showListRoom(socket);
             validUserId(data, function (error, result, params) {
                 if(!error && result){
@@ -312,7 +315,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('user_join_room', function (data) {
             var user_id = data.user_id;
-            console.log('user_join_room', data);
+            console.log('----------------------------socket user_join_room-------------------------------', data);
             userJoinRoom(socket, user_id, function(success){
                if(success){
                    setNickNameSocket(socket, user_id, function(success){
@@ -326,7 +329,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                    userJoinRoom(socket, param.room_id, function (success) {
                                        console.log('userJoinRoom success', success);
                                        if(success){
-                                           console.log('send status true');
+                                           console.log('send status join room true');
                                            setUserTime(user_id);
                                            io.to(user_id).emit('status_join_room', data_result);
                                            resetUnreadMessage(param);
@@ -854,6 +857,7 @@ function validRoomEx(data, callback){
 
 function userJoinRoom(socket, room_id, callback) {
     console.log('-----------------user join room-----------------------');
+    console.log(room_id);
     showListRoom(socket);
     var rooms = Object.keys(socket.rooms);
     if (rooms.indexOf(room_id) >= 0) {
@@ -874,10 +878,10 @@ function userJoinRoom(socket, room_id, callback) {
 
 function validUserId(data, callback){
     console.log('-----------------valid user id-----------------------');
-    var user_id = data.user_id,
-        key = data.key;
-    if(!user_id || !mongoose.Types.ObjectId.isValid(user_id) || isEmpty(key)){
+    var user_id = data.user_id;
+    if(!user_id || !mongoose.Types.ObjectId.isValid(user_id)){
         data.success = 0;
+        console.log('status_join miss user_id', data);
         io.to(user_id).emit('status_join', data);
         return callback(true);
     }
@@ -893,6 +897,7 @@ function validUserId(data, callback){
             return callback(false, data, params);
         }else{
             data.success = 0;
+            console.log('status_join user valid', data);
             io.to(user_id).emit('status_join', data);
             return callback(true);
         }
