@@ -1710,16 +1710,35 @@ function createParameterDefault(room_type, room_id, user_id, member){
 function do_ex_key_step(data, event_name, socket){
     console.log('---------------------------sed event---------------------');
     console.log(event_name, data);
-    showListRoom(socket);
-    var to_client_id = data.to_client_id,
-        data_client = {
-            success: true,
-            room_id: data.room_id,
-            from_client_id: data.from_client_id,
-            to_client_id: data.to_client_id,
-            data: data.data
-        };
-    sendEventSocket(to_client_id, event_name, data_client);
+    // showListRoom(socket);
+    var front_client_id = data.from_client_id;
+    var to_client_id = data.to_client_id;
+
+    userJoinRoom(socket, front_client_id, function(success){
+        if(success){
+            setNickNameSocket(socket, front_client_id, function(success) {
+                if (success) {
+                    userJoinRoom(socket, to_client_id, function(success){
+                        if(success){
+                            setNickNameSocket(socket, to_client_id, function(success) {
+                                if (success) {
+                                    var to_client_id = data.to_client_id,
+                                        data_client = {
+                                            success: true,
+                                            room_id: data.room_id,
+                                            from_client_id: data.from_client_id,
+                                            to_client_id: data.to_client_id,
+                                            data: data.data
+                                        };
+                                    sendEventSocket(to_client_id, event_name, data_client);
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+        }
+    });
 }
 
 function updateRoom(data, callback){
