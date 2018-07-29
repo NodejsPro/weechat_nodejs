@@ -283,7 +283,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
     // socketIO check connection status
     io.on('connection', function (socket) {
         console.log(io.engine.clientsCount);
-        console.log("client connected with socket io", socket.id);
+        console.log("client connected");
         console.log("connection worker =" + cluster.worker.id);
 
         socket.on('disconnect', function () {
@@ -297,18 +297,17 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 if(!error && result){
                     var user_id = data.user_id;
                     userJoinRoom(socket, user_id, function(success){
-                       if(success){
-                           setNickNameSocket(socket, user_id, function(success){
-                               if(success){
-                                   var data_return = {
-                                       success: true,
-                                   };
-                                   console.log('all userids arr', UserIdsArr);
-                                   io.to(user_id).emit('status_join', data_return);
-                                   return;
-                               }
-                           });
-                       }
+                        if(success){
+                            setNickNameSocket(socket, user_id, function(success){
+                                if(success){
+                                    var data_return = {
+                                        success: true,
+                                    };
+                                    io.to(user_id).emit('status_join', data_return);
+                                    return;
+                                }
+                            });
+                        }
                     });
                 }
             });
@@ -318,34 +317,34 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             var user_id = data.user_id;
             console.log('----------------------------socket user_join_room-------------------------------', data);
             userJoinRoom(socket, user_id, function(success){
-               if(success){
-                   setNickNameSocket(socket, user_id, function(success){
-                       if(success){
-                           validRoom(data, function( error, result, param){
-                               if(!error && result){
-                                   var data_result = {
-                                       success: true,
-                                       room_id: param.room_id
-                                   };
-                                   userJoinRoom(socket, param.room_id, function (success) {
-                                       console.log('userJoinRoom success', success);
-                                       if(success){
-                                           console.log('send status join room true');
-                                           setUserTime(user_id);
-                                           io.to(user_id).emit('status_join_room', data_result);
-                                           resetUnreadMessage(param);
-                                           return;
-                                       }
-                                       console.log('send status false');
-                                       data.success = false;
-                                       data.message = "message.not_join_room ," + param.room_id;
-                                       io.to(user_id).emit('status_join_room', data);
-                                   });
-                               }
-                           });
-                       }
-                   });
-               }
+                if(success){
+                    setNickNameSocket(socket, user_id, function(success){
+                        if(success){
+                            validRoom(data, function( error, result, param){
+                                if(!error && result){
+                                    var data_result = {
+                                        success: true,
+                                        room_id: param.room_id
+                                    };
+                                    userJoinRoom(socket, param.room_id, function (success) {
+                                        console.log('userJoinRoom success', success);
+                                        if(success){
+                                            console.log('send status join room true');
+                                            setUserTime(user_id);
+                                            io.to(user_id).emit('status_join_room', data_result);
+                                            resetUnreadMessage(param);
+                                            return;
+                                        }
+                                        console.log('send status false');
+                                        data.success = false;
+                                        data.message = "message.not_join_room ," + param.room_id;
+                                        io.to(user_id).emit('status_join_room', data);
+                                    });
+                                }
+                            });
+                        }
+                    });
+                }
             });
         });
 
@@ -380,8 +379,8 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                                             var msg = [];
                                                             message.forEach(function(row) {
                                                                 var obj = {
-                                                                  'path' : !isEmpty(row.path) ?  row.path : '',
-                                                                  'name_origin' : !isEmpty(row.name_origin) ?  row.name_origin : '',
+                                                                    'path' : !isEmpty(row.path) ?  row.path : '',
+                                                                    'name_origin' : !isEmpty(row.name_origin) ?  row.name_origin : '',
                                                                 };
                                                                 msg.push(obj);
                                                             });
@@ -408,16 +407,16 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('disconnecting', function () {
-            console.log('**************************************disconnecting**************************************');
+            console.log('disconnecting');
             var rooms = Object.keys(socket.rooms);
             if (rooms) {
                 rooms.forEach(function (value) {
                     socket.leave(value);
                     console.log('value', value);
                     if(!isEmpty(UserIdsArr[value])){
-                        console.log('before delete', UserIdsArr);
+                        console.log(UserIdsArr);
                         delete UserIdsArr[value];
-                        console.log('after delete', UserIdsArr);
+                        console.log(UserIdsArr);
                     }
                     if(!isEmpty(UserRoom[value]) || !isEmpty(UserKey[value])){
                         setTimeout(function () {
@@ -480,8 +479,8 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             if(isEmptyMongodbID(user_id)){
                 console.log('user_logout miss params');
                 var data_return = {
-                  'success' : false,
-                  'message' : 'user_logout miss params'
+                    'success' : false,
+                    'message' : 'user_logout miss params'
                 };
                 sendEventSocket(user_id, 'status_user_logout', data_return);
                 return;
@@ -547,9 +546,9 @@ if (!sticky.listen(server, config.get('socketPort'))) {
     });
 
     app.post('/webhook/chatwork', function (req, res) {{
-            console.error("Failed validation secret_key.");
-            res.sendStatus(403);
-        }
+        console.error("Failed validation secret_key.");
+        res.sendStatus(403);
+    }
     });
 
     app.post('/webhook/line', function (req, res) {
@@ -831,14 +830,14 @@ function validRoomEx(data, callback){
     var from_client_id = data.from_client_id,
         to_client_id = data.to_client_id,
         room_id = data.room_id,
-        check_user_id = !isEmpty(data.check_user_id) ? data.check_user_id : true;
+        check_user_id = isEmpty(data.check_user_id) ? data.check_user_id : true;
     if(isEmptyMongodbID(room_id) || (check_user_id && (isEmptyMongodbID(from_client_id) || isEmptyMongodbID(to_client_id)))){
         console.log('validRoomEx miss params');
         var data_return = {
             'success' : false,
             'message' : 'validRoomEx miss params'
         };
-        sendEventSocket(to_client_id, 'status_ex_key', data_return);
+        sendEventSocket(user_id, 'status_ex_key', data_return);
         return callback(true);
     }
     getRoomEx(data, function(error, room){
@@ -1008,10 +1007,10 @@ var stepA = function(page_id) {
     return Q.Promise(function (resolve, reject) {(ConnectPage.findOne({page_id: page_id, sns_type: SNS_TYPE_FACEBOOK, deleted_at: null}).exec())
         .then(function(result) {
             return reject(result);
-           if(result){
-               return resolve(result);
-           }
-           return reject(result);
+            if(result){
+                return resolve(result);
+            }
+            return reject(result);
         });
     });
 
@@ -1033,9 +1032,9 @@ var stepB = function(val) {
 };
 
 function listen () {
-  app.listen(app.get('port'), function() {
-    console.log('Node app is running on port', app.get('port'));
-  });
+    app.listen(app.get('port'), function() {
+        console.log('Node app is running on port', app.get('port'));
+    });
 }
 
 function sendMessage(params, message, message_type) {
@@ -1061,41 +1060,41 @@ function sendMessage(params, message, message_type) {
             if (err) throw err;
             console.log('logCollectionStore store');
             var result = {
-              'user_id' : params.user_id,
-              'room_id' : params.room_id,
-              'message_type' : message_type,
-              'message' : message,
-              'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
+                'user_id' : params.user_id,
+                'room_id' : params.room_id,
+                'message_type' : message_type,
+                'message' : message,
+                'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
             };
             var member = params.member;
             User.find({ _id: {$in: member}}, {}, {}, function(err, users) {
-               if(!err && users){
-                   var member_name = [];
-                   for (var i = 0; i < users.length; i++){
-                       member_name.push({
-                           id: users[i]['_id'],
-                           name: users[i]['user_name'],
-                           avatar: setAvatar(users[i]['avatar'])
-                       });
-                   }
-                   result.member_name = member_name;
-                   var client_in_room = params.client_in_room;
-                   if(!isEmpty(client_in_room)){
-                       result.user_read = client_in_room;
-                   }
-                   console.log('send message to user  : ', result);
-                   io.to(params.room_id).emit('server_send_message', result);
-                   updateLastMessage(params, result);
-                   var user_id_not_arr = params.user_id_not_arr;
-                   if(!isEmpty(user_id_not_arr)){
-                       console.log('+++updateUnreadMessage');
-                       sendMessageUserArr(params.user_id_not_arr, result);
-                       updateUnreadMessage(params);
-                   }
-                   setUserTime(params.user_id);
-                   return;
-               }
-               result.msg_error = 'ko tim thay user';
+                if(!err && users){
+                    var member_name = [];
+                    for (var i = 0; i < users.length; i++){
+                        member_name.push({
+                            id: users[i]['_id'],
+                            name: users[i]['user_name'],
+                            avatar: setAvatar(users[i]['avatar'])
+                        });
+                    }
+                    result.member_name = member_name;
+                    var client_in_room = params.client_in_room;
+                    if(!isEmpty(client_in_room)){
+                        result.user_read = client_in_room;
+                    }
+                    console.log('send message to user  : ', result);
+                    io.to(params.room_id).emit('server_send_message', result);
+                    updateLastMessage(params, result);
+                    var user_id_not_arr = params.user_id_not_arr;
+                    if(!isEmpty(user_id_not_arr)){
+                        console.log('+++updateUnreadMessage');
+                        sendMessageUserArr(params.user_id_not_arr, result);
+                        updateUnreadMessage(params);
+                    }
+                    setUserTime(params.user_id);
+                    return;
+                }
+                result.msg_error = 'ko tim thay user';
                 io.to(params.user_id).emit('user_join_room', result);
             });
         });
@@ -1171,23 +1170,23 @@ function sendMessageUserArr(user_ids, message) {
 }
 
 function saveNotificationHistory(connect_page_id, page_id, notification_id, data, user_list, send_count, push_time){
-  var now = new Date();
-  var notificationHistory = new NotificationHistory({
-    connect_page_id: connect_page_id,
-    page_id: page_id,
-    notification_id: notification_id,
-    data: data,
-    send_count: send_count,
-    user_list: user_list,
-    read_count: 0,
-    time_of_message: now.getTime(),
-    push_time: push_time,
-    created_at : now,
-    updated_at : now
-  });
-  notificationHistory.save(function(err) {
-    if (err) throw err;
-  });
+    var now = new Date();
+    var notificationHistory = new NotificationHistory({
+        connect_page_id: connect_page_id,
+        page_id: page_id,
+        notification_id: notification_id,
+        data: data,
+        send_count: send_count,
+        user_list: user_list,
+        read_count: 0,
+        time_of_message: now.getTime(),
+        push_time: push_time,
+        created_at : now,
+        updated_at : now
+    });
+    notificationHistory.save(function(err) {
+        if (err) throw err;
+    });
 }
 
 function updateNotification(params){
@@ -1203,7 +1202,7 @@ function updateNotification(params){
 }
 
 function saveLogChatMessage(params, message_type, type, message, time_of_message, payload, error_flg, error_message){
-  var now = new Date();
+    var now = new Date();
     if(params.preview_flg == undefined &&  params.sns_type != SNS_TYPE_CHATWORK && params.sns_type != SNS_TYPE_EFO && (!error_flg || params.background_flg != 1)){
         var date = moment().tz(TIMEZONE).format("YYYY-MM-DD"); //dateFormat(now, "yyyy-mm-dd");
         UserProfile.findOne({connect_page_id: params.connect_page_id, user_id: params.user_id}, function(err, result) {
@@ -1244,106 +1243,106 @@ function saveLogChatMessage(params, message_type, type, message, time_of_message
         });
     }
 
-   var insert_data = {
-       connect_page_id: params.connect_page_id + "",
-       page_id: params.page_id,
-       user_id: params.user_id,
-       scenario_id: params.current_scenario_id,
-       message_type: message_type,
-       notification_id: params.notification_id,
-       type: type,
-       message: message,
-       input_requiment_flg:  (( typeof params.input_requiment_flg !== 'undefined') ? params.input_requiment_flg : undefined),
-       time_of_message: time_of_message,
-       payload:  (( typeof payload !== 'undefined') ? payload : ''),
-       error_flg: error_flg,
-       background_flg: (message_type == BOT_TYPE_MAIL) ? 1 : params.background_flg,
-       user_said: ((typeof params.user_said !== 'undefined') ? params.user_said : undefined),
-       bid: ((typeof params.bid !== 'undefined') ? params.bid : undefined),
-       b_position: ((typeof params.b_position    !== 'undefined') ? params.b_position : undefined),
-       error_message: error_message,
-       btn_next: ((typeof params.btn_next !== 'undefined') ? params.btn_next : undefined),
-       created_at : now,
-       updated_at : now
-   };
+    var insert_data = {
+        connect_page_id: params.connect_page_id + "",
+        page_id: params.page_id,
+        user_id: params.user_id,
+        scenario_id: params.current_scenario_id,
+        message_type: message_type,
+        notification_id: params.notification_id,
+        type: type,
+        message: message,
+        input_requiment_flg:  (( typeof params.input_requiment_flg !== 'undefined') ? params.input_requiment_flg : undefined),
+        time_of_message: time_of_message,
+        payload:  (( typeof payload !== 'undefined') ? payload : ''),
+        error_flg: error_flg,
+        background_flg: (message_type == BOT_TYPE_MAIL) ? 1 : params.background_flg,
+        user_said: ((typeof params.user_said !== 'undefined') ? params.user_said : undefined),
+        bid: ((typeof params.bid !== 'undefined') ? params.bid : undefined),
+        b_position: ((typeof params.b_position    !== 'undefined') ? params.b_position : undefined),
+        error_message: error_message,
+        btn_next: ((typeof params.btn_next !== 'undefined') ? params.btn_next : undefined),
+        created_at : now,
+        updated_at : now
+    };
 
 
-  params.background_flg = undefined;
-  //collection(params.connect_page_id + "_logs").insertOne(insert_data);
-  var logChatMessage;
-  if(params.sns_type == SNS_TYPE_CHATWORK){
-      insert_data.room_id = params.page_id;
-      insert_data.page_id = undefined;
-      insert_data.time_of_message = undefined;
-      insert_data.send_time = time_of_message;
-      insert_data.message_id = params.message_id;
-      logChatMessage = new LogChatMessage(insert_data);
-      logChatMessage.save(function(err) {
-          if (err) throw err;
-          if(logChatMessage.background_flg != 1){
+    params.background_flg = undefined;
+    //collection(params.connect_page_id + "_logs").insertOne(insert_data);
+    var logChatMessage;
+    if(params.sns_type == SNS_TYPE_CHATWORK){
+        insert_data.room_id = params.page_id;
+        insert_data.page_id = undefined;
+        insert_data.time_of_message = undefined;
+        insert_data.send_time = time_of_message;
+        insert_data.message_id = params.message_id;
+        logChatMessage = new LogChatMessage(insert_data);
+        logChatMessage.save(function(err) {
+            if (err) throw err;
+            if(logChatMessage.background_flg != 1){
 
-          }
-      });
-  }
-  else if(params.sns_type == SNS_TYPE_EFO){
-      var logCollection = params.logCollection;
-      if(!logCollection){
-          logCollection = CreateModelLogForName(params.connect_page_id + "_logs");
-      }
-      logChatMessage = new logCollection(insert_data);
-      logChatMessage.save(function(err) {
-          if (err) throw err;
-          if(logChatMessage.background_flg != 1){
-              if( (params.sns_type == SNS_TYPE_WEBCHAT || params.sns_type == SNS_TYPE_EFO) && params.start_flg){
-                  logChatMessage.start_flg = 1;
-              }
+            }
+        });
+    }
+    else if(params.sns_type == SNS_TYPE_EFO){
+        var logCollection = params.logCollection;
+        if(!logCollection){
+            logCollection = CreateModelLogForName(params.connect_page_id + "_logs");
+        }
+        logChatMessage = new logCollection(insert_data);
+        logChatMessage.save(function(err) {
+            if (err) throw err;
+            if(logChatMessage.background_flg != 1){
+                if( (params.sns_type == SNS_TYPE_WEBCHAT || params.sns_type == SNS_TYPE_EFO) && params.start_flg){
+                    logChatMessage.start_flg = 1;
+                }
 
-              if(params.preview_flg === undefined){
-                  io.to(params.connect_page_id).emit('receive_new_message', logChatMessage);
-              }
-              if(params.sns_type == SNS_TYPE_EFO){
-                  if(typeof params.question_count !== "undefined"){
-                      logChatMessage.question_count = params.question_count;
-                  }
-                  io.to(params.user_id).emit('efo_bot_send_message', logChatMessage);
-              }
-          }
-      });
-  }else{
-      logChatMessage = new LogChatMessage(insert_data);
-      logChatMessage.save(function(err) {
-          if (err) throw err;
-          if(logChatMessage.background_flg != 1){
-              if( (params.sns_type == SNS_TYPE_WEBCHAT || params.sns_type == SNS_TYPE_EFO) && params.start_flg){
-                  logChatMessage.start_flg = 1;
-              }
-              if(params.preview_flg === undefined){
-                  io.to(params.connect_page_id).emit('receive_new_message', logChatMessage);
-              }
-              if(params.sns_type == SNS_TYPE_EFO){
-                  if(typeof params.question_count !== "undefined"){
-                      logChatMessage.question_count = params.question_count;
-                  }
-                  io.to(params.user_id).emit('efo_bot_send_message', logChatMessage);
-              }
-              if(params.sns_type == SNS_TYPE_WEBCHAT){
-                  if(type == USER_TYPE && payload){
-                      //console.log(logChatMessage);
-                      io.to(params.user_id).emit('webchat_bot_send_message', {message: logChatMessage.message,
-                          log_message_id: logChatMessage._id, type: USER_TYPE, message_type: MESSAGE_USER_PAYLOAD, user_id: params.user_id, connect_page_id: params.connect_page_id});
-                  }else if(type == BOT_TYPE){
-                      io.to(params.user_id).emit('webchat_bot_send_message', {message: logChatMessage.message,
-                          log_message_id: logChatMessage._id, type: BOT_TYPE, user_id: params.user_id, connect_page_id: params.connect_page_id});
-                  }
-              }
-              if(params.keyword_scenario_id){
-                  params.current_scenario_id = params.keyword_scenario_id;
-                  params.keyword_scenario_id = undefined;
-                  connectScenario(params);
-              }
-          }
-      });
-  }
+                if(params.preview_flg === undefined){
+                    io.to(params.connect_page_id).emit('receive_new_message', logChatMessage);
+                }
+                if(params.sns_type == SNS_TYPE_EFO){
+                    if(typeof params.question_count !== "undefined"){
+                        logChatMessage.question_count = params.question_count;
+                    }
+                    io.to(params.user_id).emit('efo_bot_send_message', logChatMessage);
+                }
+            }
+        });
+    }else{
+        logChatMessage = new LogChatMessage(insert_data);
+        logChatMessage.save(function(err) {
+            if (err) throw err;
+            if(logChatMessage.background_flg != 1){
+                if( (params.sns_type == SNS_TYPE_WEBCHAT || params.sns_type == SNS_TYPE_EFO) && params.start_flg){
+                    logChatMessage.start_flg = 1;
+                }
+                if(params.preview_flg === undefined){
+                    io.to(params.connect_page_id).emit('receive_new_message', logChatMessage);
+                }
+                if(params.sns_type == SNS_TYPE_EFO){
+                    if(typeof params.question_count !== "undefined"){
+                        logChatMessage.question_count = params.question_count;
+                    }
+                    io.to(params.user_id).emit('efo_bot_send_message', logChatMessage);
+                }
+                if(params.sns_type == SNS_TYPE_WEBCHAT){
+                    if(type == USER_TYPE && payload){
+                        //console.log(logChatMessage);
+                        io.to(params.user_id).emit('webchat_bot_send_message', {message: logChatMessage.message,
+                            log_message_id: logChatMessage._id, type: USER_TYPE, message_type: MESSAGE_USER_PAYLOAD, user_id: params.user_id, connect_page_id: params.connect_page_id});
+                    }else if(type == BOT_TYPE){
+                        io.to(params.user_id).emit('webchat_bot_send_message', {message: logChatMessage.message,
+                            log_message_id: logChatMessage._id, type: BOT_TYPE, user_id: params.user_id, connect_page_id: params.connect_page_id});
+                    }
+                }
+                if(params.keyword_scenario_id){
+                    params.current_scenario_id = params.keyword_scenario_id;
+                    params.keyword_scenario_id = undefined;
+                    connectScenario(params);
+                }
+            }
+        });
+    }
 
 }
 
@@ -1696,8 +1695,6 @@ function isEmptyMongodbID(id){
 }
 
 function sendEventSocket(room_id, event_name, data){
-    console.log('-------------------------------sendEventSocket----------------------');
-    console.log(room_id, event_name, data);
     io.to(room_id).emit(event_name, data);
 }
 
@@ -1721,8 +1718,6 @@ function do_ex_key_step(data, event_name){
             to_client_id: data.to_client_id,
             data: data.data
         };
-    console.log('socket_id', to_client_id, UserIdsArr);
-    console.log('checkRoomExits: ', checkRoomExits(to_client_id));
     sendEventSocket(to_client_id, event_name, data_client);
 }
 
@@ -1750,16 +1745,8 @@ function updateRoom(data, callback){
         room.share_key_flag = true;
         room.save();
         var data_return = {
-          success: true,
+            success: true,
         };
-       sendEventSocket(room_id, 'on_event_ex_key_finish', data_return);
+        sendEventSocket(room_id, 'on_event_ex_key_finish', data_return);
     });
-}
-
-function checkRoomExits(room_id){
-    var rooms = io.sockets.adapter.rooms;
-    if(!isEmpty(rooms) && !isEmpty(rooms[room_id])){
-        return true;
-    }
-    return false;
 }
