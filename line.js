@@ -283,7 +283,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
     // socketIO check connection status
     io.on('connection', function (socket) {
         console.log(io.engine.clientsCount);
-        console.log("client connected");
+        console.log("client connected with socket io", socket.id);
         console.log("connection worker =" + cluster.worker.id);
 
         socket.on('disconnect', function () {
