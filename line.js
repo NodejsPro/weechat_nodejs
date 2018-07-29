@@ -303,13 +303,6 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                    var data_return = {
                                        success: true,
                                    };
-                                   var data_test = {
-                                       room_id: user_id,
-                                       from_client_id: user_id,
-                                       to_client_id: user_id,
-                                       data: []
-                                   };
-                                   do_ex_key_step(data_test, 'on_event_ex_key_step1');
                                    io.to(user_id).emit('status_join', data_return);
                                    return;
                                }
