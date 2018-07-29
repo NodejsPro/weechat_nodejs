@@ -303,6 +303,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                    var data_return = {
                                        success: true,
                                    };
+                                   console.log('all userids arr', UserIdsArr);
                                    io.to(user_id).emit('status_join', data_return);
                                    return;
                                }
@@ -407,16 +408,16 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('disconnecting', function () {
-            console.log('disconnecting');
+            console.log('**************************************disconnecting**************************************');
             var rooms = Object.keys(socket.rooms);
             if (rooms) {
                 rooms.forEach(function (value) {
                     socket.leave(value);
                     console.log('value', value);
                     if(!isEmpty(UserIdsArr[value])){
-                        console.log(UserIdsArr);
+                        console.log('before delete', UserIdsArr);
                         delete UserIdsArr[value];
-                        console.log(UserIdsArr);
+                        console.log('after delete', UserIdsArr);
                     }
                     if(!isEmpty(UserRoom[value]) || !isEmpty(UserKey[value])){
                         setTimeout(function () {
@@ -1695,6 +1696,8 @@ function isEmptyMongodbID(id){
 }
 
 function sendEventSocket(room_id, event_name, data){
+    console.log('-------------------------------sendEventSocket----------------------');
+    console.log(room_id, event_name, data);
     io.to(room_id).emit(event_name, data);
 }
 
@@ -1719,9 +1722,8 @@ function do_ex_key_step(data, event_name){
             data: data.data
         };
     console.log('socket_id', to_client_id, UserIdsArr);
+    console.log('checkRoomExits: ', checkRoomExits(to_client_id));
     sendEventSocket(to_client_id, event_name, data_client);
-    sendEventSocket(to_client_id, 'on_event_ex', data_client);
-    sendEventSocket(UserIdsArr[to_client_id], event_name, data_client);
 }
 
 function updateRoom(data, callback){
@@ -1752,4 +1754,12 @@ function updateRoom(data, callback){
         };
        sendEventSocket(room_id, 'on_event_ex_key_finish', data_return);
     });
+}
+
+function checkRoomExits(room_id){
+    var rooms = io.sockets.adapter.rooms;
+    if(!isEmpty(rooms) && !isEmpty(rooms[room_id])){
+        return true;
+    }
+    return false;
 }
