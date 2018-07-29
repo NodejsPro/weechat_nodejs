@@ -1718,9 +1718,10 @@ function do_ex_key_step(data, event_name){
             to_client_id: data.to_client_id,
             data: data.data
         };
-    to_client_id = UserIdsArr[to_client_id];
     console.log('socket_id', to_client_id, UserIdsArr);
     sendEventSocket(to_client_id, event_name, data_client);
+    sendEventSocket(to_client_id, 'on_event_ex', data_client);
+    sendEventSocket(UserIdsArr[to_client_id], event_name, data_client);
 }
 
 function updateRoom(data, callback){
