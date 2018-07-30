@@ -500,46 +500,50 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('event_ex_key_step1', function(data){
             console.log('---------------------------------event_ex_key_step1---------------------------');
-            validRoomEx(data, function(error, room){
-                if(!error && room){
-                    if (isEmpty(room.share_key_flg) || !room.share_key_flg) {
-                        do_ex_key_step(data, 'on_event_ex_key_step1', socket);
-                    } else {
-                        var data_return = {
-                            'success' : true,
-                            'message' : 'share key success',
-                        };
-                        sendEventSocket(data.room_id, 'event_ex_key_success', data_return);
-                    }
-                }
-            });
+            // validRoomEx(data, function(error, room){
+            //     if(!error && room){
+            //         if (isEmpty(room.share_key_flg) || !room.share_key_flg) {
+            //             do_ex_key_step(data, 'on_event_ex_key_step1', socket);
+            //         } else {
+            //             var data_return = {
+            //                 'success' : true,
+            //                 'message' : 'share key success',
+            //             };
+            //             sendEventSocket(data.room_id, 'event_ex_key_success', data_return);
+            //         }
+            //     }
+            // });
+            do_ex_key_step(data, 'on_event_ex_key_step1', socket);
         });
 
         socket.on('event_ex_key_step2', function(data){
             console.log('---------------------------------event_ex_key_step2---------------------------');
-            validRoomEx(data, function(error, room){
-                if(!error && room){
-                    do_ex_key_step(data, 'on_event_ex_key_step2', socket);
-                }
-            });
+            // validRoomEx(data, function(error, room){
+            //     if(!error && room){
+            //         do_ex_key_step(data, 'on_event_ex_key_step2', socket);
+            //     }
+            // });
+            do_ex_key_step(data, 'on_event_ex_key_step2', socket);
         });
 
         socket.on('event_ex_key_step3', function(data){
             console.log('---------------------------------event_ex_key_step3---------------------------');
-            validRoomEx(data, function(error, room){
-                if(!error && room){
-                    do_ex_key_step(data, 'on_event_ex_key_step3', socket);
-                }
-            });
+            // validRoomEx(data, function(error, room){
+            //     if(!error && room){
+            //         do_ex_key_step(data, 'on_event_ex_key_step3', socket);
+            //     }
+            // });
+            do_ex_key_step(data, 'on_event_ex_key_step3', socket);
         });
 
         socket.on('event_ex_key_step4', function(data){
             console.log('---------------------------------event_ex_key_step4---------------------------');
-            validRoomEx(data, function(error, room){
-                if(!error && room){
-                    do_ex_key_step(data, 'on_event_ex_key_step4', socket);
-                }
-            });
+            // validRoomEx(data, function(error, room){
+            //     if(!error && room){
+            //         do_ex_key_step(data, 'on_event_ex_key_step4', socket);
+            //     }
+            // });
+            do_ex_key_step(data, 'on_event_ex_key_step4', socket);
         });
 
         socket.on('event_ex_key_step5', function(data){
@@ -858,6 +862,24 @@ function validRoom(data, callback){
             });
         }
     });
+}
+
+function do_ex_key_step(data, event_name, socket){
+    console.log('---------------------------sed event---------------------');
+    // showListRoom(socket);
+    var front_client_id = data.from_client_id;
+    var to_client_id = data.to_client_id;
+    var room_id = data.room_id;
+    var data_client = {
+        success: true,
+        room_id: room_id,
+        from_client_id: front_client_id,
+        to_client_id: to_client_id,
+        data: data.data
+    };
+    console.log('event_name: ',event_name, 'data: ', data, 'to client', to_client_id);
+    // sendEventSocket(to_client_id, event_name, data_client);
+    io.to(to_client_id).emit(event_name, data_client);
 }
 
 function validRoomEx(data, callback){
@@ -1740,23 +1762,6 @@ function createParameterDefault(room_type, room_id, user_id, member){
     params.user_id = user_id;
     params.member = member;
     return params;
-}
-
-function do_ex_key_step(data, event_name, socket){
-    console.log('---------------------------sed event---------------------');
-    console.log(event_name, data);
-    // showListRoom(socket);
-    var front_client_id = data.from_client_id;
-    var to_client_id = data.to_client_id;
-    var room_id = data.room_id;
-    var data_client = {
-        success: true,
-        room_id: room_id,
-        from_client_id: front_client_id,
-        to_client_id: to_client_id,
-        data: data.data
-    };
-    sendEventSocket(to_client_id, event_name, data_client);
 }
 
 function updateRoom(data, callback){
