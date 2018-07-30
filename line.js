@@ -568,6 +568,31 @@ if (!sticky.listen(server, config.get('socketPort'))) {
     listen();
     module.exports = app;
 }
+/* request test send key exchage*/
+app.post('/send/user', function (req, res) {
+    console.log('**********************send user***************************');
+    console.log(req.body);
+    var from_client_id = req.body.from_client_id;
+    var to_client_id = req.body.to_client_id;
+    var room_id = req.body.room_id;
+    var ename = req.body.ename;
+    var data = req.body.data;
+    if(!isEmptyMongodbID(from_client_id) && !isEmptyMongodbID(to_client_id) && !isEmptyMongodbID(room_id) && !isEmpty(ename) && !isEmpty(data)){
+        var data_client = {
+            success: true,
+            room_id: room_id,
+            from_client_id: from_client_id,
+            to_client_id: to_client_id,
+            data: data.data
+        };
+        console.log('data send', data_client);
+        io.to(to_client_id).emit(ename, data_client);
+        res.status(200).send('ok send');
+    }else{
+        console.log('miss param');
+        res.sendStatus(403);
+    }
+});
 
 var redisPublicMessage = function(row){
     console.log("redisPublicMessage=");
