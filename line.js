@@ -500,19 +500,20 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('event_ex_key_step1', function(data){
             console.log('---------------------------------event_ex_key_step1---------------------------');
+            console.log(data);
             validRoomEx(data, function(error, room){
                 if(!error && room){
-                    var front_client_id = data.from_client_id;
+                    var from_client_id = data.from_client_id;
                     var to_client_id = data.to_client_id;
                     var room_id = data.room_id;
-                    userJoinRoom(socket, front_client_id, function(success){
+                    userJoinRoom(socket, from_client_id, function(success){
                         if(success){
                             userJoinRoom(socket, to_client_id, function(success){
                                 if(success){
                                     var data_client = {
                                         success: true,
                                         room_id: room_id,
-                                        from_client_id: front_client_id,
+                                        from_client_id: from_client_id,
                                         to_client_id: to_client_id,
                                         data: data.data
                                     };
@@ -530,18 +531,19 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('event_ex_key_step2', function(data){
             console.log('---------------------------------event_ex_key_step2---------------------------');
+            console.log(data);
             validRoomEx(data, function(error, room){
-                var front_client_id = data.from_client_id;
+                var from_client_id = data.from_client_id;
                 var to_client_id = data.to_client_id;
                 var room_id = data.room_id;
-                userJoinRoom(socket, front_client_id, function(success){
+                userJoinRoom(socket, from_client_id, function(success){
                     if(success){
                         userJoinRoom(socket, to_client_id, function(success){
                             if(success){
                                 var data_client = {
                                     success: true,
                                     room_id: room_id,
-                                    from_client_id: front_client_id,
+                                    from_client_id: from_client_id,
                                     to_client_id: to_client_id,
                                     data: data.data
                                 };
@@ -560,18 +562,19 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('event_ex_key_step3', function(data){
             console.log('---------------------------------event_ex_key_step3---------------------------');
+            console.log(data);
             validRoomEx(data, function(error, room){
-                var front_client_id = data.from_client_id;
+                var from_client_id = data.from_client_id;
                 var to_client_id = data.to_client_id;
                 var room_id = data.room_id;
-                userJoinRoom(socket, front_client_id, function(success){
+                userJoinRoom(socket, from_client_id, function(success){
                     if(success){
                         userJoinRoom(socket, to_client_id, function(success){
                             if(success){
                                 var data_client = {
                                     success: true,
                                     room_id: room_id,
-                                    from_client_id: front_client_id,
+                                    from_client_id: from_client_id,
                                     to_client_id: to_client_id,
                                     data: data.data
                                 };
@@ -589,18 +592,19 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('event_ex_key_step4', function(data){
             console.log('---------------------------------event_ex_key_step4---------------------------');
+            console.log(data);
             validRoomEx(data, function(error, room){
-                var front_client_id = data.from_client_id;
+                var from_client_id = data.from_client_id;
                 var to_client_id = data.to_client_id;
                 var room_id = data.room_id;
-                userJoinRoom(socket, front_client_id, function(success){
+                userJoinRoom(socket, from_client_id, function(success){
                     if(success){
                         userJoinRoom(socket, to_client_id, function(success){
                             if(success){
                                 var data_client = {
                                     success: true,
                                     room_id: room_id,
-                                    from_client_id: front_client_id,
+                                    from_client_id: from_client_id,
                                     to_client_id: to_client_id,
                                     data: data.data
                                 };
@@ -618,6 +622,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('event_ex_key_step5', function(data){
             console.log('---------------------------------event_ex_key_step5---------------------------');
+            console.log(data);
             data.check_user_id = false;
             validRoomEx(data, function(error, room){
                 if(!error && room){
