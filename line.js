@@ -329,11 +329,21 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                     userJoinRoom(socket, param.room_id, function (success) {
                                         console.log('userJoinRoom success', success);
                                         if(success){
-                                            console.log('send status join room true');
-                                            setUserTime(user_id);
-                                            io.to(user_id).emit('status_join_room', data_result);
-                                            resetUnreadMessage(param);
-                                            return;
+                                            var member = data.member;
+                                            for(var i = 0; i < member.length; i++){
+                                                if(member[i] != user_id){
+                                                    userJoinRoom(socket, member[i], function (success) {
+                                                        console.log('userJoinRoom success,', member[i], success);
+                                                        if (success) {
+                                                            console.log('send status join room true');
+                                                            setUserTime(user_id);
+                                                            io.to(user_id).emit('status_join_room', data_result);
+                                                            resetUnreadMessage(param);
+                                                            return;
+                                                        }
+                                                    });
+                                                }
+                                            }
                                         }
                                         console.log('send status false');
                                         data.success = false;
@@ -1739,36 +1749,14 @@ function do_ex_key_step(data, event_name, socket){
     var front_client_id = data.from_client_id;
     var to_client_id = data.to_client_id;
     var room_id = data.room_id;
-
-    userJoinRoom(socket, front_client_id, function(success){
-        if(success){
-            setNickNameSocket(socket, front_client_id, function(success) {
-                if (success) {
-                    userJoinRoom(socket, to_client_id, function(success){
-                        if(success){
-                            setNickNameSocket(socket, to_client_id, function(success) {
-                                if (success) {
-                                    userJoinRoom(socket, room_id, function(success) {
-                                        if (success) {
-                                            to_client_id = data.to_client_id;
-                                            var data_client = {
-                                                success: true,
-                                                room_id: data.room_id,
-                                                from_client_id: data.from_client_id,
-                                                to_client_id: data.to_client_id,
-                                                data: data.data
-                                            };
-                                            sendEventSocket(room_id, event_name, data_client);
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-        }
-    });
+    var data_client = {
+        success: true,
+        room_id: room_id,
+        from_client_id: front_client_id,
+        to_client_id: to_client_id,
+        data: data.data
+    };
+    sendEventSocket(to_client_id, event_name, data_client);
 }
 
 function updateRoom(data, callback){
