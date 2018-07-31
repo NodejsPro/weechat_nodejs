@@ -328,27 +328,27 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                     };
                                     userJoinRoom(socket, param.room_id, function (success) {
                                         console.log('userJoinRoom success', success);
-                                        if(success){
-                                            var member = data.member;
-                                            for(var i = 0; i < member.length; i++){
-                                                if(member[i] != user_id){
-                                                    userJoinRoom(socket, member[i], function (success) {
-                                                        console.log('userJoinRoom success,', member[i], success);
-                                                        if (success) {
-                                                            console.log('send status join room true');
-                                                            setUserTime(user_id);
-                                                            io.to(user_id).emit('status_join_room', data_result);
-                                                            resetUnreadMessage(param);
-                                                            return;
-                                                        }
-                                                    });
-                                                }
+                                        if(!success){
+                                            console.log('send status false');
+                                            data.success = false;
+                                            data.message = "message.not_join_room ," + param.room_id;
+                                            io.to(user_id).emit('status_join_room', data);
+                                        }
+                                        var member = data.member;
+                                        for(var i = 0; i < member.length; i++){
+                                            if(member[i] != user_id){
+                                                userJoinRoom(socket, member[i], function (success) {
+                                                    console.log('userJoinRoom success,', member[i], success);
+                                                    if (success) {
+                                                        console.log('send status join room true');
+                                                        setUserTime(user_id);
+                                                        io.to(user_id).emit('status_join_room', data_result);
+                                                        resetUnreadMessage(param);
+                                                        return;
+                                                    }
+                                                });
                                             }
                                         }
-                                        console.log('send status false');
-                                        data.success = false;
-                                        data.message = "message.not_join_room ," + param.room_id;
-                                        io.to(user_id).emit('status_join_room', data);
                                     });
                                 }
                             });
@@ -375,38 +375,38 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                 console.log("user_send_message error",error, result, params);
                                 if(!error && result){
                                     userJoinRoom(socket, params.room_id, function (success) {
-                                        if(success){
-                                            getUserNotExistsRoom(socket, params.room_id, params.member, function(user_id_not_arr, client_in_room){
-                                                console.log('getUserNotExistsRoom', user_id_not_arr);
-                                                user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
-                                                params.user_id_not_arr = user_id_not_arr;
-                                                params.client_in_room = client_in_room;
-                                                console.log('parama, ', params);
-                                                switch (message_type){
-                                                    case USER_SEND_FILE:
-                                                        var message = data.message;
-                                                        if(!isEmpty(message) && Array.isArray(message)){
-                                                            var msg = [];
-                                                            message.forEach(function(row) {
-                                                                var obj = {
-                                                                    'path' : !isEmpty(row.path) ?  row.path : '',
-                                                                    'name_origin' : !isEmpty(row.name_origin) ?  row.name_origin : '',
-                                                                };
-                                                                msg.push(obj);
-                                                            });
-                                                            sendMessage(params, data.message, data.message_type);
-                                                        }
-
-                                                        break;
-                                                    case USER_SEND_TEXT:
-                                                        sendMessage(params, data.message, data.message_type);
-                                                        break;
-                                                }
-                                            });
+                                        if(!success){
+                                            data.success = false;
+                                            data.message = "message.not_join_room ," + params.room_id;
+                                            io.to(user_id).emit('status_join_room', data);
                                         }
-                                        data.success = false;
-                                        data.message = "message.not_join_room ," + params.room_id;
-                                        io.to(user_id).emit('status_join_room', data);
+                                        getUserNotExistsRoom(socket, params.room_id, params.member, function(user_id_not_arr, client_in_room){
+                                            console.log('getUserNotExistsRoom', user_id_not_arr);
+                                            user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
+                                            params.user_id_not_arr = user_id_not_arr;
+                                            params.client_in_room = client_in_room;
+                                            console.log('parama, ', params);
+                                            switch (message_type){
+                                                case USER_SEND_FILE:
+                                                    var message = data.message;
+                                                    if(!isEmpty(message) && Array.isArray(message)){
+                                                        var msg = [];
+                                                        message.forEach(function(row) {
+                                                            var obj = {
+                                                                'path' : !isEmpty(row.path) ?  row.path : '',
+                                                                'name_origin' : !isEmpty(row.name_origin) ?  row.name_origin : '',
+                                                            };
+                                                            msg.push(obj);
+                                                        });
+                                                        sendMessage(params, data.message, data.message_type);
+                                                    }
+
+                                                    break;
+                                                case USER_SEND_TEXT:
+                                                    sendMessage(params, data.message, data.message_type);
+                                                    break;
+                                            }
+                                        });
                                     });
                                 }
                             });
