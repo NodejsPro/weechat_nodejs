@@ -517,10 +517,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                         to_client_id: to_client_id,
                                         data: data.data
                                     };
-                                    // sendEventSocket(from_client_id, 'on_event_ex_key_step1', data_client);
                                     sendEventSocket(to_client_id, 'on_event_ex_key_step1', data_client);
-                                    // data_client.message = 'room_id';
-                                    // sendEventSocket(room_id, 'on_event_ex_key_step1', data_client);
                                 }
                             });
                         }
@@ -549,11 +546,6 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                     data: data.data
                                 };
                                 sendEventSocket(to_client_id, 'on_event_ex_key_step2', data_client);
-                                // sendEventSocket(from_client_id, 'on_event_ex_key_step2', data_client);
-                                // data_client.message = 'room_id';
-                                // sendEventSocket(room_id, 'on_event_ex_key_step2', data_client);
-                                // do_ex_key_step(data_client, 'on_event_ex_key_step1', socket);
-                                // do_ex_key_step(data_client, 'on_event_ex_key_step1', socket);
                             }
                         });
                     }
