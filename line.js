@@ -359,7 +359,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('user_send_message', function (data) {
-            console.log("user_send_message data",data);
+            console.log("---------------------------------socket user_send_message data",data);
             var room_id = data.room_id;
             var user_id = data.user_id;
             var message_type = data.message_type;
@@ -506,20 +506,16 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     var from_client_id = data.from_client_id;
                     var to_client_id = data.to_client_id;
                     var room_id = data.room_id;
-                    userJoinRoom(socket, from_client_id, function(success){
+                    userJoinRoom(socket, room_id, function(success){
                         if(success){
-                            userJoinRoom(socket, to_client_id, function(success){
-                                if(success){
-                                    var data_client = {
-                                        success: true,
-                                        room_id: room_id,
-                                        from_client_id: from_client_id,
-                                        to_client_id: to_client_id,
-                                        data: data.data
-                                    };
-                                    sendEventSocket(to_client_id, 'on_event_ex_key_step1', data_client);
-                                }
-                            });
+                            var data_client = {
+                                success: true,
+                                room_id: room_id,
+                                from_client_id: from_client_id,
+                                to_client_id: to_client_id,
+                                data: data.data
+                            };
+                            sendEventSocket(to_client_id, 'on_event_ex_key_step1', data_client);
                         }
                     });
                 }
@@ -534,23 +530,18 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 var from_client_id = data.from_client_id;
                 var to_client_id = data.to_client_id;
                 var room_id = data.room_id;
-                userJoinRoom(socket, from_client_id, function(success){
+                userJoinRoom(socket, room_id, function(success){
                     if(success){
-                        userJoinRoom(socket, to_client_id, function(success){
-                            if(success){
-                                var data_client = {
-                                    success: true,
-                                    room_id: room_id,
-                                    from_client_id: from_client_id,
-                                    to_client_id: to_client_id,
-                                    data: data.data
-                                };
-                                sendEventSocket(to_client_id, 'on_event_ex_key_step2', data_client);
-                            }
-                        });
+                        var data_client = {
+                            success: true,
+                            room_id: room_id,
+                            from_client_id: from_client_id,
+                            to_client_id: to_client_id,
+                            data: data.data
+                        };
+                        sendEventSocket(to_client_id, 'on_event_ex_key_step2', data_client);
                     }
                 });
-                // do_ex_key_step(data, 'on_event_ex_key_step2', socket);
             });
         });
 
@@ -561,20 +552,16 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 var from_client_id = data.from_client_id;
                 var to_client_id = data.to_client_id;
                 var room_id = data.room_id;
-                userJoinRoom(socket, from_client_id, function(success){
+                userJoinRoom(socket, room_id, function(success){
                     if(success){
-                        userJoinRoom(socket, to_client_id, function(success){
-                            if(success){
-                                var data_client = {
-                                    success: true,
-                                    room_id: room_id,
-                                    from_client_id: from_client_id,
-                                    to_client_id: to_client_id,
-                                    data: data.data
-                                };
-                                sendEventSocket(to_client_id, 'on_event_ex_key_step3', data_client);
-                            }
-                        });
+                        var data_client = {
+                            success: true,
+                            room_id: room_id,
+                            from_client_id: from_client_id,
+                            to_client_id: to_client_id,
+                            data: data.data
+                        };
+                        sendEventSocket(to_client_id, 'on_event_ex_key_step3', data_client);
                     }
                 });
             });
@@ -587,20 +574,16 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 var from_client_id = data.from_client_id;
                 var to_client_id = data.to_client_id;
                 var room_id = data.room_id;
-                userJoinRoom(socket, from_client_id, function(success){
+                userJoinRoom(socket, room_id, function(success){
                     if(success){
-                        userJoinRoom(socket, to_client_id, function(success){
-                            if(success){
-                                var data_client = {
-                                    success: true,
-                                    room_id: room_id,
-                                    from_client_id: from_client_id,
-                                    to_client_id: to_client_id,
-                                    data: data.data
-                                };
-                                sendEventSocket(to_client_id, 'on_event_ex_key_step4', data_client);
-                            }
-                        });
+                        var data_client = {
+                            success: true,
+                            room_id: room_id,
+                            from_client_id: from_client_id,
+                            to_client_id: to_client_id,
+                            data: data.data
+                        };
+                        sendEventSocket(to_client_id, 'on_event_ex_key_step4', data_client);
                     }
                 });
             });
@@ -955,7 +938,9 @@ function validRoomEx(data, callback){
             'success' : false,
             'message' : 'validRoomEx miss params'
         };
-        sendEventSocket(user_id, 'status_ex_key', data_return);
+        if(!isEmptyMongodbID(room_id)){
+            sendEventSocket(room_id, 'status_ex_key', data_return);
+        }
         return callback(true);
     }
     getRoomEx(data, function(error, room){
