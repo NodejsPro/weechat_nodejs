@@ -865,30 +865,40 @@ function validRoom(data, callback){
                     params.room_id = result._id;
                     console.log('room true', result);
                     return callback(false, data, params);
-                }else if(user.authority == USER_AUTHORITY_SUPER_ADMIN || (contact instanceof Array  && contact.length > 0 &&
-                    ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0)))){
-                    var now = new Date();
-                    var roomStore = new Room({
-                        name: member.join('_'),
-                        user_id: user_id,
-                        member: member,
-                        room_type: room_type,
-                        share_key_flag: false,
-                        created_at : now,
-                        updated_at : now
-                    });
-                    roomStore.save(function(err, roomStore) {
-                        if (err) throw err;
-                        console.log('room true store');
-                        params.room_id = roomStore._id;
-                        return callback(false, data, params);
-                    });
-                }else {
-                    console.log('member_validate_2');
-                    data.success = 0;
-                    data.message = 'message.member_validate_2';
-                    io.to(user_id).emit('status_join_room', data);
-                    return callback(true);
+                }else{
+                    if(isEmpty(member) || member.length != 2){
+                        console.log('member_validate_2');
+                        data.success = 0;
+                        data.message = 'message.member_validate_2';
+                        io.to(user_id).emit('status_join_room', data);
+                        return callback(true);
+                    }else{
+                        if(user.authority == USER_AUTHORITY_SUPER_ADMIN || (contact instanceof Array  && contact.length > 0 &&
+                            ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0)))){
+                            var now = new Date();
+                            var roomStore = new Room({
+                                name: member.join('_'),
+                                user_id: user_id,
+                                member: member,
+                                room_type: room_type,
+                                share_key_flag: false,
+                                created_at : now,
+                                updated_at : now
+                            });
+                            roomStore.save(function(err, roomStore) {
+                                if (err) throw err;
+                                console.log('room true store');
+                                params.room_id = roomStore._id;
+                                return callback(false, data, params);
+                            });
+                        }else {
+                            console.log('member_validate_3');
+                            data.success = 0;
+                            data.message = 'message.member_validate_3';
+                            io.to(user_id).emit('status_join_room', data);
+                            return callback(true);
+                        }
+                    }
                 }
             });
         }else{
