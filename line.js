@@ -853,8 +853,6 @@ function validRoom(data, callback){
         }
         var user = result;
         if(room_type == ROOM_TYPE_ONE_ONE){
-            var u1 = member[0];
-            var u2 = member[1];
             var contact = user.contact != void 0 ? user.contact : [];
             //console.log(user._id, result._id, contact, u1, contact.indexOf(u2), u2, contact.indexOf(u1));
             console.log('---------------', user);
@@ -873,6 +871,8 @@ function validRoom(data, callback){
                         io.to(user_id).emit('status_join_room', data);
                         return callback(true);
                     }else{
+                        var u1 = member[0];
+                        var u2 = member[1];
                         if(user.authority == USER_AUTHORITY_SUPER_ADMIN || (contact instanceof Array  && contact.length > 0 &&
                             ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0)))){
                             var now = new Date();
