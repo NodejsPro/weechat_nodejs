@@ -334,7 +334,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                             data.message = "message.not_join_room ," + param.room_id;
                                             io.to(user_id).emit('status_join_room', data);
                                         }
-                                        var member = data.member;
+                                        var member = result.member;
                                         for(var i = 0; i < member.length; i++){
                                             if(member[i] != user_id){
                                                 userJoinRoom(socket, member[i], function (success) {
@@ -862,6 +862,7 @@ function validRoom(data, callback){
                 if (!err && result) {
                     params.room_id = result._id;
                     console.log('room true', result);
+                    data.member = result.member;
                     return callback(false, data, params);
                 }else{
                     if(isEmpty(member) || member.length != 2){
