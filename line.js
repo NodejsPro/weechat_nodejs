@@ -395,6 +395,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                                             var obj = {
                                                                 'path' : !isEmpty(row.path) ?  row.path : '',
                                                                 'name_origin' : !isEmpty(row.name_origin) ?  row.name_origin : '',
+                                                                'file_type' : !isEmpty(row.file_type) ?  row.file_type : '',
                                                             };
                                                             msg.push(obj);
                                                         });
