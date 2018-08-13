@@ -945,7 +945,7 @@ function validRoomEx(data, callback){
         room_id = data.room_id,
         check_user_id = isEmpty(data.check_user_id) ? data.check_user_id : true;
     if(isEmptyMongodbID(room_id) || (check_user_id && (isEmptyMongodbID(from_client_id) || isEmptyMongodbID(to_client_id)))){
-        console.log('validRoomEx miss params');
+        console.log('validRoomEx miss params by data' , data);
         var data_return = {
             'success' : false,
             'message' : 'validRoomEx miss params'
@@ -957,12 +957,12 @@ function validRoomEx(data, callback){
     }
     getRoomEx(data, function(error, room){
         if(error || !room){
-            console.log('room valid');
+            console.log('room valid by id', room_id);
             var data_return = {
                 'success' : false,
                 'message' : 'room valid'
             };
-            sendEventSocket(user_id, 'status_ex_key', data_return);
+            sendEventSocket(room_id, 'status_ex_key', data_return);
             return callback(true);
         }
         console.log('**********************room true-----------', room);
@@ -1831,7 +1831,7 @@ function updateRoom(data, callback){
             'success' : false,
             'message' : 'room valid'
         };
-        sendEventSocket(user_id, 'status_ex_key', data_return);
+        sendEventSocket(room_id, 'status_ex_key', data_return);
         return callback(true);
     }
     getRoomEx(data, function (error, room) {
@@ -1841,7 +1841,7 @@ function updateRoom(data, callback){
                 'success' : false,
                 'message' : 'room valid'
             };
-            sendEventSocket(user_id, 'status_ex_key', data_return);
+            sendEventSocket(room_id, 'status_ex_key', data_return);
             return callback(true);
         }
         room.share_key_flag = true;
