@@ -16,13 +16,6 @@ var moment = require('moment-timezone');
 
 var i18n = require("i18n");
 var User = model.User;
-var ConnectPage = model.ConnectPage;
-var BotMessage = model.BotMessage;
-var UserProfile = model.UserProfile;
-var UserPosition = model.UserPosition;
-var LogChatMessage = model.LogChatMessage;
-var NotificationHistory = model.NotificationHistory;
-var Variable = model.Variable;
 var Exception = model.Exception;
 var UnreadMessage = model.UnreadMessage;
 var LastMessage = model.LastMessage;
@@ -39,12 +32,6 @@ var Room = model.Room;
 
 //var EfoCv = model.EfoCv;
 var CreateModelLogForName = model.CreateModelLogForName;
-var CreateModelEfoCvForName = model.CreateModelEfoCvForName;
-//var CreateModelUserActiveForName = model.CreateModelUserActiveForName;
-
-var EfoCart = model.EfoCart;
-
-var RoomList = model.RoomList;
 
 var UserIdsArr = {};
 var KeyByRoom = {};
@@ -1314,151 +1301,6 @@ function updateNotification(params){
                 });
         }
     });
-}
-
-function saveLogChatMessage(params, message_type, type, message, time_of_message, payload, error_flg, error_message){
-    var now = new Date();
-    if(params.preview_flg == undefined &&  params.sns_type != SNS_TYPE_CHATWORK && params.sns_type != SNS_TYPE_EFO && (!error_flg || params.background_flg != 1)){
-        var date = moment().tz(TIMEZONE).format("YYYY-MM-DD"); //dateFormat(now, "yyyy-mm-dd");
-        UserProfile.findOne({connect_page_id: params.connect_page_id, user_id: params.user_id}, function(err, result) {
-            if (err) throw err;
-            if(result){
-                if(typeof result.last_time_at !== "undefined") {
-                    var last_time_at = new Date(result.last_time_at);
-                    var diff = timediff(last_time_at, now , 'S');
-                    var before_date = moment(last_time_at).tz(TIMEZONE).format("YYYY-MM-DD"); //dateFormat(last_time_at, "yyyy-mm-dd");
-                    if(diff.seconds > 1800 && result.get_session_flg != 1){
-                        SessionUser.update({connect_page_id: params.connect_page_id, user_id: result.user_id, date: before_date}, {$inc: {session_no: 1}, $set: {updated_at : now}, $setOnInsert: {created_at: now}  },
-                            {upsert: true, multi: false}, function (err) {
-                            });
-                        SessionScenario.update({connect_page_id: params.connect_page_id, scenario_id: result.scenario_id, date: before_date}, {$inc: {session_no: 1}, $set: {updated_at : now}, $setOnInsert: {created_at: now}  },
-                            {upsert: true, multi: false}, function (err) {
-                            });
-                    }
-                }
-            }
-            //else{
-            //    SessionUser.update({connect_page_id: params.connect_page_id, user_id: params.user_id, date: date}, {$inc: {session_no: 1}, $set: {updated_at : now}, $setOnInsert: {created_at: now}  },
-            //        {upsert: true, multi: false}, function (err) {
-            //            if (err) throw err;
-            //        });
-            //}
-            console.log("type=" + type);
-            if(type == USER_TYPE){
-                UserProfile.update({connect_page_id: params.connect_page_id, user_id: params.user_id}, {$inc: {unread_cnt: 1}, $set: {get_session_flg: 0, scenario_id: params.current_scenario_id, last_time_at: now.getTime(), updated_at : now}, $setOnInsert: {created_at: now}  },
-                    {upsert: false, multi: false}, function (err) {
-                        if (err) throw err;
-                    });
-            }else if(result){
-                result.scenario_id = params.current_scenario_id;
-                result.last_time_at = now.getTime();
-                result.get_session_flg = 0;
-                result.save();
-            }
-        });
-    }
-
-    var insert_data = {
-        connect_page_id: params.connect_page_id + "",
-        page_id: params.page_id,
-        user_id: params.user_id,
-        scenario_id: params.current_scenario_id,
-        message_type: message_type,
-        notification_id: params.notification_id,
-        type: type,
-        message: message,
-        input_requiment_flg:  (( typeof params.input_requiment_flg !== 'undefined') ? params.input_requiment_flg : undefined),
-        time_of_message: time_of_message,
-        payload:  (( typeof payload !== 'undefined') ? payload : ''),
-        error_flg: error_flg,
-        background_flg: (message_type == BOT_TYPE_MAIL) ? 1 : params.background_flg,
-        user_said: ((typeof params.user_said !== 'undefined') ? params.user_said : undefined),
-        bid: ((typeof params.bid !== 'undefined') ? params.bid : undefined),
-        b_position: ((typeof params.b_position    !== 'undefined') ? params.b_position : undefined),
-        error_message: error_message,
-        btn_next: ((typeof params.btn_next !== 'undefined') ? params.btn_next : undefined),
-        created_at : now,
-        updated_at : now
-    };
-
-
-    params.background_flg = undefined;
-    //collection(params.connect_page_id + "_logs").insertOne(insert_data);
-    var logChatMessage;
-    if(params.sns_type == SNS_TYPE_CHATWORK){
-        insert_data.room_id = params.page_id;
-        insert_data.page_id = undefined;
-        insert_data.time_of_message = undefined;
-        insert_data.send_time = time_of_message;
-        insert_data.message_id = params.message_id;
-        logChatMessage = new LogChatMessage(insert_data);
-        logChatMessage.save(function(err) {
-            if (err) throw err;
-            if(logChatMessage.background_flg != 1){
-
-            }
-        });
-    }
-    else if(params.sns_type == SNS_TYPE_EFO){
-        var logCollection = params.logCollection;
-        if(!logCollection){
-            logCollection = CreateModelLogForName(params.connect_page_id + "_logs");
-        }
-        logChatMessage = new logCollection(insert_data);
-        logChatMessage.save(function(err) {
-            if (err) throw err;
-            if(logChatMessage.background_flg != 1){
-                if( (params.sns_type == SNS_TYPE_WEBCHAT || params.sns_type == SNS_TYPE_EFO) && params.start_flg){
-                    logChatMessage.start_flg = 1;
-                }
-
-                if(params.preview_flg === undefined){
-                    io.to(params.connect_page_id).emit('receive_new_message', logChatMessage);
-                }
-                if(params.sns_type == SNS_TYPE_EFO){
-                    if(typeof params.question_count !== "undefined"){
-                        logChatMessage.question_count = params.question_count;
-                    }
-                    io.to(params.user_id).emit('efo_bot_send_message', logChatMessage);
-                }
-            }
-        });
-    }else{
-        logChatMessage = new LogChatMessage(insert_data);
-        logChatMessage.save(function(err) {
-            if (err) throw err;
-            if(logChatMessage.background_flg != 1){
-                if( (params.sns_type == SNS_TYPE_WEBCHAT || params.sns_type == SNS_TYPE_EFO) && params.start_flg){
-                    logChatMessage.start_flg = 1;
-                }
-                if(params.preview_flg === undefined){
-                    io.to(params.connect_page_id).emit('receive_new_message', logChatMessage);
-                }
-                if(params.sns_type == SNS_TYPE_EFO){
-                    if(typeof params.question_count !== "undefined"){
-                        logChatMessage.question_count = params.question_count;
-                    }
-                    io.to(params.user_id).emit('efo_bot_send_message', logChatMessage);
-                }
-                if(params.sns_type == SNS_TYPE_WEBCHAT){
-                    if(type == USER_TYPE && payload){
-                        //console.log(logChatMessage);
-                        io.to(params.user_id).emit('webchat_bot_send_message', {message: logChatMessage.message,
-                            log_message_id: logChatMessage._id, type: USER_TYPE, message_type: MESSAGE_USER_PAYLOAD, user_id: params.user_id, connect_page_id: params.connect_page_id});
-                    }else if(type == BOT_TYPE){
-                        io.to(params.user_id).emit('webchat_bot_send_message', {message: logChatMessage.message,
-                            log_message_id: logChatMessage._id, type: BOT_TYPE, user_id: params.user_id, connect_page_id: params.connect_page_id});
-                    }
-                }
-                if(params.keyword_scenario_id){
-                    params.current_scenario_id = params.keyword_scenario_id;
-                    params.keyword_scenario_id = undefined;
-                    connectScenario(params);
-                }
-            }
-        });
-    }
-
 }
 
 function isEmpty (value, trim) {
