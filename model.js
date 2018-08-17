@@ -61,7 +61,7 @@ var ExceptionSchema = new Schema({
 
 var RoomSchema = new Schema({
     name: String,
-    user_id: String,
+    admin_id: String,
     room_type: String,
     share_key_flag: Number,
     member: Array,

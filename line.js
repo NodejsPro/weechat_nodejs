@@ -303,15 +303,18 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         socket.on('user_join_room', function (data) {
             var user_id = data.user_id;
             console.log('----------------------------socket user_join_room-------------------------------', data);
-            userJoinRoom(socket, user_id, function(success){
-                if(success){
-                    setNickNameSocket(socket, user_id, function(success){
+            validRoom(data, function( error, room, param){
+                if(!error && room){
+                    userJoinRoom(socket, user_id, function(success){
                         if(success){
-                            validRoom(data, function( error, result, param){
-                                if(!error && result){
+                            setNickNameSocket(socket, user_id, function(success){
+                                if(success){
                                     var data_result = {
                                         success: true,
-                                        room_id: param.room_id
+                                        room_id: param.room_id,
+                                        admin_id: room.admin_id,
+                                        type: param.room_type,
+                                        member: param.member,
                                     };
                                     userJoinRoom(socket, param.room_id, function (success) {
                                         console.log('userJoinRoom success', success);
@@ -321,21 +324,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                             data.message = "message.not_join_room ," + param.room_id;
                                             io.to(user_id).emit('status_join_room', data);
                                         }
-                                        var member = result.member;
-                                        for(var i = 0; i < member.length; i++){
-                                            if(member[i] != user_id){
-                                                userJoinRoom(socket, member[i], function (success) {
-                                                    console.log('userJoinRoom success,', member[i], success);
-                                                    if (success) {
-                                                        console.log('send status join room true');
-                                                        setUserTime(user_id);
-                                                        io.to(user_id).emit('status_join_room', data_result);
-                                                        resetUnreadMessage(param);
-                                                        return;
-                                                    }
-                                                });
-                                            }
-                                        }
+                                        setUserTime(user_id);
+                                        io.to(user_id).emit('status_join_room', data_result);
+                                        resetUnreadMessage(param.room_id, user_id);
+                                        return;
                                     });
                                 }
                             });
@@ -432,43 +424,6 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('client_to_server_receive_message', function (data) {
             updateBotLastTime(data.connect_page_id, data.user_id);
-        });
-
-        //from cms
-        socket.on('send_new_message', function (data) {
-            //console.log("send_new_message");
-            //console.log(data);
-            var result;
-            getConnectPageById(data.connect_page_id)
-                .then(function (connect_page) {
-                    result = connect_page;
-                    return Q(UserPosition.findOne({connect_page_id: connect_page.id, user_id: data.user_id}).exec());
-                })
-                .then(function (resultPosition) {
-                    var current_scenario_id = undefined;
-                    if (resultPosition) {
-                        current_scenario_id = resultPosition.scenario_id;
-                    }
-                    updateBotLastTime(data.connect_page_id, data.user_id);
-                    var params = {};
-
-                    if (result.sns_type == SNS_TYPE_WEBCHAT) {
-                        params = createParameterDefault(result.sns_type, result._id, data.user_id, result.page_id);
-                        params.current_scenario_id = current_scenario_id;
-                        sendMessageWebchat(params, data.data);
-                    } else if (result.sns_type == SNS_TYPE_LINE) {
-                        params = createParameterDefault(result.sns_type, result._id, data.user_id, result.channel_id, result.channel_access_token, current_scenario_id);
-                        params.conversation_flg = 1;
-                        sendMessageConversationLine(params, data.data);
-                    } else {
-                        params = createParameterDefault(result.sns_type, result._id, data.user_id, result.page_id, result.page_access_token, current_scenario_id);
-                        params.conversation_flg = 1;
-                        sendMessageConversationFacebook(params, data.data);
-                    }
-                })
-                .catch(function (err) {
-                    saveException(err);
-                });
         });
 
         socket.on('user_logout', function(data){
@@ -586,6 +541,26 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     updateRoom(data, function(error, room){
 
                     });
+                }
+            });
+        });
+
+        // lắng nghe client muốn trao đổi key với admin trong 1 room
+        //
+        socket.on('start_exchange_key', function(data){
+            console.log('---------------------------------start_exchange_key---------------------------');
+            console.log(data);
+            var admin_id = data.admin_id;
+            var room_id = data.room_id;
+            var user_id = data.user_id;
+            validRoomEx2(room_id, admin_id, user_id, function(error, room){
+                if(!error && room){
+                    var data_send = {
+                        'room_id' : room_id,
+                        'admin_id' : admin_id,
+                        'user_id' : user_id,
+                    };
+                    sendEventSocket(admin_id, 'event_trigger_ex_key', data_send)
                 }
             });
         });
@@ -803,6 +778,7 @@ function validRoom(data, callback){
     var member = data.member;
     var room_type_arr = [ROOM_TYPE_ONE_MANY, ROOM_TYPE_ONE_ONE];
     console.log('---------------------validRoom-----------------------');
+    console.log(data);
     if(isEmptyMongodbID(user_id)){
         data.success = 0;
         data.message = 'user id miss';
@@ -810,16 +786,16 @@ function validRoom(data, callback){
         io.to(user_id).emit('status_join_room', data);
         return callback(true);
     }
-    if(room_id){
-        var query = {_id: room_id, room_type: room_type, deleted_at: null};
+    if(!isEmptyMongodbID(room_id)){
+        var query = {_id: room_id, deleted_at: null};
     }else {
-        if (!room_type || !room_type_arr.indexOf(room_type)) {
+        if (isEmpty(room_type) || !room_type_arr.indexOf(room_type)) {
             data.success = 0;
             data.message = 'message.room_type_validate';
             io.to(user_id).emit('status_join_room', data);
             console.log('room_type_validate');
             return callback(true);
-        } else if (!member || !(member instanceof Array) || (room_type == ROOM_TYPE_ONE_ONE && member.length != 2)) {
+        } else if (isEmpty(member) || !(member instanceof Array) || (room_type == ROOM_TYPE_ONE_ONE && member.length != 2)) {
             data.success = 0;
             data.message = 'message.member_validate_1';
             console.log('member_validate_1');
@@ -828,82 +804,58 @@ function validRoom(data, callback){
         }
         var query = {member: {$all : member, $size : 2},room_type: room_type, deleted_at: null}
     }
-    console.log('validRoom find user', data);
-    User.findOne({_id: user_id, deleted_at: null}, function (err, result) {
-        console.log('validRoom find user ', err, result);
+    User.findOne({_id: user_id, deleted_at: null}, function (err, user) {
+        console.log('validRoom find user ', user);
         var params = createParameterDefault(room_type, undefined, data.user_id, member);
-        if(err || !result){
+        if(err || !user){
             data.success = false;
             data.message = "message.user_not_exsits";
             io.to(user_id).emit('status_join_room', data);
             console.log('user_not_exsits');
             return callback(true);
         }
-        var user = result;
-        if(room_type == ROOM_TYPE_ONE_ONE){
-            var contact = user.contact != void 0 ? user.contact : [];
-            //console.log(user._id, result._id, contact, u1, contact.indexOf(u2), u2, contact.indexOf(u1));
-            console.log('---------------', user);
-            console.log('user.authority: ', user.authority , USER_AUTHORITY_SUPER_ADMIN);
-            console.log('query', query);
-            Room.findOne(query, function (err, result) {
-                if (!err && result) {
-                    params.room_id = result._id;
-                    console.log('room true', result);
-                    data.member = result.member;
-                    return callback(false, data, params);
-                }else{
-                    if(isEmpty(member) || member.length != 2){
-                        console.log('member_validate_2');
-                        data.success = 0;
-                        data.message = 'message.member_validate_2';
-                        io.to(user_id).emit('status_join_room', data);
-                        return callback(true);
-                    }else{
-                        var u1 = member[0];
-                        var u2 = member[1];
-                        if(user.authority == USER_AUTHORITY_SUPER_ADMIN || (contact instanceof Array  && contact.length > 0 &&
-                            ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0)))){
-                            var now = new Date();
-                            var roomStore = new Room({
-                                name: member.join('_'),
-                                user_id: user_id,
-                                member: member,
-                                room_type: room_type,
-                                share_key_flag: false,
-                                created_at : now,
-                                updated_at : now
-                            });
-                            roomStore.save(function(err, roomStore) {
-                                if (err) throw err;
-                                console.log('room true store');
-                                params.room_id = roomStore._id;
-                                return callback(false, data, params);
-                            });
-                        }else {
-                            console.log('member_validate_3');
-                            data.success = 0;
-                            data.message = 'message.member_validate_3';
-                            io.to(user_id).emit('status_join_room', data);
-                            return callback(true);
-                        }
-                    }
+        getRoomEx2(room_id, query, function(err, room){
+            // trường hợp room đã tồn tại ( room 1-1, 1-n)
+            // trường hợp room 1-1 chưa tồn tại => create room
+            // các trường hợp còn lại lỗi hết
+            if (!err && room) {
+                params.room_id = room._id;
+                params.room_type = room.room_type;
+                params.member = room.member;
+                console.log('room true', room);
+                return callback(false, room, params);
+            }else if(room_type == ROOM_TYPE_ONE_ONE){
+                var u1 = member[0];
+                var u2 = member[1];
+                var contact = user.contact;
+                if(!isEmpty(contact) && contact instanceof Array &&
+                    ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0))){
+                    var now = new Date();
+                    var roomStore = new Room({
+                        name: member.join('_'),
+                        admin_id: user_id,
+                        member: member,
+                        room_type: room_type,
+                        share_key_flag: false,
+                        created_at : now,
+                        updated_at : now
+                    });
+                    roomStore.save(function(err, roomStore) {
+                        if (err) throw err;
+                        console.log('room true store');
+                        params.room_id = roomStore._id;
+                        params.room_type = roomStore.room_type;
+                        return callback(false, roomStore, params);
+                    });
                 }
-            });
-        }else{
-            Room.findOne(query, function (err, result) {
-                if (!err && result) {
-                    params.room_id = result._id;
-                    console.log('room true', result);
-                    return callback(false, data, params);
-                }
+            } else{
                 console.log('member_validate_3');
                 data.success = 0;
                 data.message = 'message.room_not_exits';
                 io.to(user_id).emit('status_join_room', data);
                 return callback(true);
-            });
-        }
+            }
+        });
     });
 }
 
@@ -954,6 +906,30 @@ function validRoomEx(data, callback){
         }
         console.log('**********************room true-----------', room);
         return callback(false, room);
+    });
+}
+
+function validRoomEx2(room_id, admin_id, user_id, callback){
+    if(isEmptyMongodbID(room_id) || isEmptyMongodbID(admin_id) || isEmptyMongodbID(user_id)){
+        console.log('miss param, room_id', room_id, 'admin_id', admin_id, 'user_id', user_id);
+        return callback(true);
+    }
+    getRoomEx2(room_id, {}, function(err, room){
+        if(err || !room){
+            console.log('room_id miss', room_id, 'admin_id', admin_id, 'user_id', user_id);
+            return callback(true);
+        }
+        var room_member = room.member;
+        var room_admin_id = room.admin_id;
+        if(admin_id == room_admin_id && room_member.indexOf(admin_id) && room_member.indexOf(user_id)){
+            console.log('valid true');
+            return callback(false, room);
+        }else if(user_id == room_admin_id){
+            console.log('room_id trao doi key admin voi admin');
+            return callback(true);
+        }
+        console.log('room_id error param', room_id, 'admin_id', admin_id, 'user_id', user_id);
+        return callback(true);
     });
 }
 
@@ -1091,6 +1067,22 @@ function getRoomEx(data, callback){
             return callback(true);
         }
         return callback(false, room);
+    });
+}
+
+function getRoomEx2(room_id, option_query, callback){
+    console.log('----------------------get Room ex2------------');
+    var query = {deleted_at: null},
+        query_room = {};
+    if(!isEmptyMongodbID(room_id)){
+        query_room = {_id : room_id};
+    }
+    var option = Object.assign({}, query, query_room, option_query);
+    Room.findOne(option, function (err, room) {
+        if(!err && room){
+            return callback(false, room);
+        }
+        return callback(true);
     });
 }
 
@@ -1316,11 +1308,12 @@ function showListRoom(socket) {
     console.log('room current', rooms);
 }
 
-function resetUnreadMessage(params) {
+function resetUnreadMessage(room_id, user_id) {
     var now = new Date();
-    UnreadMessage.findOne({room_id: params.room_id, user_id: params.user_id}, function(err, result) {
+    UnreadMessage.findOne({room_id: room_id, user_id: user_id}, function(err, result) {
         if(err){
-            if (err) throw err;
+            throw err;
+            return;
         }
         // Nếu tìm thấy reset
         if(result){
