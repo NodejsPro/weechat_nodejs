@@ -550,11 +550,11 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         socket.on('start_exchange_key', function(data){
             console.log('---------------------------------start_exchange_key---------------------------');
             console.log(data);
-            var admin_id = data.admin_id;
             var room_id = data.room_id;
             var user_id = data.user_id;
-            validRoomEx2(room_id, admin_id, user_id, function(error, room){
+            validRoomEx2(room_id, user_id, function(error, room){
                 if(!error && room){
+                    var admin_id = room.admin_id;
                     var data_send = {
                         'room_id' : room_id,
                         'admin_id' : admin_id,
@@ -909,26 +909,26 @@ function validRoomEx(data, callback){
     });
 }
 
-function validRoomEx2(room_id, admin_id, user_id, callback){
-    if(isEmptyMongodbID(room_id) || isEmptyMongodbID(admin_id) || isEmptyMongodbID(user_id)){
-        console.log('miss param, room_id', room_id, 'admin_id', admin_id, 'user_id', user_id);
+function validRoomEx2(room_id, user_id, callback){
+    if(isEmptyMongodbID(room_id) || isEmptyMongodbID(user_id)){
+        console.log('miss param, room_id', room_id, 'user_id', user_id);
         return callback(true);
     }
     getRoomEx2(room_id, {}, function(err, room){
         if(err || !room){
-            console.log('room_id miss', room_id, 'admin_id', admin_id, 'user_id', user_id);
+            console.log('room_id miss', room_id, 'user_id', user_id);
             return callback(true);
         }
         var room_member = room.member;
         var room_admin_id = room.admin_id;
-        if(admin_id == room_admin_id && room_member.indexOf(admin_id) && room_member.indexOf(user_id)){
+        if(user_id != room_admin_id && room_member.indexOf(user_id)){
             console.log('valid true');
             return callback(false, room);
         }else if(user_id == room_admin_id){
             console.log('room_id trao doi key admin voi admin');
             return callback(true);
         }
-        console.log('room_id error param', room_id, 'admin_id', admin_id, 'user_id', user_id);
+        console.log('room_id error param', room_id, 'user_id', user_id);
         return callback(true);
     });
 }
