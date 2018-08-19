@@ -378,7 +378,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                                             };
                                                             msg.push(obj);
                                                         });
-                                                        sendMessage(params, data.message, data.message_type);
+                                                        sendMessage(params, msg, data.message_type);
                                                     }
 
                                                     break;
