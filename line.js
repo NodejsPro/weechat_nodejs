@@ -325,6 +325,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                         admin_id: room.admin_id,
                                         type: param.room_type,
                                         member: param.member,
+                                        admin_key_flg: room.admin_key_flg,
                                     };
                                     userJoinRoom(socket, param.room_id, function (success) {
                                         console.log('userJoinRoom success', success);
