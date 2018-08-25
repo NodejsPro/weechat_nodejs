@@ -30,6 +30,11 @@ var kue = require('kue'),
 
 var Room = model.Room;
 
+const
+    ADMIN_KEY_FLG_TRUE=1,
+    ADMIN_KEY_FLG_FALSE=0,
+    ADMIN_KEY_FLG_UNKNOW=-1;
+
 //var EfoCv = model.EfoCv;
 var CreateModelLogForName = model.CreateModelLogForName;
 
@@ -283,15 +288,20 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             validUserId(data, function (error, result, params) {
                 if(!error && result){
                     var user_id = data.user_id;
-                    userJoinRoom(socket, user_id, function(success){
-                        if(success){
-                            setNickNameSocket(socket, user_id, function(success){
+                    var admin_key_flg = data.admin_key_flg;
+                    updateAdminKeyInRoom(user_id, admin_key_flg, function(err){
+                        if(!err){
+                            userJoinRoom(socket, user_id, function(success){
                                 if(success){
-                                    var data_return = {
-                                        success: true,
-                                    };
-                                    io.to(user_id).emit('status_join', data_return);
-                                    return;
+                                    setNickNameSocket(socket, user_id, function(success){
+                                        if(success){
+                                            var data_return = {
+                                                success: true,
+                                            };
+                                            io.to(user_id).emit('status_join', data_return);
+                                            return;
+                                        }
+                                    });
                                 }
                             });
                         }
@@ -819,32 +829,33 @@ function validRoom(data, callback){
             // trường hợp room 1-1 chưa tồn tại => create room
             // các trường hợp còn lại lỗi hết
             if (!err && room) {
-                params.room_id = room._id;
+                // room 1-1, admin_key_flg = false => create room
+                //           admin_key_flg = true, unknow => tra ve cac thong tin room
                 params.room_type = room.room_type;
                 params.member = room.member;
-                console.log('room true', room);
-                return callback(false, room, params);
+                if(room.room_type == ROOM_TYPE_ONE_ONE && room.admin_key_flg == ADMIN_KEY_FLG_FALSE){
+                    roomCreate(user_id, member, room_type, function(err, roomStore){
+                        if (err) throw err;
+                        params.room_id = roomStore._id;
+                        params.admin_key_flg = roomStore.admin_key_flg;
+                        return callback(false, roomStore, params);
+                    });
+                }else{
+                    params.room_id = room._id;
+                    params.admin_key_flg = room.admin_key_flg;
+                    console.log('room true', room);
+                    return callback(false, room, params);
+                }
             }else if(room_type == ROOM_TYPE_ONE_ONE){
                 var u1 = member[0];
                 var u2 = member[1];
                 var contact = user.contact;
                 if(!isEmpty(contact) && contact instanceof Array &&
                     ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0))){
-                    var now = new Date();
-                    var roomStore = new Room({
-                        name: member.join('_'),
-                        admin_id: user_id,
-                        member: member,
-                        room_type: room_type,
-                        share_key_flag: false,
-                        created_at : now,
-                        updated_at : now
-                    });
-                    roomStore.save(function(err, roomStore) {
+                    roomCreate(user_id, member, room_type, function(err, roomStore){
                         if (err) throw err;
-                        console.log('room true store');
                         params.room_id = roomStore._id;
-                        params.room_type = roomStore.room_type;
+                        params.admin_key_flg = roomStore.admin_key_flg;
                         return callback(false, roomStore, params);
                     });
                 }
@@ -856,6 +867,30 @@ function validRoom(data, callback){
                 return callback(true);
             }
         });
+    });
+}
+
+function roomCreate(admin_id, member, room_type, callback){
+    var now = new Date();
+    var roomStore = new Room({
+        name: member.join('_'),
+        admin_id: admin_id,
+        member: member,
+        room_type: room_type,
+        admin_key_flg: ADMIN_KEY_FLG_UNKNOW,
+        created_at : now,
+        updated_at : now
+    });
+    roomStore.save(function(err, roomStore) {
+        if (err){
+            return callback(true);
+        };
+        console.log('room true store');
+        params.room_id = roomStore._id;
+        params.room_type = roomStore.room_type;
+        params.admin_key_flg = roomStore.admin_key_flg;
+        params.member = roomStore.member;
+        return callback(false, roomStore);
     });
 }
 
@@ -905,6 +940,10 @@ function validRoomEx(data, callback){
             return callback(true);
         }
         console.log('**********************room true-----------', room);
+        if(!isEmpty(data.admin_key_flg)){
+            room.admin_key_flg = data.admin_key_flg;
+            room.save();
+        }
         return callback(false, room);
     });
 }
@@ -978,6 +1017,24 @@ function validUserId(data, callback){
             return callback(true);
         }
     });
+}
+
+function updateAdminKeyInRoom(admin_id, admin_key_flg_arr, callback){
+    console.log('-----updateAdminKeyInRoom admin_id: ' , admin_id, ' key: ', admin_key_flg_arr);
+    Room.find({admin_id: admin_id, deleted_at: null}, function (err, rooms) {
+        if(!err && rooms){
+            rooms.forEach(function (row) {
+                var current_admin_key_flg = ADMIN_KEY_FLG_FALSE;
+                var current_room_id = row._id;
+                if(!isEmpty(admin_key_flg_arr) && admin_key_flg_arr.indexof(current_room_id) >= 0){
+                    current_admin_key_flg = admin_key_flg_arr[current_room_id];
+                }
+                row.admin_key_flg = current_admin_key_flg;
+                row.save();
+            });
+        }
+        return callback(false);
+    })
 }
 
 function doUserLogout(data, callback){

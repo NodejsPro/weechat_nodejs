@@ -64,6 +64,7 @@ var RoomSchema = new Schema({
     admin_id: String,
     room_type: String,
     share_key_flag: Number,
+    admin_key_flg : Number,
     member: Array,
     created_at : Date,
     updated_at : Date
