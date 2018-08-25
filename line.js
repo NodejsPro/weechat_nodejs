@@ -459,6 +459,8 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     var from_client_id = data.from_client_id;
                     var to_client_id = data.to_client_id;
                     var room_id = data.room_id;
+                    room.admin_key_flg = ADMIN_KEY_FLG_TRUE;
+                    room.save();
                     userJoinRoom(socket, room_id, function(success){
                         if(success){
                             var data_client = {
