@@ -835,9 +835,9 @@ function validRoom(data, callback){
                 params.member = room.member;
                 if(room.admin_key_flg == ADMIN_KEY_FLG_FALSE){
                     if(room.room_type == ROOM_TYPE_ONE_ONE){
-                        roomCreate(user_id, member, room_type, function(err, roomStore){
+                        console.log('room create in truong hop 1-1, admin key flag false');
+                        roomCreate(user_id, room.member, room.room_type, function(err, roomStore){
                             if (err) throw err;
-                            console.log('room create in truong hop 1-1, admin key flag false');
                             params.room_id = roomStore._id;
                             params.admin_key_flg = roomStore.admin_key_flg;
                             return callback(false, roomStore, params);
@@ -904,10 +904,6 @@ function roomCreate(admin_id, member, room_type, callback){
             return callback(true);
         };
         console.log('room true store');
-        params.room_id = roomStore._id;
-        params.room_type = roomStore.room_type;
-        params.admin_key_flg = roomStore.admin_key_flg;
-        params.member = roomStore.member;
         return callback(false, roomStore);
     });
 }
