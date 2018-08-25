@@ -827,7 +827,7 @@ function validRoom(data, callback){
             console.log('user_not_exsits');
             return callback(true);
         }
-        getRoomEx2(room_id, query, function(err, room){
+        getLastRoom(room_id, query, function(err, room){
             // trường hợp room đã tồn tại ( room 1-1, 1-n)
             // trường hợp room 1-1 chưa tồn tại => create room
             // các trường hợp còn lại lỗi hết
@@ -1165,6 +1165,24 @@ function getRoomEx2(room_id, option_query, callback){
         }
         return callback(true);
     });
+}
+
+function getLastRoom(room_id, option_query, callback){
+    console.log('----------------------get Room ex2------------');
+    var query = {deleted_at: null},
+        query_room = {};
+    if(!isEmptyMongodbID(room_id)){
+        query_room = {_id : room_id};
+    }
+    var option = Object.assign({}, query, query_room, option_query);
+    return callback(false, new Promise((resolve, reject) => {
+        Room.findOne(option, {}, { sort: { '_id': -1 } }, function(
+            err,
+            obj
+        ) {
+            resolve(obj);
+        });
+    }));
 }
 
 //非同期処理
