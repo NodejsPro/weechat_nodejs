@@ -833,13 +833,31 @@ function validRoom(data, callback){
                 //           admin_key_flg = true, unknow => tra ve cac thong tin room
                 params.room_type = room.room_type;
                 params.member = room.member;
-                if(room.room_type == ROOM_TYPE_ONE_ONE && room.admin_key_flg == ADMIN_KEY_FLG_FALSE){
-                    roomCreate(user_id, member, room_type, function(err, roomStore){
-                        if (err) throw err;
-                        params.room_id = roomStore._id;
-                        params.admin_key_flg = roomStore.admin_key_flg;
-                        return callback(false, roomStore, params);
-                    });
+                if(room.admin_key_flg == ADMIN_KEY_FLG_FALSE){
+                    if(room.room_type == ROOM_TYPE_ONE_ONE){
+                        roomCreate(user_id, member, room_type, function(err, roomStore){
+                            if (err) throw err;
+                            console.log('room create in truong hop 1-1, admin key flag false');
+                            params.room_id = roomStore._id;
+                            params.admin_key_flg = roomStore.admin_key_flg;
+                            return callback(false, roomStore, params);
+                        });
+                    }else{
+                        // admin ko vao duoc room voi truong hop key clear
+                        if(user_id == room.admin_id){
+                            console.log('admin bi clear data');
+                            data.success = 0;
+                            data.message = 'message.room_not_exits';
+                            io.to(user_id).emit('status_join_room', data);
+                            return callback(true);
+                        // user binhf thuong van join duoc vao room
+                        }else{
+                            console.log('room join bin thuong  in truong hop 1-1, admin key flag false');
+                            params.room_id = room._id;
+                            params.admin_key_flg = room.admin_key_flg;
+                            return callback(false, room, params);
+                        }
+                    }
                 }else{
                     params.room_id = room._id;
                     params.admin_key_flg = room.admin_key_flg;
