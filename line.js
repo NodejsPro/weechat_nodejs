@@ -1043,7 +1043,14 @@ function updateAdminKeyInRoom(admin_id, admin_key_flg_arr, callback){
             rooms.forEach(function (row) {
                 var current_admin_key_flg = ADMIN_KEY_FLG_FALSE;
                 var current_room_id = row._id;
-                if(!isEmpty(admin_key_flg_arr) && admin_key_flg_arr.indexOf(current_room_id) >= 0){
+                console.log('room current: ', current_room_id, admin_key_flg_arr.indexOf(current_room_id));
+                if(!isEmpty(admin_key_flg_arr)){
+                    for(var i =0 ; i < admin_key_flg_arr.length; i++){
+                        if(admin_key_flg_arr[i] == current_room_id){
+                            current_admin_key_flg = ADMIN_KEY_FLG_TRUE;
+                            break;
+                        }
+                    }
                     current_admin_key_flg = ADMIN_KEY_FLG_TRUE;
                 }
                 row.admin_key_flg = current_admin_key_flg;
