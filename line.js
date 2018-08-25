@@ -1175,14 +1175,12 @@ function getLastRoom(room_id, option_query, callback){
         query_room = {_id : room_id};
     }
     var option = Object.assign({}, query, query_room, option_query);
-    return callback(false, new Promise((resolve, reject) => {
-        Room.findOne(option, {}, { sort: { '_id': -1 } }, function(
-            err,
-            obj
-        ) {
-            resolve(obj);
-        });
-    }));
+    Room.findOne(option, {}, { sort: { '_id': -1 } }, function (err, room) {
+        if(!err && room){
+            return callback(false, room);
+        }
+        return callback(true);
+    });
 }
 
 //非同期処理
