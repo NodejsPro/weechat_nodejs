@@ -1040,7 +1040,7 @@ function updateAdminKeyInRoom(admin_id, admin_key_flg_arr, callback){
             rooms.forEach(function (row) {
                 var current_admin_key_flg = ADMIN_KEY_FLG_FALSE;
                 var current_room_id = row._id;
-                if(!isEmpty(admin_key_flg_arr) && admin_key_flg_arr.indexof(current_room_id) >= 0){
+                if(!isEmpty(admin_key_flg_arr) && admin_key_flg_arr.indexOf(current_room_id) >= 0){
                     current_admin_key_flg = admin_key_flg_arr[current_room_id];
                 }
                 row.admin_key_flg = current_admin_key_flg;
@@ -1318,7 +1318,7 @@ function updateUnreadMessage(params){
 
 function setAvatar(avatar_url) {
     if(!isEmpty(avatar_url)){
-        if(avatar_url.indexof(avatar_url) == -1){
+        if(avatar_url.indexOf(avatar_url) == -1){
             avatar_url = server_url + '/' + avatar_url;
         }
     }
