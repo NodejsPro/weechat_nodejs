@@ -1260,18 +1260,10 @@ function sendMessage(params, message, message_type) {
                 'message' : message,
                 'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
             };
-            var member = params.member;
-            User.find({ _id: {$in: member}}, {}, {}, function(err, users) {
-                if(!err && users){
-                    var member_name = [];
-                    for (var i = 0; i < users.length; i++){
-                        member_name.push({
-                            id: users[i]['_id'],
-                            name: users[i]['user_name'],
-                            avatar: setAvatar(users[i]['avatar'])
-                        });
-                    }
-                    result.member_name = member_name;
+            User.findOne({ _id: params.user_id}, {}, {}, function(err, user) {
+                if(!err && user){
+                    result.user_name = user.user_name;
+                    result.avatar = setAvatar(user.avatar);
                     var client_in_room = params.client_in_room;
                     if(!isEmpty(client_in_room)){
                         result.user_read = client_in_room;
