@@ -375,6 +375,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                             user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
                                             params.user_id_not_arr = user_id_not_arr;
                                             params.client_in_room = client_in_room;
+                                            params.admin_id = result.admin_id;
                                             console.log('parama, ', params);
                                             switch (message_type){
                                                 case USER_SEND_FILE:
@@ -1242,6 +1243,7 @@ function sendMessage(params, message, message_type) {
         var logCollection = new logCollection({
             room_id: params.room_id,
             user_id: params.user_id,
+            admin_id: params.admin_id,
             message_type: message_type,
             message: message,
             created_at : now,
@@ -1252,6 +1254,7 @@ function sendMessage(params, message, message_type) {
             console.log('logCollectionStore store');
             var result = {
                 'user_id' : params.user_id,
+                'admin_id' : params.admin_id,
                 'room_id' : params.room_id,
                 'message_type' : message_type,
                 'message' : message,
