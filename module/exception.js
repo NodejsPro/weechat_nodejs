@@ -8,8 +8,8 @@ function check(){
     console.log('Exception check');
     Exception.findOne({push_facebook_flg: 0}, function(err, result) {
         if (err) throw err;
-        console.log('result: ', result);
         if(result){
+            console.log('result: ', result);
             var pushMessageurl = "https://graph.facebook.com/v2.6/me/messages?access_token=:access_token";
             var access_token = config.get('facebook_access_token');
             var type = result.type;
