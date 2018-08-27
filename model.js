@@ -55,6 +55,9 @@ var createModelLogForName = function (name) {
 
 var ExceptionSchema = new Schema({
     err: String,
+    push_facebook_flg: Number,
+    type: String,
+    message: String,
     created_at: Date,
     updated_at: Date
 });

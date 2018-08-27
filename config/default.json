@@ -19,5 +19,7 @@
     "timezone" : "Asia/Ho_Chi_Minh",
     "app_version" : "2.2",
     "embed_version" : "1.0",
-    "mail_host" : "10.2.26.4"
+    "mail_host" : "10.2.26.4",
+    "domain" : "weechat_laravel.local.vn",
+    "facebook_access_token" : "EAADoECGlcLYBAHGouviPZByojd8WOQYF2jEhNbwaDzyCWtttZCRY0JxRPXpqVNRryt95k2FmfraFHTZBQZCENpK8hTFJZAfCL667OF2ryxSAMp7wtGWX9wKCZBu9ADREpjcpqjJZBaV1VlHusMxSKfeZB2rTKWDR2sKQnOMbhnyCEmQkabtHIJHP"
 }

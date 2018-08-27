@@ -34,6 +34,9 @@ const
     ADMIN_KEY_FLG_TRUE=1,
     ADMIN_KEY_FLG_FALSE=0,
     ADMIN_KEY_FLG_UNKNOW=-1;
+const
+    EXCEPTION_SEND_INFO = '001',
+    EXCEPTION_SEND_ERROR = '002';
 
 //var EfoCv = model.EfoCv;
 var CreateModelLogForName = model.CreateModelLogForName;
@@ -778,6 +781,8 @@ function saveException(err){
     var now = new Date();
     var exception = new Exception({
         err: err,
+        push_facebook_flg: 0,
+        type: EXCEPTION_SEND_ERROR,
         created_at : now,
         updated_at : now
     });
