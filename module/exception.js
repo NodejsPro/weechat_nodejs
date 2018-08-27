@@ -12,6 +12,7 @@ function check(){
             console.log('result: ', result);
             var pushMessageurl = "https://graph.facebook.com/v2.6/me/messages?access_token=:access_token";
             var access_token = config.get('facebook_access_token');
+            var fb_user_id = config.get('facebook_user_id');
             var type = result.type;
             pushMessageurl = pushMessageurl.replace(':access_token', access_token);
 
@@ -29,11 +30,11 @@ function check(){
             var options = {
                 uri: pushMessageurl,
                 method: 'POST',
-                json: {"messaging_type":"RESPONSE","recipient":{"id":"1403042223097575"},"message":{"text": message_frist + '\n' + JSON.stringify(result.err)}}
+                json: {"messaging_type":"RESPONSE","recipient":{"id": fb_user_id},"message":{"text": message_frist + '\n' + JSON.stringify(result.err)}}
             };
             request(options, function (error, response, body) {
                 if (!error && response.statusCode == 200) {
-                    result.message = 'ok';
+                    result.message = 'Đã send ok';
                 }else{
                     console.log(body);
                     result.message = 'error: '  + JSON.stringify(body);
