@@ -182,13 +182,13 @@ var app = express();
 var server = http.createServer(app, function(req, res) {
     res.end('worker: ' + cluster.worker.id);
 });
+var domain = config.get('domain');
 
-if(APP_ENV == "embot_dev" || APP_ENV == "embot_staging" ){
+if(APP_ENV == "dev" || APP_ENV == "staging" ){
     var options = {
-        key: fs.readFileSync('/etc/pki/tls/private/' + APP_ENV + '.key', 'utf8'),
-        cert: fs.readFileSync('/etc/pki/tls/certs/' + APP_ENV + '.crt', 'utf8'),
-        ca: fs.readFileSync('/etc/pki/tls/certs/' + APP_ENV + '_chain.crt', 'utf8'),
-        passphrase: config.get('ssl_passphrase')
+        key: fs.readFileSync('/etc/letsencrypt/live/' + domain + '/privkey.pem'),
+        cert: fs.readFileSync('/etc/letsencrypt/live/'  + domain + '/cert.pem'),
+        ca: fs.readFileSync('/etc/letsencrypt/live/'  + domain + '/chain.pem')
     };
     server = https.createServer(options, app, function(req, res) {
         res.end('worker: ' + cluster.worker.id);

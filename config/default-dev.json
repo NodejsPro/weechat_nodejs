@@ -1,5 +1,5 @@
 {
-    "appEnv" : "embot",
+    "appEnv" : "dev",
     "appSecret": "319c0f5bb0c5f9196832152840336ff4",
     "pageAccessToken": "EAADoECGlcLYBAO0tTlpZBqhUXf0WOgmAw21O2ta0WJZCZBaAogPLiw7vmZBSfufc9UQNdLyRBdgy2dwioURSWWo82wXK37g6ZCwYDXWzKqrZACYg6E31qP7bxMW9HB44JUZBdLOibprn75kALhQdmAk8Sppkf7Hpwu4m3auLzM6fwZDZD",
     "validationToken": "QEEl99CA4cZCCFvyhpOlzr2JKXk9v6sWIZC3JE",
@@ -20,7 +20,7 @@
     "app_version" : "2.2",
     "embed_version" : "1.0",
     "mail_host" : "10.2.26.4",
-    "domain" : "weechat_laravel.local.vn",
+    "domain" : "chat.secureiot.com.vn",
     "facebook_access_token" : "EAAL2YQHaUYEBAH8pt7GgXwg6S8KlvgjOd5H3c8w9vCoEhQ436zLGetivG82hWxIZCMf1awCiVnokIgUeCVX8RkCBZCvOPqYksZCZCBp3FhuLJJeDR9pDPZAeVAO6tflmzEeBQTk0KLZBHqL6GDBRusG2p6sW5FGfXFXY0SDTZBcuyhFJVWZCZCZBLYY0XauHG5KRQZD",
     "facebook_user_id" : "989436831159486"
 }
