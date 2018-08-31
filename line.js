@@ -52,7 +52,7 @@ var UserRoom = {};
 //format {user_id_1: 123456, user_id_2: 234567}
 var UserTime = {};
 
-const TIME_USER_LOGOUT = 60000;// 1 phút
+const TIME_USER_LOGOUT = 300000;// 5 phút
 
 const filter_variable = ["user_gender", "user_locale", "user_timezone", "user_referral"];
 
@@ -301,6 +301,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                             var data_return = {
                                                 success: true,
                                             };
+                                            setUserTime(user_id);
                                             io.to(user_id).emit('status_join', data_return);
                                             return;
                                         }
@@ -321,6 +322,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     userJoinRoom(socket, user_id, function(success){
                         if(success){
                             setNickNameSocket(socket, user_id, function(success){
+                                setUserTime(user_id);
                                 if(success){
                                     var data_result = {
                                         success: true,
@@ -433,20 +435,18 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('disconnecting', function () {
-            console.log('disconnecting');
+            console.log('****************************disconnecting**************************');
             var rooms = Object.keys(socket.rooms);
             if (rooms) {
                 rooms.forEach(function (value) {
                     socket.leave(value);
                     console.log('value', value);
                     if(!isEmpty(UserIdsArr[value])){
+                        console.log('delete UserIdsArr', UserIdsArr[value]);
                         console.log(UserIdsArr);
                         delete UserIdsArr[value];
-                        console.log(UserIdsArr);
-                    }
-                    if(!isEmpty(UserRoom[value]) || !isEmpty(UserKey[value])){
                         setTimeout(function () {
-                            setUserOffline(value)
+                            setUserOffline(value);
                         }, TIME_USER_LOGOUT);
                     }
                 });
@@ -715,14 +715,10 @@ function setUserOffline(user_id) {
     var current_time = new Date();
     current_time = current_time.getTime();
     console.log('---------------------setUserOffline---------------------');
-    console.log('user_id', user_id, UserTime, UserTime[user_id], current_time, UserTime[user_id] - current_time);
-    var time_secound = TIME_USER_LOGOUT/1000;
-    console.log(!isEmpty(UserTime[user_id]), current_time - UserTime[user_id], TIME_USER_LOGOUT);
+    console.log('user_id', user_id, ', time of user: ', UserTime[user_id], ', current time', current_time, 'sub: >0', (current_time - UserTime[user_id] > TIME_USER_LOGOUT));
     if(!isEmpty(UserTime[user_id]) && (current_time - UserTime[user_id] > TIME_USER_LOGOUT)){
-        console.log('start set user offline');
-        setUserStatus(user_id, false);
-        deleteUserKey(user_id);
         User.findOne({_id: user_id, deleted_at: null, }, function (err, result) {
+            console.log('set user offline success');
             if(!err && result){
                 result.is_login = false;
                 result.save();
@@ -1109,37 +1105,6 @@ function doUserLogout(data, callback){
     });
 }
 
-function sendKeyUserInRoom(data, params, callback) {
-    var user_id = data.user_id;
-    console.log('-----------------sendKeyUserInRoom-----------------------');
-    var room_id_arr = setUserStatus(user_id);
-    Room.find({_id: {$in: room_id_arr}, deleted_at: null}, function (err, rooms) {
-        console.log('rooms : ', rooms);
-        if(!err && rooms){
-            rooms.forEach(function (room) {
-                if(isEmpty(room.share_key_flg) || !room.share_key_flg){
-                    var member = room.member;
-                    var room_id= room._id;
-                    console.log('room_id', room_id, 'member', member, ' check all user online');
-                    // check all member_onine
-                    var room_flg = checkUserRoomOnline(room_id);
-                    if(room_flg){
-                        console.log('----send key for all user online');
-                        var user_room_key = getUserRoomKey(room_id);
-                        for(var i = 0; i < member.length; i++){
-                            io.to(member[i]).emit('user_share_key', user_room_key);
-                        }
-                        room.share_key_flg = true;
-                        room.save();
-                        deleteAllUserInRoom(room_id);
-                    }
-                }
-            });
-            return callback(true);
-        }
-        return callback(false);
-    });
-}
 
 var getRoom = function(data, callback) {
     var user_id = data.user_id;
@@ -1553,22 +1518,6 @@ function getNickNameSocket(socket, user_id) {
 
 }
 
-function checkUserKey(user_id, key){
-    var room_obj = {};
-    if(!isEmpty(KeyByRoom)){
-        Object.keys(KeyByRoom).forEach(function (room_id) {
-            var room = KeyByRoom[room_id];
-            if(!isEmpty(room[user_id])){
-                room[user_id] = key;
-                KeyByRoom[room_id][user_id] = key;
-                Object.keys(room).forEach(function (user_id) {
-
-                });
-            }
-        });
-    }
-    return;
-}
 // Cập nhật lại trạng thái user: is_login: false => true nếu login thành công
 function validUserLogin(user_id, key, callback) {
     if(!isEmpty(user_id) && mongoose.Types.ObjectId(user_id) && !isEmpty(key)){
@@ -1583,119 +1532,6 @@ function validUserLogin(user_id, key, callback) {
     return callback(false);
 }
 
-// Cập nhật lại
-function validAllUserOffline(user_id) {
-    var user_room_key = {},
-        room_id_arr = [];
-    for (var room_id in UserRoom) {
-        var room_current = UserRoom[room_id];
-        if(!isEmpty(room_current[user_id])){
-            room_id_arr.push(room_id);
-        }
-    }
-    if(room_id_arr.length > 0){
-        Room.find({_id: {$in: room_id_arr}, deleted_at: null}, function (err, rooms) {
-            if(!err && rooms){
-                rooms.forEach(function (row) {
-                    var share_key = true;
-                    if(!row[_user_id]){
-                        share_key = false;
-                    }
-                });
-
-
-                for (var _user_id in room_current) {
-
-                }
-                if(share_key){
-                    //user_room_key[room_id] = UserRoom[room_id];
-                    //call event user_share_key
-                }
-
-            }
-        });
-    }
-    return user_room_key;
-}
-
-function checkUserRoomOnline(room_id) {
-    console.log('----------------checkUserRoomOnline---------------------');
-    console.log(room_id);
-    var status = false;
-    if(!isEmpty(UserRoom[room_id])){
-        status = true;
-        var room_current = UserRoom[room_id];
-        for (var user_id in room_current) {
-            if(!room_current[user_id]){
-                status = false;
-            }
-        }
-    }
-    console.log('all member online', status);
-    return status;
-}
-
-function setUserStatus(user_id, status) {
-    console.log('----------------setUserStatus---------------------');
-    console.log(user_id);
-    if(isEmpty(status)){
-        status = true;
-    }
-    var room_id_arr = [];
-    for (var room_id in UserRoom) {
-        var room_current = UserRoom[room_id];
-        if(!isEmpty(room_current[user_id])){
-            UserRoom[room_id][user_id] = status;
-            room_id_arr.push(room_id);
-        }
-    }
-    return room_id_arr;
-}
-
-function setUserKey(socket, user_id, key) {
-    console.log('------------------setUserKey-----------------');
-    console.log(socket, user_id, key);
-    console.log('setUserKey', UserKey, UserKey[user_id]);
-    if(isEmpty(UserKey[user_id])){
-        UserKey[user_id] = key;
-    }
-}
-
-function getUserRoomKey(room_id){
-    var room_user_key = {};
-    console.log('----------------getUserRoomKey---------------------');
-    console.log(room_id);
-    if(!isEmpty(UserRoom[room_id])){
-        var room_current = UserRoom[room_id];
-        console.log(UserKey, room_current, user_id);
-        for (var user_id in room_current) {
-            if(!isEmpty(UserKey[user_id]) && !isEmpty(room_current[user_id]) && room_current[user_id]){
-                room_user_key[user_id] = UserKey[user_id];
-            }else{
-                console.log('user_share_key error room_id', room_id, 'room_current', room_current);
-            }
-        }
-    }
-    return room_user_key;
-}
-
-function setUserInRoom(room_id, user_id, user_status){
-    if(!isEmpty(UserRoom[room_id]) && user_id){
-        var room_current = UserRoom[room_id];
-        if(!isEmpty(room_current[user_id])){
-            UserRoom[room_id][user_id] = user_status;
-        }
-    }
-}
-
-function getUserInRoom(room_id) {
-    var user_room = {};
-    if(!isEmpty(UserRoom[room_id])){
-        user_room = UserRoom[room_id];
-    }
-    return user_room;
-}
-
 function array_diff(a1, a2) {
     var result = [];
     for (var i = 0; i < a1.length; i++) {
@@ -1704,48 +1540,6 @@ function array_diff(a1, a2) {
         }
     }
     return result;
-}
-
-function updateUserRoom(room_id, member){
-    console.log('----------------update user room---------------------');
-    var room_current = {};
-    if(!isEmpty(UserRoom[room_id])){
-        room_current = UserRoom[room_id];
-    }
-    for(var i = 0; i < member.length; i++){
-        var status = true;
-        if(isEmpty(UserKey[member[i]])){
-            status = false;
-        }
-        room_current[member[i]] = status;
-    }
-    UserRoom[room_id] = room_current;
-}
-
-function deleteAllUserInRoom(room_id){
-    console.log('-------------delete key in room------------');
-    console.log('----', room_id, UserRoom[room_id]);
-    if(!isEmpty(UserRoom[room_id])){
-        var room_current = UserRoom[room_id];
-        Object.keys(room_current).forEach(function(row) {
-            if(!isEmpty(UserKey[row])){
-                delete UserKey[row];
-            }
-        });
-        delete UserRoom[room_id];
-    }
-}
-
-function deleteUserKey(user_id) {
-    console.log('---------------------deleteUserKey---------------------');
-    console.log('user_id', user_id);
-    if(!isEmpty(UserKey[user_id])){
-        delete UserKey[user_id];
-        console.log('delete user key success');
-        return true;
-    }
-    console.log('delete user key false');
-    return false;
 }
 
 function setUserTime(user_id) {
