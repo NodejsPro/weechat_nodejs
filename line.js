@@ -411,6 +411,27 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             });
         });
 
+        socket.on('user_typing', function (data) {
+            console.log('----------------------------------socket user_typing---------------------------', data);
+            var room_id = data.room_id;
+            var user_id = data.user_id;
+            if(isEmptyMongodbID(room_id) || isEmptyMongodbID(user_id)){
+                console.log('data empty room_id', room_id, ', user_id', user_id);
+            }else if(isEmpty(data.typing)){
+                console.log('data empty typing', data.typing);
+            }
+            getRoomEx2(room_id, {}, function (error, result) {
+                if(!error && result){
+                    var member = result.member;
+                    if(member.indexOf(user_id) >= 0){
+                        sendEventSocket(room_id, 'trigger_user_typing', data);
+                        return;
+                    }
+                }
+                console.log('err: ', error);
+            });
+        });
+
         socket.on('disconnecting', function () {
             console.log('disconnecting');
             var rooms = Object.keys(socket.rooms);
