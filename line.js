@@ -298,12 +298,14 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                 if(success){
                                     setNickNameSocket(socket, user_id, function(success){
                                         if(success){
-                                            var data_return = {
-                                                success: true,
-                                            };
-                                            setUserTime(user_id);
-                                            io.to(user_id).emit('status_join', data_return);
-                                            return;
+                                            UpdateStatusUserInRoom(user_id, true, function(err){
+                                                var data_return = {
+                                                    success: true,
+                                                };
+                                                setUserTime(user_id);
+                                                io.to(user_id).emit('status_join', data_return);
+                                                return;
+                                            });
                                         }
                                     });
                                 }
@@ -725,6 +727,8 @@ function setUserOffline(user_id) {
             if(!err && result){
                 result.is_login = false;
                 result.save();
+                UpdateStatusUserInRoom(user_id, false, function(err){
+                });
             }
         });
     }
@@ -1459,8 +1463,18 @@ function setNickNameSocket(socket, user_id, callback) {
 
 function UpdateStatusUserInRoom(user_id, status, callback){
     // chỉ update trạng thái user_id cho màn hình contact
-    User.findOne({ _id: params.user_id}, {}, {}, function(err, user) {
-
+    User.find({contact : {$in: [user_id]}, deleted_at: null}, {}, {}, function(err, users) {
+        if(!err && !isEmpty(users)){
+            var data_user_online = {
+                user_id: user_id,
+                status: status,
+            };
+            users.forEach(function(user) {
+                sendEventSocket(user._id, 'user_online', data_user_online);
+            });
+            return callback(false);
+        }
+        return callback(true);
     });
 }
 
