@@ -1101,7 +1101,7 @@ function doUserLogout(user_id, callback){
             console.log('user_logout success');
             data_return['success'] = true;
             UpdateStatusUserInRoom(user_id, false, function(err){
-                return callback(false);
+                // return callback(false);
             });
         }else{
             data_return.success = false;
@@ -1474,9 +1474,9 @@ function UpdateStatusUserInRoom(user_id, status, callback){
             users.forEach(function(user) {
                 sendEventSocket(user._id, 'user_online', data_user_online);
             });
-            return callback(false);
+            // return callback(false);
         }
-        return callback(true);
+        // return callback(true);
     });
 }
 
