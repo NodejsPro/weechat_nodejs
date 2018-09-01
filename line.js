@@ -1330,7 +1330,7 @@ function updateUnreadMessage(params){
 
 function setAvatar(avatar_url) {
     if(!isEmpty(avatar_url)){
-        if(avatar_url.indexOf(avatar_url) == -1){
+        if(avatar_url.indexOf(server_url) == -1){
             avatar_url = server_url + '/' + avatar_url;
         }
     }

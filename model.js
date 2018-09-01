@@ -12,6 +12,7 @@ var UserSchema = new Schema({
     code: String,
     is_login: Number,
     created_at : Date,
+    avatar: String,
     updated_at : Date
 });
 
