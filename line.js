@@ -422,13 +422,16 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             }else if(isEmpty(data.typing)){
                 console.log('data empty typing', data.typing);
             }
-            getRoomEx2(room_id, {}, function (error, result) {
-                if(!error && result){
-                    var member = result.member;
-                    if(member.indexOf(user_id) >= 0){
-                        sendEventSocket(room_id, 'trigger_user_typing', data);
-                        return;
-                    }
+            getRoomEx2(room_id, {}, function (error, room) {
+                if(!error && room){
+                    getUserInfo(user_id, function(err, user){
+                        var member = room.member;
+                        data.user_name = user.user_name;
+                        if(member.indexOf(user_id) >= 0){
+                            sendEventSocket(room_id, 'trigger_user_typing', data);
+                            return;
+                        }
+                    });
                 }
                 console.log('err: ', error);
             });
@@ -1452,6 +1455,25 @@ function setNickNameSocket(socket, user_id, callback) {
         }
     }
     return callback(result);
+}
+
+function UpdateStatusUserInRoom(user_id, status, callback){
+    // chỉ update trạng thái user_id cho màn hình contact
+    User.findOne({ _id: params.user_id}, {}, {}, function(err, user) {
+
+    });
+}
+
+function getUserInfo(user_id, calback){
+    // get user info
+    console.log('------------getUserInfo----------------');
+    User.findOne({ _id: user_id}, {}, {}, function(err, user) {
+        if(!err && user){
+            return calback(false, user);
+        }
+        console.log('error find user: ', user_id);
+        return calback(true);
+    });
 }
 
 function getUserNotExistsRoom(socket, room_id, member, callback){
