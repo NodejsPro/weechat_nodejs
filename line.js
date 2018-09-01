@@ -1101,8 +1101,10 @@ function doUserLogout(data, callback){
             user.save();
             console.log('user_logout success');
             data_return['success'] = true;
-            sendEventSocket(user_id, 'status_user_logout', data_return);
-            return callback(false);
+            UpdateStatusUserInRoom(user_id, false, function(err){
+                sendEventSocket(user_id, 'status_user_logout', data_return);
+                return callback(false);
+            });
         }else{
             data_return.success = false;
             data_return['message'] = 'user not exits';
