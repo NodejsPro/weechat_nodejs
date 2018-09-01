@@ -1101,7 +1101,6 @@ function doUserLogout(user_id, callback){
             console.log('user_logout success');
             data_return['success'] = true;
             UpdateStatusUserInRoom(user_id, false, function(err){
-                sendEventSocket(user_id, 'status_user_logout', data_return);
                 return callback(false);
             });
         }else{
@@ -1464,6 +1463,8 @@ function setNickNameSocket(socket, user_id, callback) {
 
 function UpdateStatusUserInRoom(user_id, status, callback){
     // chỉ update trạng thái user_id cho màn hình contact
+    console.log('--------------------UpdateStatusUserInRoom--------------------');
+    console.log(user_id, '---',status);
     User.find({contact : {$in: [user_id]}, deleted_at: null}, {}, {}, function(err, users) {
         if(!err && !isEmpty(users)){
             var data_user_online = {
