@@ -468,7 +468,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('user_logout', function(data){
-            console.log('---------------------------------user logout---------------------------');
+            console.log('---------------------------------user logout---------------------------', data);
             var user_id = data.user_id;
             if(isEmptyMongodbID(user_id)){
                 console.log('user_logout miss params');
@@ -479,7 +479,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 sendEventSocket(user_id, 'status_user_logout', data_return);
                 return;
             }
-            doUserLogout();
+            doUserLogout(user_id);
         });
 
         socket.on('event_ex_key_step1', function(data){
@@ -1091,8 +1091,7 @@ function updateAdminKeyInRoom(admin_id, admin_key_flg_arr, callback){
     })
 }
 
-function doUserLogout(data, callback){
-    var user_id = data.user_id;
+function doUserLogout(user_id, callback){
     var data_return = {};
     User.findOne({_id: user_id, deleted_at: null}, function (err, user) {
         if (!err && user) {
