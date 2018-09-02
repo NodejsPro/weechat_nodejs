@@ -1280,6 +1280,7 @@ function sendMessage(params, message, message_type) {
                 'message_type' : message_type,
                 'message' : message,
                 'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
+                'data_unread_message_count' : 0,
             };
             User.findOne({ _id: params.user_id}, {}, {}, function(err, user) {
                 if(!err && user){
@@ -1300,7 +1301,7 @@ function sendMessage(params, message, message_type) {
                             console.log('err', err, ', unread_message_counts: ', unread_message_counts);
                             if(!err && !isEmpty(unread_message_counts)){
                                 Object.keys(unread_message_counts).forEach(function (id) {
-                                    result.data_uread_message_count = unread_message_counts[id];
+                                    result.data_unread_message_count = unread_message_counts[id];
                                     // send message for user_id not in room
                                     console.log('unread.user_id: ', unread_message_counts[id], 'result: ', result);
                                     sendEventSocket(unread_message_counts[id], 'server_send_message', result)
@@ -1591,7 +1592,7 @@ function getUserNotExistsRoom(room_id, member, callback){
             console.log('user_item: ', i, user_item);
             if(!isEmpty(UserIdsArr[user_item]) && !isEmpty(clients[user_item]) && clients[user_item]){
                 client_in_room.push(user_item);
-                console.log('user_item push ', user_item);
+                console.log('****user_item push online', user_item);
             }
         }
     }
