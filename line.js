@@ -1589,11 +1589,9 @@ function getUserNotExistsRoom(room_id, member, callback){
         for(var i = 0; i < member.length; i++){
             var user_item = member[i];
             console.log('user_item: ', i, user_item);
-            if(!isEmpty(UserIdsArr[user_item])){
-                var client_id_check = UserIdsArr[user_item];
-                if(!isEmpty(clients[client_id_check]) && clients[client_id_check]){
-                    client_in_room.push(user_item);
-                }
+            if(!isEmpty(UserIdsArr[user_item]) && !isEmpty(clients[user_item]) && clients[user_item]){
+                client_in_room.push(user_item);
+                console.log('user_item push ', user_item);
             }
         }
     }
