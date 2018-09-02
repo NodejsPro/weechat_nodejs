@@ -337,11 +337,14 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                     userJoinRoom(socket, param.room_id, function (success) {
                                         console.log('userJoinRoom success', success);
                                         if(!success){
+                                            updateUserRoom(param.room_id, param.user_id, false);
                                             console.log('send status false');
                                             data.success = false;
                                             data.message = "message.not_join_room ," + param.room_id;
                                             io.to(user_id).emit('status_join_room', data);
+                                            return;
                                         }
+                                        updateUserRoom(param.room_id, param.user_id, true);
                                         setUserTime(user_id);
                                         io.to(user_id).emit('status_join_room', data_result);
                                         resetUnreadMessage(param.room_id, user_id);
@@ -359,6 +362,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log("---------------------------------socket user_send_message data",data);
             var room_id = data.room_id;
             var user_id = data.user_id;
+            console.log('******************user_send_message clients: ', 'UserIdsArr ', UserIdsArr, ', clients: ', socket.adapter.rooms[room_id]);
             var message_type = data.message_type;
             if(isEmpty(room_id) || isEmpty(user_id) || isEmpty(data.message_type)){
                 console.log('data send empty');
@@ -377,7 +381,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                             data.message = "message.not_join_room ," + params.room_id;
                                             io.to(user_id).emit('status_join_room', data);
                                         }
-                                        getUserNotExistsRoom(socket, params.room_id, params.member, function(user_id_not_arr, client_in_room){
+                                        getUserNotExistsRoom(params.room_id, params.member, function(user_id_not_arr, client_in_room){
                                             console.log('getUserNotExistsRoom', user_id_not_arr);
                                             user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
                                             params.user_id_not_arr = user_id_not_arr;
@@ -436,6 +440,20 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     });
                 }
                 console.log('err: ', error);
+            });
+        });
+
+        socket.on('user_leave_room', function (data) {
+            console.log('----------------------------------socket user_leave_room---------------------------', data);
+            var room_id = data.room_id;
+            var user_id = data.user_id;
+            if(isEmptyMongodbID(room_id) || isEmptyMongodbID(user_id)){
+                console.log('data empty room_id', room_id, ', user_id', user_id);
+            }
+            getRoomEx2(room_id, {}, function (error, room) {
+                if(!error && room){
+                    updateUserRoom(room_id, user_id, false);
+                }
             });
         });
 
@@ -843,6 +861,7 @@ function validRoom(data, callback){
             data.message = 'message.member_validate_1';
             console.log('member_validate_1');
             io.to(user_id).emit('status_join_room', data);
+            deleteUserRoom(room_id, user_id);
             return callback(true);
         }
         var query = {member: {$all : member, $size : 2},room_type: room_type, deleted_at: null}
@@ -915,6 +934,7 @@ function validRoom(data, callback){
                 data.success = 0;
                 data.message = 'message.room_not_exits';
                 io.to(user_id).emit('status_join_room', data);
+                deleteUserRoom(room_id, user_id);
                 return callback(true);
             }
         });
@@ -1335,6 +1355,21 @@ function updateUnreadMessage(params){
     }
 }
 
+function updateUserRoom(room_id, user_id, status){
+    if(!isEmptyMongodbID(room_id) && !isEmptyMongodbID(user_id) && !isEmpty(UserRoom)){
+        if(!isEmpty(UserRoom[room_id])){
+            UserRoom[room_id] = {};
+        }
+        UserRoom[room_id][user_id] = status;
+    }
+}
+
+function deleteUserRoom(room_id, user_id){
+    if(!isEmptyMongodbID(room_id) && !isEmptyMongodbID(user_id) && !isEmpty(UserRoom) && !isEmpty(UserRoom[room_id])){
+            delete UserRoom[room_id];
+    }
+}
+
 function setAvatar(avatar_url) {
     if(!isEmpty(avatar_url)){
         if(avatar_url.indexOf(server_url) == -1){
@@ -1492,34 +1527,25 @@ function getUserInfo(user_id, calback){
     });
 }
 
-function getUserNotExistsRoom(socket, room_id, member, callback){
+function getUserNotExistsRoom(room_id, member, callback){
     var user_id_not_arr = removeArrayDuplicates(member);
     var client_in_room = [];
-    if(room_id && mongoose.Types.ObjectId(room_id)){
-        var clients = socket.adapter.rooms[room_id];
-        if(!isEmpty(clients) && !isEmpty(clients.sockets) && !isEmpty(UserIdsArr)){
-            console.log('---check usser in room is room----- ');
-            clients = clients.sockets;
-            if(!isEmpty(clients)){
-                console.log('UserIdsArr ', UserIdsArr, 'client', clients);
-                for(var i = 0; i < member.length; i++){
-                    var user_item = member[i];
-                    console.log('user_item: ', i, user_item);
-                    if(!isEmpty(UserIdsArr[user_item])){
-                        console.log('user ', user_item, 'dang online');
-                        var client_id_check = UserIdsArr[user_item];
-                        if(!isEmpty(clients[client_id_check]) && clients[client_id_check]){
-                            user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
-                            console.log('user ', user_item, 'dang trong room');
-                            client_in_room.push(user_item);
-                        }else{
-                            // user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
-                        }
-                    }else{
-                        console.log('trung hop la ');
-                        // user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
-                        // client_in_room.push([user_item] = UserIdsArr[user_item];
-                    }
+    var clients = !isEmpty(UserRoom[room_id]) ? UserRoom[room_id] : {};
+    if(!isEmptyMongodbID(room_id) && !isEmpty(clients) && !isEmpty(UserIdsArr)){
+        console.log('---check usser in room is room----- ');
+        console.log('UserIdsArr ', UserIdsArr, 'client', clients);
+        for(var i = 0; i < member.length; i++){
+            var user_item = member[i];
+            console.log('user_item: ', i, user_item);
+            if(!isEmpty(UserIdsArr[user_item])){
+                console.log('user ', user_item, 'dang online');
+                var client_id_check = UserIdsArr[user_item];
+                if(!isEmpty(clients[client_id_check]) && clients[client_id_check]){
+                    user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
+                    console.log('user ', user_item, 'dang trong room');
+                    client_in_room.push(user_item);
+                }else{
+                    // user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
                 }
             }
         }
