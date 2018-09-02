@@ -1587,18 +1587,14 @@ function getUserNotExistsRoom(room_id, member, callback){
             var user_item = member[i];
             console.log('user_item: ', i, user_item);
             if(!isEmpty(UserIdsArr[user_item])){
-                console.log('user ', user_item, 'dang online');
                 var client_id_check = UserIdsArr[user_item];
                 if(!isEmpty(clients[client_id_check]) && clients[client_id_check]){
-                    user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
-                    console.log('user ', user_item, 'dang trong room');
                     client_in_room.push(user_item);
-                }else{
-                    user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
                 }
             }
         }
     }
+    user_id_not_arr = array_diff(user_id_not_arr, client_in_room);
     console.log('member not exits room', user_id_not_arr);
     return callback(user_id_not_arr, client_in_room);
 }
