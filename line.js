@@ -1292,14 +1292,15 @@ function sendMessage(params, message, message_type) {
                     var user_id_not_arr = params.user_id_not_arr;
                     if(!isEmpty(user_id_not_arr)){
                         console.log('+++updateUnreadMessage');
-                        updateUnreadMessage(params, function(err, unread_messages){
+                        updateUnreadMessage(params, function(err, unread_message_counts){
                             // sendMessageUserArr(params.user_id_not_arr, result);
-                            if(!err && !isEmpty(unread_messages)){
-                                unread_messages.forEach(function (unread) {
-                                    result.data_uread_message_count = unread.count;
+                            console.log('err', err, ', unread_message_counts: ', unread_message_counts);
+                            if(!err && !isEmpty(unread_message_counts)){
+                                Object.keys(unread_message_counts).forEach(function (id) {
+                                    result.data_uread_message_count = unread_message_counts[id];
                                     // send message for user_id not in room
-                                    console.log('unread.user_id: ', unread.user_id, 'result: ', result);
-                                    sendEventSocket(unread.user_id, 'server_send_message', result)
+                                    console.log('unread.user_id: ', unread_message_counts[id], 'result: ', result);
+                                    sendEventSocket(unread_message_counts[id], 'server_send_message', result)
                                 });
                             }
                         });
@@ -1343,16 +1344,13 @@ function updateLastMessage(params, msg_data){
     });
 }
 
-function updateUnreadMessage(params, callback){
-    console.log('-----------run updateUnreadMessage');
-    var now = new Date();
-
+function insertUnreadMessage(room_id, user_ids){
     var data_list_update = UnreadMessage.collection.initializeOrderedBulkOp();
-    var data_ids = params.user_id_not_arr;
-    for (var i = 0; i < data_ids.length; i++) {
-        data_list_update.find({room_id: params.room_id, user_id : data_ids[i]})
+    var now = new Date();
+    for (var i = 0; i < user_ids; i++) {
+        data_list_update.find({room_id: room_id, user_id : user_ids[i]})
             .upsert()
-            .update({ $inc: {count: 1}, $set: {room_id: params.room_id, user_id: data_ids[i], updated_at : now}});
+            .update({ $inc: {count: 1}, $set: {room_id: params.room_id, user_id: user_ids[i], updated_at : now}});
     }
 
     if(data_list_update && data_list_update.s && data_list_update.s.currentBatch
@@ -1360,9 +1358,48 @@ function updateUnreadMessage(params, callback){
         && data_list_update.s.currentBatch.operations.length > 0){
         data_list_update.execute(function (error, unread_messages) {
             console.log(error);
-            return callback(error, unread_messages);
         });
     }
+}
+function updateUnreadMessage(params, callback){
+    console.log('-----------run updateUnreadMessage');
+
+    // var data_list_update = UnreadMessage.collection.initializeOrderedBulkOp();
+    var data_ids = params.user_id_not_arr;
+    var room_id = params.room_id;
+    var unread_message_counts = {};
+    UnreadMessage.find({room_id: params.room_id, deleted_at: null}, function (err, unreads) {
+        if(!err){
+            // chưa có record trong unread message
+            if(isEmpty(unreads)){
+                insertUnreadMessage(room_id, data_ids);
+                for(var i = 0; i< data_ids.length; i++){
+                    unread_message_counts[data_ids[i]] = 1;
+                }
+            // có ít nhất 1 record trong unread
+            }else{
+                var user_id_tmp = [];
+                unreads.forEach(function(unread) {
+                    user_id_tmp.push(unread.user_id);
+                    unread.count = unread.count + 1;
+                    unread.save();
+                    unread_message_counts[unread.user_id] = unread.count;
+                });
+                console.log('user_id_tmp: ', user_id_tmp, ', data_ids: ', data_ids);
+                if(user_id_tmp.length < data_ids.length){
+                    var user_id2 = arrayDiff(data_ids, user_id_tmp);
+                    console.log('user_id2: ', user_id2);
+                    insertUnreadMessage(room_id, user_id2);
+                    for(var i = 0; i< user_id2.length; i++){
+                        unread_message_counts[user_id2[i]] = 1;
+                    }
+                }
+            }
+            return callback(false, unread_message_counts);
+        }else{
+            return callback(true);
+        }
+    });
 }
 
 function updateUserRoom(room_id, user_id, status){
@@ -1588,6 +1625,12 @@ function removeElementFromArray(array, element) {
         array.splice(index, 1);
     }
     return array;
+}
+
+function arrayDiff(arr_source, arr_dest){
+    if((arr_source instanceof Array) && (arr_dest instanceof Array)){
+        return arr_source.filter(function(obj) { return arr_dest.indexOf(obj) == -1; });
+    }
 }
 
 function getNickNameSocket(socket, user_id) {
