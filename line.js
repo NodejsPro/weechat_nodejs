@@ -869,7 +869,7 @@ function validRoom(data, callback){
                 if(room.admin_key_flg == ADMIN_KEY_FLG_FALSE){
                     if(room.room_type == ROOM_TYPE_ONE_ONE){
                         console.log('room create in truong hop 1-1, admin key flag false');
-                        roomCreate(user_id, room.member, room.room_type, function(err, roomStore){
+                        roomCreate(room.admin_id, room.member, room.room_type, function(err, roomStore){
                             if (err) throw err;
                             params.room_id = roomStore._id;
                             params.admin_key_flg = roomStore.admin_key_flg;
