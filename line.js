@@ -1361,7 +1361,7 @@ function updateUserRoom(room_id, user_id, status){
         if(isEmpty(UserRoom[room_id])){
             UserRoom[room_id] = {};
         }
-        Use rRoom[room_id][user_id] = status;
+        UserRoom[room_id][user_id] = status;
         console.log('after update', UserRoom);
     }
 }
