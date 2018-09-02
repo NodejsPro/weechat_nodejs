@@ -1292,8 +1292,17 @@ function sendMessage(params, message, message_type) {
                     var user_id_not_arr = params.user_id_not_arr;
                     if(!isEmpty(user_id_not_arr)){
                         console.log('+++updateUnreadMessage');
-                        sendMessageUserArr(params.user_id_not_arr, result);
-                        updateUnreadMessage(params);
+                        updateUnreadMessage(params, function(err, unread_messages){
+                            // sendMessageUserArr(params.user_id_not_arr, result);
+                            if(!err && !isEmpty(unread_messages)){
+                                unread_messages.forEach(function (unread) {
+                                    result.data_uread_message = unread.count;
+                                    // send message for user_id not in room
+                                    console.log('unread.user_id: ', unread.user_id, 'result: ', result);
+                                    sendEventSocket(unread.user_id, 'server_send_message', result)
+                                });
+                            }
+                        });
                     }
                     setUserTime(params.user_id);
                     return;
@@ -1334,7 +1343,7 @@ function updateLastMessage(params, msg_data){
     });
 }
 
-function updateUnreadMessage(params){
+function updateUnreadMessage(params, callback){
     console.log('-----------run updateUnreadMessage');
     var now = new Date();
 
@@ -1349,8 +1358,9 @@ function updateUnreadMessage(params){
     if(data_list_update && data_list_update.s && data_list_update.s.currentBatch
         && data_list_update.s.currentBatch.operations
         && data_list_update.s.currentBatch.operations.length > 0){
-        data_list_update.execute(function (error) {
+        data_list_update.execute(function (error, unread_messages) {
             console.log(error);
+            return callback(error, unread_messages);
         });
     }
 }
