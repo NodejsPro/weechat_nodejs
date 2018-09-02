@@ -382,7 +382,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                             io.to(user_id).emit('status_join_room', data);
                                             return;
                                         }
-                                        updateUserRoom(param.room_id, user_id, true);
+                                        updateUserRoom(params.room_id, user_id, true);
                                         console.log('******************check userid arr ', UserIdsArr);
                                         getUserNotExistsRoom(params.room_id, params.member, function(user_id_not_arr, client_in_room){
                                             console.log('getUserNotExistsRoom', user_id_not_arr);
