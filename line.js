@@ -1594,7 +1594,7 @@ function getUserNotExistsRoom(room_id, member, callback){
                     console.log('user ', user_item, 'dang trong room');
                     client_in_room.push(user_item);
                 }else{
-                    // user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
+                    user_id_not_arr = removeElementFromArray(user_id_not_arr, user_item);
                 }
             }
         }
