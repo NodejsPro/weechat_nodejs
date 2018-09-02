@@ -362,7 +362,6 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             console.log("---------------------------------socket user_send_message data",data);
             var room_id = data.room_id;
             var user_id = data.user_id;
-            console.log('******************user_send_message clients: ', 'UserIdsArr ', UserIdsArr, ', clients: ', socket.adapter.rooms[room_id]);
             var message_type = data.message_type;
             if(isEmpty(room_id) || isEmpty(user_id) || isEmpty(data.message_type)){
                 console.log('data send empty');
@@ -372,6 +371,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 if(success){
                     setNickNameSocket(socket, user_id, function(success) {
                         if (success) {
+                            console.log('******************setNickNameSocket ', UserIdsArr);
                             getRoom(data, function( error, result, params){
                                 console.log("user_send_message error",error, result, params);
                                 if(!error && result){
@@ -380,7 +380,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                             data.success = false;
                                             data.message = "message.not_join_room ," + params.room_id;
                                             io.to(user_id).emit('status_join_room', data);
+                                            return;
                                         }
+                                        updateUserRoom(param.room_id, user_id, true);
+                                        console.log('******************check userid arr ', UserIdsArr);
                                         getUserNotExistsRoom(params.room_id, params.member, function(user_id_not_arr, client_in_room){
                                             console.log('getUserNotExistsRoom', user_id_not_arr);
                                             user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
