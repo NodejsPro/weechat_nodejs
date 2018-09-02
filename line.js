@@ -1108,7 +1108,6 @@ function updateAdminKeyInRoom(admin_id, admin_key_flg_arr, callback){
                             break;
                         }
                     }
-                    current_admin_key_flg = ADMIN_KEY_FLG_TRUE;
                 }
                 row.admin_key_flg = current_admin_key_flg;
                 row.save();
