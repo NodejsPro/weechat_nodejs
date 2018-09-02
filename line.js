@@ -1358,10 +1358,10 @@ function updateUnreadMessage(params){
 function updateUserRoom(room_id, user_id, status){
     console.log('update User in Room room_id', room_id, ' ,user_id', user_id, ', status', status);
     if(!isEmptyMongodbID(room_id) && !isEmptyMongodbID(user_id) && !isEmpty(UserRoom)){
-        if(!isEmpty(UserRoom[room_id])){
+        if(isEmpty(UserRoom[room_id])){
             UserRoom[room_id] = {};
         }
-        UserRoom[room_id][user_id] = status;
+        Use rRoom[room_id][user_id] = status;
         console.log('after update', UserRoom);
     }
 }
