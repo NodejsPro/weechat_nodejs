@@ -432,6 +432,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 console.log('data empty typing', data.typing);
             }
             getRoomEx2(room_id, {}, function (error, room) {
+                if(error){
+                    console.log('err: ', error);
+                    return;
+                }
                 if(!error && room){
                     getUserInfo(user_id, function(err, user){
                         var member = room.member;
@@ -442,7 +446,6 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                         }
                     });
                 }
-                console.log('err: ', error);
             });
         });
 
@@ -889,7 +892,8 @@ function validRoom(data, callback){
                 params.room_type = room.room_type;
                 params.member = room.member;
                 if(room.admin_key_flg == ADMIN_KEY_FLG_FALSE){
-                    if(room.room_type == ROOM_TYPE_ONE_ONE){
+                    // Nếu room bị mất admin key và ko có room_id thì tạo room mới
+                    if(room.room_type == ROOM_TYPE_ONE_ONE && isEmpty(room_id)){
                         console.log('room create in truong hop 1-1, admin key flag false');
                         roomCreate(room.admin_id, room.member, room.room_type, function(err, roomStore){
                             if (err) throw err;
@@ -1674,7 +1678,7 @@ function isEmptyMongodbID(id){
 }
 
 function sendEventSocket(room_id, event_name, data){
-    console.log('cakl evnet, ', room_id, event_name);
+    console.log('call event, ', room_id, event_name);
     io.to(room_id).emit(event_name, data);
 }
 
