@@ -1368,7 +1368,7 @@ function updateUnreadMessage(params, callback){
     var data_ids = params.user_id_not_arr;
     var room_id = params.room_id;
     var unread_message_counts = {};
-    UnreadMessage.find({room_id: params.room_id, deleted_at: null}, function (err, unreads) {
+    UnreadMessage.find({room_id: params.room_id, user_id: {$in: data_ids}, deleted_at: null}, function (err, unreads) {
         if(!err){
             // chưa có record trong unread message
             if(isEmpty(unreads)){
