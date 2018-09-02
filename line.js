@@ -1296,7 +1296,7 @@ function sendMessage(params, message, message_type) {
                             // sendMessageUserArr(params.user_id_not_arr, result);
                             if(!err && !isEmpty(unread_messages)){
                                 unread_messages.forEach(function (unread) {
-                                    result.data_uread_message = unread.count;
+                                    result.data_uread_message_count = unread.count;
                                     // send message for user_id not in room
                                     console.log('unread.user_id: ', unread.user_id, 'result: ', result);
                                     sendEventSocket(unread.user_id, 'server_send_message', result)
