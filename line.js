@@ -1352,20 +1352,22 @@ function updateLastMessage(params, msg_data){
 }
 
 function insertUnreadMessage(room_id, user_ids){
-    var data_list_update = UnreadMessage.collection.initializeOrderedBulkOp();
     var now = new Date();
-    for (var i = 0; i < user_ids; i++) {
-        data_list_update.find({room_id: room_id, user_id : user_ids[i]})
-            .upsert()
-            .update({ $inc: {count: 1}, $set: {room_id: room_id, user_id: user_ids[i], updated_at : now}});
-    }
+    var data_list_update = UnreadMessage.collection.initializeOrderedBulkOp();
+    if(!isEmpty(user_ids)){
+        for (var i = 0; i < user_ids.length; i++) {
+            data_list_update.find({room_id: room_id, user_id : user_ids[i]})
+                .upsert()
+                .update({ $inc: {count: 1}, $set: {room_id: room_id, user_id: user_ids[i], updated_at : now}});
+        }
 
-    if(data_list_update && data_list_update.s && data_list_update.s.currentBatch
-        && data_list_update.s.currentBatch.operations
-        && data_list_update.s.currentBatch.operations.length > 0){
-        data_list_update.execute(function (error, unread_messages) {
-            console.log(error);
-        });
+        if(data_list_update && data_list_update.s && data_list_update.s.currentBatch
+            && data_list_update.s.currentBatch.operations
+            && data_list_update.s.currentBatch.operations.length > 0){
+            data_list_update.execute(function (error) {
+                console.log(error);
+            });
+        }
     }
 }
 function updateUnreadMessage(params, callback){
