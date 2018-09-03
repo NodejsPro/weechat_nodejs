@@ -1283,7 +1283,6 @@ function sendMessage(params, message, message_type) {
                 'message_type' : message_type,
                 'message' : message,
                 'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
-                'data_unread_message_count' : 0,
             };
             User.findOne({ _id: params.user_id}, {}, {}, function(err, user) {
                 if(!err && user){
@@ -1307,7 +1306,7 @@ function sendMessage(params, message, message_type) {
                                     result.data_unread_message_count = unread_message_counts[id];
                                     // send message for user_id not in room
                                     console.log('unread.user_id: ', unread_message_counts[id], 'result: ', result);
-                                    sendEventSocket(unread_message_counts[id], 'server_send_message', result)
+                                    sendEventSocket(id, 'server_send_message', result)
                                 });
                             }
                         });
