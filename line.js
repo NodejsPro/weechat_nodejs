@@ -52,7 +52,7 @@ var UserRoom = {};
 //format {user_id_1: 123456, user_id_2: 234567}
 var UserTime = {};
 
-const TIME_USER_LOGOUT = 300000;// 5 phút
+const TIME_USER_LOGOUT = 5000;// 5 giây
 
 const filter_variable = ["user_gender", "user_locale", "user_timezone", "user_referral"];
 
@@ -459,6 +459,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             getRoomEx2(room_id, {}, function (error, room) {
                 if(!error && room){
                     updateUserRoom(room_id, user_id, false);
+                    setUserTime(user_id);
                 }
             });
         });
