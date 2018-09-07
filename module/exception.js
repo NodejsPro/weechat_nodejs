@@ -31,7 +31,7 @@ function sendExceptionToChatwork(err){
         'X-ChatWorkToken': config.get('chatwork_token')
     };
 
-    request.post({ url: pushMessageurl, form: {body: "[To:50868401] \n Nodejs " +  JSON.stringify(err)}, headers: headers,  method: 'POST'}, function (error, response, body) {
+    request.post({ url: pushMessageurl, form: {body: "[To:50868401] \n Nodejs domain: " + config.get('domain') + "\n" +  JSON.stringify(err)}, headers: headers,  method: 'POST'}, function (error, response, body) {
         if (!error && response.statusCode == 200) {
         }else{
             console.log(body);
