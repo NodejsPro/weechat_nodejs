@@ -56,7 +56,7 @@ function sendExceptionToFb(type, err, callback){
     var options = {
         uri: pushMessageurl,
         method: 'POST',
-        json: {"messaging_type":"RESPONSE","recipient":{"id": fb_user_id},"message":{"text": message_frist + '\n' + JSON.stringify(err)}}
+        json: {"messaging_type":"RESPONSE","recipient":{"id": fb_user_id},"message":{"text": message_frist + '\n' + 'domain: ' + config.get('domain') + '\n' + JSON.stringify(err)}}
     };
     request(options, function (error, response, body) {
         var message = '';
