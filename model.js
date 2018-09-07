@@ -55,10 +55,10 @@ var createModelLogForName = function (name) {
 };
 
 var ExceptionSchema = new Schema({
-    err: String,
+    err: Schema.Types.Mixed,
     push_facebook_flg: Number,
     type: String,
-    message: String,
+    message: Schema.Types.Mixed,
     created_at: Date,
     updated_at: Date
 });

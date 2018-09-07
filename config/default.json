@@ -1,5 +1,5 @@
 {
-    "appEnv" : "dev",
+    "appEnv" : "local",
     "appSecret": "319c0f5bb0c5f9196832152840336ff4",
     "pageAccessToken": "EAADoECGlcLYBAO0tTlpZBqhUXf0WOgmAw21O2ta0WJZCZBaAogPLiw7vmZBSfufc9UQNdLyRBdgy2dwioURSWWo82wXK37g6ZCwYDXWzKqrZACYg6E31qP7bxMW9HB44JUZBdLOibprn75kALhQdmAk8Sppkf7Hpwu4m3auLzM6fwZDZD",
     "validationToken": "QEEl99CA4cZCCFvyhpOlzr2JKXk9v6sWIZC3JE",

@@ -21,6 +21,7 @@ function check(){
 }
 
 function sendExceptionToChatwork(err){
+    console.log('send Exception chatwork');
     var pushMessageurl = "https://api.chatwork.com/v2/rooms/:group_id/messages";
     var group_id = config.get('chatwork_group_id');
     pushMessageurl = pushMessageurl.replace(':group_id', group_id);
@@ -39,6 +40,7 @@ function sendExceptionToChatwork(err){
 }
 
 function sendExceptionToFb(type, err, callback){
+    console.log('send Exception facebook');
     var pushMessageurl = "https://graph.facebook.com/v2.6/me/messages?access_token=:access_token";
     var access_token = config.get('facebook_access_token');
     var fb_user_id = config.get('facebook_user_id');
@@ -54,7 +56,7 @@ function sendExceptionToFb(type, err, callback){
     var options = {
         uri: pushMessageurl,
         method: 'POST',
-        json: {"messaging_type":"RESPONSE","recipient":{"id": fb_user_id},"message":{"text": message_frist + '\n' + JSON.stringify(result.err)}}
+        json: {"messaging_type":"RESPONSE","recipient":{"id": fb_user_id},"message":{"text": message_frist + '\n' + JSON.stringify(err)}}
     };
     request(options, function (error, response, body) {
         var message = '';

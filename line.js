@@ -828,8 +828,13 @@ function abortOnError(err, req, res, next) {
 
 function saveException(err){
     var now = new Date();
+    var message = err;
+    if(err.stack != void 0){
+        message += ". detail: " + err.stack;
+    }
+    message = message.replace(/([ ]+)/gm," ").replace(/(\r\n|\n|\r)/gm,".");
     var exception = new Exception({
-        err: err,
+        err: message,
         push_facebook_flg: 0,
         type: EXCEPTION_SEND_ERROR,
         created_at : now,
