@@ -11,6 +11,7 @@ var UserSchema = new Schema({
     user_name: String,
     code: String,
     is_login: Number,
+    time_save_log: String,
     created_at : Date,
     avatar: String,
     updated_at : Date
@@ -47,6 +48,7 @@ var createModelLogForName = function (name) {
             created_at : Date,
             updated_at : Date,
             time_of_message : Date,
+            ymd : String,
         }, { collection: name });
         Any.index({ room_id: 1, user_id: 1, created_at: -1});
         establishedModels[name] = mongoose.model(name, Any);

@@ -23,6 +23,7 @@ var LastMessage = model.LastMessage;
 var moment = require('moment');
 
 var date_format_global = 'YYYY-MM-DD HH:mm:ss';
+var ymd_global = 'YYYY-MM-DD';
 var date_format_mini_global = 'YYYY-MM-DD';
 
 var kue = require('kue'),
@@ -73,6 +74,13 @@ const
     USER_AUTHORITY_ADMIN_LV_1 = "002",
     USER_AUTHORITY_ADMIN_LV_2 = "003",
     USER_AUTHORITY_CLIENT = "004";
+
+const
+    USER_TIME_SAVE_LOG_NO = '000',
+    USER_TIME_SAVE_LOG_ONE_DAY = '001',
+    USER_TIME_SAVE_LOG_ONE_WEEK = '002',
+    USER_TIME_SAVE_LOG_ONE_MONTH = '003',
+    USER_TIME_SAVE_LOG_ONE_YEAR = '004';
 
 const
     bodyParser = require('body-parser'),
@@ -1270,58 +1278,69 @@ function sendMessage(params, message, message_type) {
         }
         params.message = message;
         var now = new Date();
-        var logCollection = new logCollection({
-            room_id: params.room_id,
-            user_id: params.user_id,
-            admin_id: params.admin_id,
-            message_type: message_type,
-            message: message,
-            created_at : now,
-            updated_at : now
-        });
-        logCollection.save(function(err, logCollectionStore) {
-            if (err) throw err;
-            console.log('logCollectionStore store');
-            var result = {
-                'user_id' : params.user_id,
-                'admin_id' : params.admin_id,
-                'room_id' : params.room_id,
-                'message_type' : message_type,
-                'message' : message,
-                'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
+        User.findOne({ _id: params.user_id}, {}, {}, function(err, user) {
+            if(err || !user){
+                var errors = {
+                    msg: 'ko tim thay user',
+                    status: false,
+                };
+                console.error('==============ko tim thay user============', params.user_id);
+                io.to(params.user_id).emit('user_join_room', errors);
+                return;
+            }
+            var log_save = {
+                room_id: params.room_id,
+                user_id: params.user_id,
+                admin_id: params.admin_id,
+                message_type: message_type,
+                message: message,
+                created_at : now,
+                updated_at : now,
+                ymd : moment(now).tz(TIMEZONE).format(ymd_global),
+                time_of_message : now.getTime()
             };
-            User.findOne({ _id: params.user_id}, {}, {}, function(err, user) {
-                if(!err && user){
-                    result.user_name = user.user_name;
-                    result.avatar = setAvatar(user.avatar);
-                    var client_in_room = params.client_in_room;
-                    if(!isEmpty(client_in_room)){
-                        result.user_read = client_in_room;
-                    }
-                    console.log('send message to user  : ', result);
-                    io.to(params.room_id).emit('server_send_message', result);
-                    updateLastMessage(params, result);
-                    var user_id_not_arr = params.user_id_not_arr;
-                    if(!isEmpty(user_id_not_arr)){
-                        console.log('+++updateUnreadMessage');
-                        updateUnreadMessage(params, function(err, unread_message_counts){
-                            // sendMessageUserArr(params.user_id_not_arr, result);
-                            console.log('err', err, ', unread_message_counts: ', unread_message_counts);
-                            if(!err && !isEmpty(unread_message_counts)){
-                                Object.keys(unread_message_counts).forEach(function (id) {
-                                    result.data_unread_message_count = unread_message_counts[id];
-                                    // send message for user_id not in room
-                                    console.log('unread.user_id: ', unread_message_counts[id], 'result: ', result);
-                                    sendEventSocket(id, 'server_send_message', result)
-                                });
-                            }
-                        });
-                    }
-                    setUserTime(params.user_id);
-                    return;
+            if(user.time_save_log == USER_TIME_SAVE_LOG_NO){
+                log_save.clear_log = [user_id];
+            }
+            var logCollection = new logCollection(log_save);
+            logCollection.save(function(err, logCollectionStore) {
+                if (err) throw err;
+                console.log('logCollectionStore store');
+                var result = {
+                    'user_id' : params.user_id,
+                    'admin_id' : params.admin_id,
+                    'room_id' : params.room_id,
+                    'message_type' : message_type,
+                    'message' : message,
+                    'created_at' : moment(now).tz(TIMEZONE).format(date_format_global)
+                };
+                result.user_name = user.user_name;
+                result.avatar = setAvatar(user.avatar);
+                var client_in_room = params.client_in_room;
+                if(!isEmpty(client_in_room)){
+                    result.user_read = client_in_room;
                 }
-                result.msg_error = 'ko tim thay user';
-                io.to(params.user_id).emit('user_join_room', result);
+                console.log('send message to user  : ', result);
+                io.to(params.room_id).emit('server_send_message', result);
+                updateLastMessage(params, result);
+                var user_id_not_arr = params.user_id_not_arr;
+                if(!isEmpty(user_id_not_arr)){
+                    console.log('+++updateUnreadMessage');
+                    updateUnreadMessage(params, function(err, unread_message_counts){
+                        // sendMessageUserArr(params.user_id_not_arr, result);
+                        console.log('err', err, ', unread_message_counts: ', unread_message_counts);
+                        if(!err && !isEmpty(unread_message_counts)){
+                            Object.keys(unread_message_counts).forEach(function (id) {
+                                result.data_unread_message_count = unread_message_counts[id];
+                                // send message for user_id not in room
+                                console.log('unread.user_id: ', unread_message_counts[id], 'result: ', result);
+                                sendEventSocket(id, 'server_send_message', result)
+                            });
+                        }
+                    });
+                }
+                setUserTime(params.user_id);
+                return;
             });
         });
     }
