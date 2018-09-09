@@ -621,6 +621,23 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             });
         });
 
+        socket.on('event_user_clear_log', function(data){
+            console.log('---------------------------------event_user_clear_log---------------------------');
+            console.log(data);
+            if(isEmptyMongodbID(data.user_id)){
+                console.log('miss param user_id', data.user_id);
+                return;
+            }
+            var user_id = data.user_id;
+            User.findOne({ _id: user_id, deleted_at: null}, {}, {}, function(err, user) {
+                if(err || !user){
+                    console.log('user_id invalid');
+                    return ;
+                }
+                clearLogUserRoom(user_id);
+            });
+        });
+
         // lắng nghe client muốn trao đổi key với admin trong 1 room
         //
         socket.on('start_exchange_key', function(data){
@@ -1743,5 +1760,28 @@ function updateRoom(data, callback){
             success: true,
         };
         sendEventSocket(room_id, 'on_event_ex_key_finish', data_return);
+    });
+}
+
+function clearLogUserRoom(user_id){
+    // get toan bo room cua user_id
+    // for cac room do -> clear log cua tung room theo user_id
+
+    Room.findOne({user_id: {$or: {admin_id: user_id, member: {$in: [user_id]}} }, deleted_at: null}, {}, {}, function (err, rooms) {
+        if(err){
+            return ;
+        }
+        rooms.forEach(function(room){
+            var room_id = room._id;
+            var logName = room_id + "_logs";
+            var logCollection = CreateModelLogForName(logName);
+            console.log('---clear log by room: ', logName);
+            logCollection.updateMany({}, {$addToSet: {clear_log : [user_id]}}, function (err, log) {
+                if(err){
+                    console.log(' ko tim thay room');
+                    return;
+                }
+            })
+        });
     });
 }
