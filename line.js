@@ -1295,42 +1295,39 @@ function sendMessage(params, message, message_type) {
         }
         params.message = message;
         var now = new Date();
-        User.findOne({ _id: params.user_id}, {}, {}, function(err, user) {
-            if(err || !user){
-                var errors = {
-                    msg: 'ko tim thay user',
-                    status: false,
-                };
-                console.error('==============ko tim thay user============', params.user_id);
-                io.to(params.user_id).emit('user_join_room', errors);
-                return;
-            }
-            var log_save = {
-                room_id: params.room_id,
-                user_id: params.user_id,
-                admin_id: params.admin_id,
-                message_type: message_type,
-                message: message,
-                created_at : now,
-                updated_at : now,
-                ymd : moment(now).tz(TIMEZONE).format(ymd_global),
-                time_of_message : now.getTime()
+        var logCollection = new logCollection({
+            room_id: params.room_id,
+            user_id: params.user_id,
+            admin_id: params.admin_id,
+            message_type: message_type,
+            message: message,
+            created_at : now,
+            updated_at : now
+        });
+        logCollection.save(function(err, logCollectionStore) {
+            if (err) throw err;
+            console.log('logCollectionStore store');
+            var result = {
+                'user_id' : params.user_id,
+                'admin_id' : params.admin_id,
+                'room_id' : params.room_id,
+                'message_type' : message_type,
+                'message' : message,
+                'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
             };
-            if(user.time_save_log == USER_TIME_SAVE_LOG_NO){
-                log_save.clear_log = [user_id];
-            }
-            var logCollection = new logCollection(log_save);
-            logCollection.save(function(err, logCollectionStore) {
-                if (err) throw err;
-                console.log('logCollectionStore store');
-                var result = {
-                    'user_id' : params.user_id,
-                    'admin_id' : params.admin_id,
-                    'room_id' : params.room_id,
-                    'message_type' : message_type,
-                    'message' : message,
-                    'created_at' : moment(now).tz(TIMEZONE).format(date_format_global)
-                };
+            User.findOne({ _id: params.user_id}, {}, {}, function(err, user) {
+                if(err || !user){
+                    var errors = {
+                        msg: 'ko tim thay user',
+                        status: false,
+                    };
+                    console.error('==============ko tim thay user============', params.user_id);
+                    io.to(params.user_id).emit('user_join_room', errors);
+                    return;
+                }
+                if(user.time_save_log == USER_TIME_SAVE_LOG_NO){
+                    logCollectionStore.clear_log = [params.user_id];
+                }
                 result.user_name = user.user_name;
                 result.avatar = setAvatar(user.avatar);
                 var client_in_room = params.client_in_room;
