@@ -1331,7 +1331,7 @@ function sendMessage(params, message, message_type){
                 return;
             }
             var unread_message_counts = data.unread_message_counts;
-            return sendMessageOutsideRoom(params, unread_message_counts);
+            return sendMessageOutsideRoom(params, message, message_type, unread_message_counts);
         })
         .catch(function(err){
             console.log('err: ', err);
@@ -1983,7 +1983,7 @@ function updateUnreadMessage(params){
     });
 }
 
-function sendMessageOutsideRoom(params, unread_message_counts){
+function sendMessageOutsideRoom(params, message, message_type, unread_message_counts){
     console.log('*******************sendMessageOutsideRoom**************');
     var now = new Date();
     var result = {
