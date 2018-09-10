@@ -11,11 +11,12 @@ var UserSchema = new Schema({
     user_name: String,
     code: String,
     is_login: Number,
-    time_save_log: String,
+    time_save_log: Schema.Types.Mixed,
     created_at : Date,
     avatar: String,
     updated_at : Date
 });
+UserSchema.index({phone: 1, contact: 1});
 
 var UnreadMessageSchema = new Schema({
     room_id: String,
@@ -25,6 +26,8 @@ var UnreadMessageSchema = new Schema({
     updated_at : Date
 }, { collection: 'unread_messages' });
 
+UnreadMessageSchema.index({ room_id: 1, user_id: 1});
+
 var LastMessageSchema = new Schema({
     room_id: String,
     user_id: String,
@@ -33,6 +36,8 @@ var LastMessageSchema = new Schema({
     created_at : Date,
     updated_at : Date,
 }, { collection: 'last_messages' });
+
+LastMessageSchema.index({ room_id: 1, user_id: 1});
 
 var establishedModels = {};
 var createModelLogForName = function (name) {
@@ -46,9 +51,10 @@ var createModelLogForName = function (name) {
             error_flg: Number,
             background_flg: Number,
             created_at : Date,
+            uid: String,
             updated_at : Date,
-            time_of_message : Date,
             ymd : String,
+            time_of_message : String,
         }, { collection: name });
         Any.index({ room_id: 1, user_id: 1, created_at: -1});
         establishedModels[name] = mongoose.model(name, Any);
@@ -75,6 +81,8 @@ var RoomSchema = new Schema({
     created_at : Date,
     updated_at : Date
 });
+
+RoomSchema.index({ admin_id: 1, room_type: 1});
 
 var options = {
     //useMongoClient: true,

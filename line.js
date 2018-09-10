@@ -1283,8 +1283,62 @@ function listen () {
         console.log('Node app is running on port', app.get('port'));
     });
 }
+function sendMessage(params, message, message_type){
+    console.log('-----------------------------sendMessageNew--------------------------------');
+    var now = new Date();
+    var msg_data = {
+        'user_id' : params.user_id,
+        'admin_id' : params.admin_id,
+        'room_id' : params.room_id,
+        'message_type' : message_type,
+        'message' : message,
+        'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
+    };
+    getUserSaveLog(params)
+        .then(function(data){
+            console.log('-----------------------------getUserSaveLog--------------------------------');
+            console.log('data: ',data);
+            if(isEmpty(data) || isEmpty(data.error) || (data.error)){
+                console.log(data.reason);
+                return;
+            }
+            // send message for user in room with room_id
+            var user_log = data.user_log;
+            var user_send_message = data.user_send_message;
+            if(!isEmpty(user_send_message)){
+                msg_data.user_name = user_send_message.user_name;
+                msg_data.avatar = setAvatar(user_send_message.avatar);
+            }
+            var client_in_room = params.client_in_room;
+            if(!isEmpty(client_in_room)){
+                msg_data.user_read = client_in_room;
+            }
+            console.log('send message to user  : ', msg_data);
+            sendEventSocket(params.room_id, 'server_send_message', msg_data);
+            return Promise.all([
+                saveUserSaveLog(params, user_log, message, message_type),
+                updateLastMessage(params, message, message_type)
+            ]);
+        })
+        .then(function () {
+            console.log('updateUnreadMessage then');
+            return updateUnreadMessage(params);
+        })
+        .then(function (data) {
+            console.log('sendMessageOutsideRoom then');
+            if(isEmpty(data) || isEmpty(data.error) || (data.error)){
+                console.log(data);
+                return;
+            }
+            var unread_message_counts = data.unread_message_counts;
+            return sendMessageOutsideRoom(params, unread_message_counts);
+        })
+        .catch(function(err){
+            console.log('err: ', err);
+        })
+}
 
-function sendMessage(params, message, message_type) {
+function sendMessageBK(params, message, message_type) {
     console.log('func sendMessage: ', params, message, message_type);
     if(message_type == USER_SEND_TEXT || message_type == USER_SEND_FILE) {
         console.log('func USER_SEND_TEXT or USER_SEND_FILE: ');
@@ -1360,7 +1414,7 @@ function sendMessage(params, message, message_type) {
     }
 }
 
-function updateLastMessage(params, msg_data){
+function updateLastMessageBK(params, msg_data){
     var now = new Date();
     LastMessage.findOne({room_id: params.room_id}, function(err, result) {
         if(err){
@@ -1408,7 +1462,7 @@ function insertUnreadMessage(room_id, user_ids){
         }
     }
 }
-function updateUnreadMessage(params, callback){
+function updateUnreadMessage1(params, callback){
     console.log('-----------run updateUnreadMessage');
 
     // var data_list_update = UnreadMessage.collection.initializeOrderedBulkOp();
@@ -1781,4 +1835,172 @@ function clearLogUserRoom(user_id){
             })
         });
     });
+}
+
+function getUserSaveLog(params){
+    console.log('*******************getUserSaveLog**************');
+    // tạo và trả về 1 Promise, khi này Promise ở trang thái pending
+    return new Promise(function(resolve, reject) {
+        // tâm sinh lý ngẫu nhiên
+        var member = params.member;
+        User.find({_id : {$in: member}, deleted_at: null}, {}, {}, function(err, users) {
+            var result = {};
+            if(err || !users){
+                result['reason'] = 'khong tim thay user nao';
+                result['error'] = true;
+                return reject(result);
+            }
+            var user_log = [],
+                user_send_message = {};
+            users.forEach(function(user) {
+                console.log(params.user_id ,'==', user._id);
+                if(isEmpty(user.time_save_log) || (!isEmpty(user.time_save_log.save) && user.time_save_log.save)){
+                    user_log.push(user);
+                }
+                if(params.user_id == user._id){
+                    user_send_message = user;
+                }
+            });
+            result['error'] = false;
+            result['user_send_message'] = user_send_message;
+            result['user_log'] = user_log;
+            return resolve(result);
+        });
+    });
+}
+
+function saveUserSaveLog(params, users, message, message_type){
+    console.log('*******************saveUserSaveLog**************');
+    return new Promise(function(resolve, reject) {
+        var user_save_log = [];
+        var logCollection = params.logCollection;
+        if(!logCollection){
+            logCollection = CreateModelLogForName(params.room_id + "_logs");
+            params.logCollection = logCollection;
+        }
+        var now = new Date();
+        users.forEach(function(user) {
+            user_save_log.push({
+                room_id: params.room_id,
+                user_id: params.user_id,
+                uid: user._id,
+                admin_id: params.admin_id,
+                message_type: message_type,
+                message: message,
+                time_of_message: now.getTime(),
+                ymd: moment(now).tz(TIMEZONE).format(ymd_global),
+                created_at : now,
+                updated_at : now
+            });
+        });
+        console.log('user_save_log', user_save_log);
+        logCollection.insertMany(user_save_log, function(error, docs) {
+            if(error){
+                console.log('error when save log', error);
+            }
+        });
+        return resolve(true);
+    });
+}
+
+function updateLastMessage(params, message, message_type){
+    console.log('*******************updateLastMessage**************');
+    return new Promise(function(resolve, reject) {
+        var now = new Date();
+        LastMessage.findOne({room_id: params.room_id}, function(err, result) {
+            if(err){
+                var reason = 'Lỗi create last message';
+                return reject(true, reason);
+            }
+            // Nếu tìm thấy update, ngược lại create
+            if(result){
+                result.updated_at = now;
+                result.user_id = params.user_id;
+                result.message_type = message_type;
+                result.message = message;
+                result.save();
+                return resolve(false);
+            }else{
+                var LastMessageSave = new LastMessage({
+                    room_id: params.room_id,
+                    user_id: params.user_id,
+                    message_type : message_type,
+                    message : message,
+                    created_at : now,
+                    updated_at : now
+                });
+                LastMessageSave.save(function(err) {
+                    if (err) {
+                        var reason = 'Lỗi save last message';
+                        return reject(true, reason);
+                    }
+                });
+            }
+        });
+    });
+}
+
+function updateUnreadMessage(params){
+    console.log('*******************updateUnreadMessage**************');
+    return new Promise(function(resolve, reject) {
+        var data_ids = params.user_id_not_arr;
+        var room_id = params.room_id;
+        var unread_message_counts = {};
+        UnreadMessage.find({room_id: params.room_id, user_id: {$in: data_ids}, deleted_at: null}, function (err, unreads) {
+            var result = {error: true};
+            if(err){
+                return reject(result);
+            }
+            // chưa có record trong unread message
+            if(isEmpty(unreads)){
+                insertUnreadMessage(room_id, data_ids);
+                for(var i = 0; i< data_ids.length; i++){
+                    unread_message_counts[data_ids[i]] = 1;
+                }
+                // có ít nhất 1 record trong unread
+            }else{
+                var user_id_tmp = [];
+                unreads.forEach(function(unread) {
+                    user_id_tmp.push(unread.user_id);
+                    unread.count = unread.count + 1;
+                    unread.save();
+                    unread_message_counts[unread.user_id] = unread.count;
+                });
+                console.log('user_id_tmp: ', user_id_tmp, ', data_ids: ', data_ids);
+                if(user_id_tmp.length < data_ids.length){
+                    var user_id2 = arrayDiff(data_ids, user_id_tmp);
+                    console.log('user_id2: ', user_id2);
+                    insertUnreadMessage(room_id, user_id2);
+                    for(var i = 0; i< user_id2.length; i++){
+                        unread_message_counts[user_id2[i]] = 1;
+                    }
+                }
+            }
+            result['error'] = false;
+            result['unread_message_counts'] = unread_message_counts;
+            return resolve(result);
+        });
+    });
+}
+
+function sendMessageOutsideRoom(params, unread_message_counts){
+    console.log('*******************sendMessageOutsideRoom**************');
+    var now = new Date();
+    var result = {
+        'user_id' : params.user_id,
+        'admin_id' : params.admin_id,
+        'room_id' : params.room_id,
+        'message_type' : message_type,
+        'message' : message,
+        'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
+    };
+    console.log('unread_message_counts: ', unread_message_counts);
+    if(!isEmpty(unread_message_counts)){
+        Object.keys(unread_message_counts).forEach(function (id) {
+            result.data_unread_message_count = unread_message_counts[id];
+            // send message for user_id not in room
+            console.log('unread.user_id: ', id, ', count: ', unread_message_counts[id], 'result: ', result);
+            sendEventSocket(id, 'server_send_message', result)
+        });
+    }
 }
