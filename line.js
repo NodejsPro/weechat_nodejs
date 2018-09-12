@@ -2122,14 +2122,14 @@ function userExKeyOnline(user_id){
 }
 
 function logUser(user){
-    if(empty(user)){
+    if(isEmpty(user)){
         console.log(user);
     }
     console.log('id: ',user._id,'name: ',user.user_name,', phone: ',user.phone,', contact: ',user.contact.join(', '));
 }
 
 function logRoom(room){
-    if(empty(room)){
+    if(isEmpty(room)){
         console.log(room);
     }
     console.log('id: ', room._id, 'name: ', room.name,', member: ', room.member.join(', '),', room_type: ',room.room_type,', admin_key_flg: ',room.admin_key_flg);
