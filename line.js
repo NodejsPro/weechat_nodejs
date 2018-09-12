@@ -31,6 +31,29 @@ var kue = require('kue'),
 
 var Room = model.Room;
 
+/**
+ * format queue_exchange_key: {
+ *      to_client_id: [
+ *          {
+ *              time: time1,
+ *              data_client: {
+ *                  from_client_id: from_client_id,
+ *                  to_client_id: to_client_id,....
+ *              }
+ *          },
+ *          {
+ *              time: time2,
+ *              data_client: {
+ *                  from_client_id: from_client_id,
+ *                  to_client_id: to_client_id,....
+ *              }
+ *          },
+ * }
+ */
+
+var queue_exchange_key = {};
+var queue_time_exchange_key = 5;
+
 const
     ADMIN_KEY_FLG_TRUE=1,
     ADMIN_KEY_FLG_FALSE=0,
@@ -515,6 +538,60 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             doUserLogout(user_id);
         });
 
+        socket.on('event_ex_key_step1_new_bk', function(data){
+            console.log('---------------------------------event_ex_key_step1---------------------------');
+            console.log(data);
+            validRoomEx(data, function(error, room){
+                if(!error && room){
+                    var from_client_id = data.from_client_id;
+                    var to_client_id = data.to_client_id;
+                    var room_id = data.room_id;
+                    room.admin_key_flg = ADMIN_KEY_FLG_TRUE;
+                    room.save();
+                    getUser(to_client_id, function (err, user) {
+                        if(err || !user){
+                            return;
+                        }
+                        var data_client = {
+                            success: true,
+                            room_id: room_id,
+                            from_client_id: from_client_id,
+                            to_client_id: to_client_id,
+                            data: data.data
+                        };
+                        if(user.is_login){
+                            console.log('to_client_id online');
+                            userJoinRoom(socket, room_id, function(success){
+                                if(success){
+                                    sendEventSocket(to_client_id, 'on_event_ex_key_step1', data_client);
+                                }
+                            });
+                        }else{
+                            console.log('to_client_id offline');
+                            var current_time = new Date();
+                            if(!isEmpty(queue_exchange_key[to_client_id])){
+                                var queue_to_client_id = queue_exchange_key[to_client_id];
+                                for(var i = 0; i < queue_to_client_id.length; i++){
+                                    var user_current_exchange_key =  queue_to_client_id[i];
+                                    if(!isEmpty(user_current_exchange_key) && !isEmpty(user_current_exchange_key.data_client) && !isEmpty(user_current_exchange_key.data_client.to_client_id)
+                                        && user_current_exchange_key.data_client.to_client_id == to_client_id){
+                                        user_current_exchange_key.splice(i, 1);
+                                    }
+                                }
+                                queue_to_client_id ='';
+                            }
+                            current_time = current_time.getTime();
+                            queue_exchange_key.push({
+                                time: current_time,
+                                data_client: data_client,
+                            });
+                        }
+                    });
+                }
+            });
+            // do_ex_key_step(data, 'on_event_ex_key_step1', socket);
+        });
+
         socket.on('event_ex_key_step1', function(data){
             console.log('---------------------------------event_ex_key_step1---------------------------');
             console.log(data);
@@ -904,7 +981,8 @@ function validRoom(data, callback){
         var query = {member: {$all : member, $size : 2},room_type: room_type, deleted_at: null}
     }
     User.findOne({_id: user_id, deleted_at: null}, function (err, user) {
-        console.log('validRoom find user ', user);
+        console.log('validRoom find user ');
+        logUser(user);
         var params = createParameterDefault(room_type, undefined, data.user_id, member);
         if(err || !user){
             data.success = false;
@@ -914,9 +992,12 @@ function validRoom(data, callback){
             return callback(true);
         }
         getLastRoom(room_id, query, function(err, room){
+            console.log('***************query check room*************** room_id', room_id, 'query: ', query, 'params: ', params);
             // trường hợp room đã tồn tại ( room 1-1, 1-n)
             // trường hợp room 1-1 chưa tồn tại => create room
             // các trường hợp còn lại lỗi hết
+            console.log('***************room data***************');
+            console.log(logRoom(room));
             if (!err && room) {
                 // room 1-1, admin_key_flg = false => create room
                 //           admin_key_flg = true, unknow => tra ve cac thong tin room
@@ -925,7 +1006,7 @@ function validRoom(data, callback){
                 if(room.admin_key_flg == ADMIN_KEY_FLG_FALSE){
                     // Nếu room bị mất admin key và ko có room_id thì tạo room mới
                     if(room.room_type == ROOM_TYPE_ONE_ONE && isEmpty(room_id)){
-                        console.log('room create in truong hop 1-1, admin key flag false');
+                        console.log('room create, room_id empty, admin key flag false');
                         roomCreate(room.admin_id, room.member, room.room_type, function(err, roomStore){
                             if (err) throw err;
                             params.room_id = roomStore._id;
@@ -942,7 +1023,7 @@ function validRoom(data, callback){
                             return callback(true);
                         // user binhf thuong van join duoc vao room
                         }else{
-                            console.log('room join bin thuong  in truong hop 1-1, admin key flag false');
+                            console.log('room join bin thuong in truong hop 1-1, admin key flag false');
                             params.room_id = room._id;
                             params.admin_key_flg = room.admin_key_flg;
                             return callback(false, room, params);
@@ -960,6 +1041,7 @@ function validRoom(data, callback){
                 var contact = user.contact;
                 if(!isEmpty(contact) && contact instanceof Array &&
                     ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0))){
+                    console.log('room create, room not exists');
                     roomCreate(user_id, member, room_type, function(err, roomStore){
                         if (err) throw err;
                         params.room_id = roomStore._id;
@@ -1224,7 +1306,7 @@ function getRoomEx2(room_id, option_query, callback){
 }
 
 function getLastRoom(room_id, option_query, callback){
-    console.log('----------------------get Room ex2------------');
+    console.log('----------------------getLastRoom------------');
     var query = {deleted_at: null},
         query_room = {};
     if(!isEmptyMongodbID(room_id)){
@@ -2003,4 +2085,52 @@ function sendMessageOutsideRoom(params, unread_message_counts){
             sendEventSocket(id, 'server_send_message', result)
         });
     }
+}
+
+function getUser(user_id, callback){
+    User.findOne({_id : user_id, deleted_at: null}, {}, {}, function(err, user) {
+      if(err || !user){
+          return callback(true);
+      }
+      return callback(false, user);
+    })
+}
+
+function userExKeyOnline(user_id){
+    if(!isEmpty(queue_exchange_key)){
+        var current_time = new Date();
+        current_time = current_time.getTime()+2;
+        for(var i = 0; i < queue_exchange_key.length; i++){
+            var user_current = queue_exchange_key[i];
+            console.log('1', user_current.time);
+            if(!isEmpty(user_current.time)){
+                if(!isEmpty(user_current.data_client) && !isEmpty(user_current.data_client.to_client_id) && user_id == user_current.data_client.to_client_id){
+                    console.log('2');
+                    if(current_time - user_current.time <= queue_time_exchange_key){
+                        // exchange key
+                    }
+                    queue_exchange_key.splice(i, 1);
+                }else if(current_time - user_current.time > queue_time_exchange_key){
+                    queue_exchange_key.splice(i, 1);
+                    console.log('3');
+                }
+            }
+        }
+        console.log('4');
+        console.log('end ',queue_exchange_key );
+    }
+}
+
+function logUser(user){
+    if(empty(user)){
+        console.log(user);
+    }
+    console.log('id: ',user._id,'name: ',user.user_name,', phone: ',user.phone,', contact: ',user.contact.join(', '));
+}
+
+function logRoom(room){
+    if(empty(room)){
+        console.log(room);
+    }
+    console.log('id: ', room._id, 'name: ', room.name,', member: ', room.member.join(', '),', room_type: ',room.room_type,', admin_key_flg: ',room.admin_key_flg);
 }
