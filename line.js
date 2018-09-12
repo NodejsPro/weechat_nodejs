@@ -1004,6 +1004,7 @@ function validRoom(data, callback){
                 params.room_type = room.room_type;
                 params.member = room.member;
                 if(room.admin_key_flg == ADMIN_KEY_FLG_FALSE){
+                    console.log('room miss admin key');
                     // Nếu room bị mất admin key và ko có room_id thì tạo room mới
                     if(room.room_type == ROOM_TYPE_ONE_ONE && isEmpty(room_id)){
                         console.log('room create, room_id empty, admin key flag false');
@@ -1011,6 +1012,9 @@ function validRoom(data, callback){
                             if (err) throw err;
                             params.room_id = roomStore._id;
                             params.admin_key_flg = roomStore.admin_key_flg;
+                            params.admin_id = roomStore.admin_id;
+                            params.member = roomStore.member;
+                            params.room_type = roomStore.room_type;
                             return callback(false, roomStore, params);
                         });
                     }else{
@@ -1026,13 +1030,19 @@ function validRoom(data, callback){
                             console.log('room join bin thuong in truong hop 1-1, admin key flag false');
                             params.room_id = room._id;
                             params.admin_key_flg = room.admin_key_flg;
+                            params.admin_id = room.admin_id;
+                            params.member = room.member;
+                            params.room_type = room.room_type;
                             return callback(false, room, params);
                         }
                     }
                 }else{
                     params.room_id = room._id;
                     params.admin_key_flg = room.admin_key_flg;
-                    console.log('room true', room);
+                    params.admin_id = room.admin_id;
+                    params.member = room.member;
+                    params.room_type = room.room_type;
+                    console.log('room admin key', params.admin_key_flg);
                     return callback(false, room, params);
                 }
             }else if(room_type == ROOM_TYPE_ONE_ONE){
@@ -1046,6 +1056,9 @@ function validRoom(data, callback){
                         if (err) throw err;
                         params.room_id = roomStore._id;
                         params.admin_key_flg = roomStore.admin_key_flg;
+                        params.admin_id = roomStore.admin_id;
+                        params.member = roomStore.member;
+                        params.room_type = roomStore.room_type;
                         return callback(false, roomStore, params);
                     });
                 }
@@ -1126,7 +1139,8 @@ function validRoomEx(data, callback){
             sendEventSocket(room_id, 'status_ex_key', data_return);
             return callback(true);
         }
-        console.log('**********************room true-----------', room);
+        console.log('**********************room true-----------');
+        logRoom(room);
         if(!isEmpty(data.admin_key_flg)){
             room.admin_key_flg = data.admin_key_flg;
             room.save();
@@ -1975,7 +1989,8 @@ function saveUserSaveLog(params, users, message, message_type){
                 updated_at : now
             });
         });
-        console.log('user_save_log', user_save_log);
+        console.log('user_save_log');
+        logUser(user_save_log);
         logCollection.insertMany(user_save_log, function(error, docs) {
             if(error){
                 console.log('error when save log', error);
@@ -2125,12 +2140,26 @@ function logUser(user){
     if(isEmpty(user)){
         console.log(user);
     }
-    console.log('id: ',user._id,'name: ',user.user_name,', phone: ',user.phone,', contact: ',user.contact.join(', '));
+    if(user instanceof Array){
+        for(var i= 0; i< user.length; i++){
+            var _user = user[i];
+            console.log('id: ',_user._id,'name: ',_user.user_name,', phone: ',_user.phone,', contact: ',_user.contact.join(', '));
+        }
+    }else{
+        console.log('id: ',user._id,'name: ',user.user_name,', phone: ',user.phone,', contact: ',user.contact.join(', '));
+    }
 }
 
 function logRoom(room){
     if(isEmpty(room)){
         console.log(room);
     }
-    console.log('id: ', room._id, 'name: ', room.name,', member: ', room.member.join(', '),', room_type: ',room.room_type,', admin_key_flg: ',room.admin_key_flg);
+    if(room instanceof Array){
+        for(var i= 0; i< room.length; i++){
+            var _room = room[i];
+            console.log('id: ', _room._id, 'name: ', _room.name,', member: ', _room.member.join(', '),', room_type: ',_room.room_type,', admin_key_flg: ',_room.admin_key_flg);
+        }
+    }else{
+        console.log('id: ', room._id, 'name: ', room.name,', member: ', room.member.join(', '),', room_type: ',room.room_type,', admin_key_flg: ',room.admin_key_flg);
+    }
 }
