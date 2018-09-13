@@ -2162,6 +2162,7 @@ function logRoom(room){
     if(isEmpty(room)){
         console.log(room);
     }
+    console.log(room);
     if(room instanceof Array){
         for(var i= 0; i< room.length; i++){
             var _room = room[i];
