@@ -143,16 +143,16 @@ redis.on("message", function(channel, message) {
         return;
     }
     var data = JSON.parse(message);
-    console.log(data);
+    logObject(data);
     data =data.data.arr_notification;
     data.forEach(function(row) {
-        //console.log(row.connect_page_id + " " + row.page_access_token + " " + row.scenario_id);
+        //logObject(row.connect_page_id + " " + row.page_access_token + " " + row.scenario_id);
         if(row.sns_type == SNS_TYPE_LINE){
             setPushMessageLine(row);
         }else{
             redisPublicMessage(row)
                 .fail(function(){
-                    console.log("fail");
+                    logObject("fail");
                 })
                 .catch(function(err) {
                     saveException(err);
@@ -227,7 +227,7 @@ if(APP_ENV == "dev" || APP_ENV == "staging" ){
 }
 
 app.get('/captcha', function (req, res) {
-    console.log('capchat');
+    logObject('capchat');
     //svgCaptcha.loadFont(" https://fonts.googleapis.com/css?family=Crimson+Text|Open+Sans:400,600");
     var cid = req.query.cid;
     var uid = req.query.uid;
@@ -260,14 +260,14 @@ io.attach( server ,{
 //server.listen(config.get('socketPort'), function () {
 //    var host = server.address().address;
 //    var port = server.address().port;
-//    console.log("Server listening at http://%s:%s", host, port)
+//    logObject("Server listening at http://%s:%s", host, port)
 //});
 var svgCaptcha = require('svg-captcha');
 
 if (!sticky.listen(server, config.get('socketPort'))) {
     // Master code
     server.once('listening', function() {
-        console.log('server started on socket port', config.get('socketPort'));
+        logObject('server started on socket port', config.get('socketPort'));
     });
 } else {
     app.set('port', process.env.PORT || config.get('appPort'));
@@ -295,29 +295,29 @@ if (!sticky.listen(server, config.get('socketPort'))) {
     app.use('/images', express.static(__dirname + '/public/assets/images/'));
 
     process.on('uncaughtException', function (err) {
-        console.log("uncaughtException");
-        console.log(err);
+        logObject("uncaughtException");
+        logObject(err);
         saveException(err);
     });
 
     process.on('unhandledRejection', function (err) {
-        console.log("unhandledRejection");
-        console.log(err);
+        logObject("unhandledRejection");
+        logObject(err);
         saveException(err);
     });
 
     // socketIO check connection status
     io.on('connection', function (socket) {
-        console.log(io.engine.clientsCount);
-        console.log("client connected");
-        console.log("connection worker =" + cluster.worker.id);
+        logObject(io.engine.clientsCount);
+        logObject("client connected");
+        logObject("connection worker =" + cluster.worker.id);
 
         socket.on('disconnect', function () {
-            console.log('client disconnected');
+            logObject('client disconnected');
         });
 
         socket.on('user_join', function (data) {
-            console.log('----------------------------------socket user_join---------------------------', data);
+            logObject('----------------------------------socket user_join---------------------------', data);
             showListRoom(socket);
             validUserId(data, function (error, result, params) {
                 if(!error && result){
@@ -349,7 +349,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('user_join_room', function (data) {
             var user_id = data.user_id;
-            console.log('----------------------------socket user_join_room-------------------------------', data);
+            logObject('----------------------------socket user_join_room-------------------------------', data);
             validRoom(data, function( error, room, param){
                 if(!error && room){
                     userJoinRoom(socket, user_id, function(success){
@@ -366,10 +366,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                         admin_key_flg: room.admin_key_flg,
                                     };
                                     userJoinRoom(socket, param.room_id, function (success) {
-                                        console.log('userJoinRoom success', success);
+                                        logObject('userJoinRoom success', success);
                                         if(!success){
                                             updateUserRoom(param.room_id, param.user_id, false);
-                                            console.log('send status false');
+                                            logObject('send status false');
                                             data.success = false;
                                             data.message = "message.not_join_room ," + param.room_id;
                                             io.to(user_id).emit('status_join_room', data);
@@ -390,21 +390,21 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('user_send_message', function (data) {
-            console.log("---------------------------------socket user_send_message data",data);
+            logObject("---------------------------------socket user_send_message data",data);
             var room_id = data.room_id;
             var user_id = data.user_id;
             var message_type = data.message_type;
             if(isEmpty(room_id) || isEmpty(user_id) || isEmpty(data.message_type)){
-                console.log('data send empty');
+                logObject('data send empty');
                 return;
             }
             userJoinRoom(socket, user_id, function(success){
                 if(success){
                     setNickNameSocket(socket, user_id, function(success) {
                         if (success) {
-                            console.log('******************setNickNameSocket ', UserIdsArr);
+                            logObject('******************setNickNameSocket ', UserIdsArr);
                             getRoom(data, function( error, result, params){
-                                console.log("user_send_message error",error, result, params);
+                                logObject("user_send_message error",error, result, params);
                                 if(!error && result){
                                     userJoinRoom(socket, params.room_id, function (success) {
                                         if(!success){
@@ -414,14 +414,14 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                             return;
                                         }
                                         updateUserRoom(params.room_id, user_id, true);
-                                        console.log('******************check userid arr ', UserIdsArr);
+                                        logObject('******************check userid arr ', UserIdsArr);
                                         getUserNotExistsRoom(params.room_id, params.member, function(user_id_not_arr, client_in_room){
-                                            console.log('getUserNotExistsRoom', user_id_not_arr);
+                                            logObject('getUserNotExistsRoom', user_id_not_arr);
                                             user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
                                             params.user_id_not_arr = user_id_not_arr;
                                             params.client_in_room = client_in_room;
                                             params.admin_id = result.admin_id;
-                                            console.log('parama, ', params);
+                                            logObject('parama, ', params);
                                             switch (message_type){
                                                 case USER_SEND_FILE:
                                                     var message = data.message;
@@ -454,17 +454,17 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('user_typing', function (data) {
-            console.log('----------------------------------socket user_typing---------------------------', data);
+            logObject('----------------------------------socket user_typing---------------------------', data);
             var room_id = data.room_id;
             var user_id = data.user_id;
             if(isEmptyMongodbID(room_id) || isEmptyMongodbID(user_id)){
-                console.log('data empty room_id', room_id, ', user_id', user_id);
+                logObject('data empty room_id', room_id, ', user_id', user_id);
             }else if(isEmpty(data.typing)){
-                console.log('data empty typing', data.typing);
+                logObject('data empty typing', data.typing);
             }
             getRoomEx2(room_id, {}, function (error, room) {
                 if(error){
-                    console.log('err: ', error);
+                    logObject('err: ', error);
                     return;
                 }
                 if(!error && room){
@@ -481,11 +481,11 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('user_leave_room', function (data) {
-            console.log('----------------------------------socket user_leave_room---------------------------', data);
+            logObject('----------------------------------socket user_leave_room---------------------------', data);
             var room_id = data.room_id;
             var user_id = data.user_id;
             if(isEmptyMongodbID(room_id) || isEmptyMongodbID(user_id)){
-                console.log('data empty room_id', room_id, ', user_id', user_id);
+                logObject('data empty room_id', room_id, ', user_id', user_id);
             }
             getRoomEx2(room_id, {}, function (error, room) {
                 if(!error && room){
@@ -496,15 +496,15 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('disconnecting', function () {
-            console.log('****************************disconnecting**************************');
+            logObject('****************************disconnecting**************************');
             var rooms = Object.keys(socket.rooms);
             if (rooms) {
                 rooms.forEach(function (value) {
                     socket.leave(value);
-                    console.log('value', value);
+                    logObject('value', value);
                     if(!isEmpty(UserIdsArr[value])){
-                        console.log('delete UserIdsArr', UserIdsArr[value]);
-                        console.log(UserIdsArr);
+                        logObject('delete UserIdsArr', UserIdsArr[value]);
+                        logObject(UserIdsArr);
                         delete UserIdsArr[value];
                         setTimeout(function () {
                             setUserOffline(value);
@@ -515,7 +515,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('join', function (data) {
-            console.log("join=" ,  data);
+            logObject("join=" ,  data);
             socket.join(data.connect_page_id);
         });
 
@@ -524,10 +524,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('user_logout', function(data){
-            console.log('---------------------------------user logout---------------------------', data);
+            logObject('---------------------------------user logout---------------------------', data);
             var user_id = data.user_id;
             if(isEmptyMongodbID(user_id)){
-                console.log('user_logout miss params');
+                logObject('user_logout miss params');
                 var data_return = {
                     'success' : false,
                     'message' : 'user_logout miss params'
@@ -539,8 +539,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('event_ex_key_step1_new_bk', function(data){
-            console.log('---------------------------------event_ex_key_step1---------------------------');
-            console.log(data);
+            logObject('---------------------------------event_ex_key_step1---------------------------', data);
             validRoomEx(data, function(error, room){
                 if(!error && room){
                     var from_client_id = data.from_client_id;
@@ -560,14 +559,14 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                             data: data.data
                         };
                         if(user.is_login){
-                            console.log('to_client_id online');
+                            logObject('to_client_id online');
                             userJoinRoom(socket, room_id, function(success){
                                 if(success){
                                     sendEventSocket(to_client_id, 'on_event_ex_key_step1', data_client);
                                 }
                             });
                         }else{
-                            console.log('to_client_id offline');
+                            logObject('to_client_id offline');
                             var current_time = new Date();
                             if(!isEmpty(queue_exchange_key[to_client_id])){
                                 var queue_to_client_id = queue_exchange_key[to_client_id];
@@ -593,8 +592,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('event_ex_key_step1', function(data){
-            console.log('---------------------------------event_ex_key_step1---------------------------');
-            console.log(data);
+            logObject('---------------------------------event_ex_key_step1---------------------------', data);
             validRoomEx(data, function(error, room){
                 if(!error && room){
                     var from_client_id = data.from_client_id;
@@ -620,8 +618,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('event_ex_key_step2', function(data){
-            console.log('---------------------------------event_ex_key_step2---------------------------');
-            console.log(data);
+            logObject('---------------------------------event_ex_key_step2---------------------------', data);
             validRoomEx(data, function(error, room){
                 var from_client_id = data.from_client_id;
                 var to_client_id = data.to_client_id;
@@ -642,8 +639,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('event_ex_key_step3', function(data){
-            console.log('---------------------------------event_ex_key_step3---------------------------');
-            console.log(data);
+            logObject('---------------------------------event_ex_key_step3---------------------------', data);
             validRoomEx(data, function(error, room){
                 var from_client_id = data.from_client_id;
                 var to_client_id = data.to_client_id;
@@ -664,8 +660,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('event_ex_key_step4', function(data){
-            console.log('---------------------------------event_ex_key_step4---------------------------');
-            console.log(data);
+            logObject('---------------------------------event_ex_key_step4---------------------------', data);
             validRoomEx(data, function(error, room){
                 var from_client_id = data.from_client_id;
                 var to_client_id = data.to_client_id;
@@ -686,8 +681,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('event_ex_key_step5', function(data){
-            console.log('---------------------------------event_ex_key_step5---------------------------');
-            console.log(data);
+            logObject('---------------------------------event_ex_key_step5---------------------------', data);
             data.check_user_id = false;
             validRoomEx(data, function(error, room){
                 if(!error && room){
@@ -699,16 +693,15 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('event_user_clear_log', function(data){
-            console.log('---------------------------------event_user_clear_log---------------------------');
-            console.log(data);
+            data('---------------------------------event_user_clear_log---------------------------', data);
             if(isEmptyMongodbID(data.user_id)){
-                console.log('miss param user_id', data.user_id);
+                data('miss param user_id', data.user_id);
                 return;
             }
             var user_id = data.user_id;
             User.findOne({ _id: user_id, deleted_at: null}, {}, {}, function(err, user) {
                 if(err || !user){
-                    console.log('user_id invalid');
+                    data('user_id invalid');
                     return ;
                 }
                 clearLogUserRoom(user_id);
@@ -718,8 +711,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         // lắng nghe client muốn trao đổi key với admin trong 1 room
         //
         socket.on('start_exchange_key', function(data){
-            console.log('---------------------------------start_exchange_key---------------------------');
-            console.log(data);
+            logObject('---------------------------------start_exchange_key---------------------------', data);
             var room_id = data.room_id;
             var user_id = data.user_id;
             validRoomEx2(room_id, user_id, function(error, room){
@@ -761,8 +753,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 }
 /* request test send key exchage*/
 app.post('/send/user', function (req, res) {
-    console.log('**********************send user***************************');
-    console.log(req.body);
+    logObject('**********************send user***************************', req.body);
     var from_client_id = req.body.from_client_id;
     var to_client_id = req.body.to_client_id;
     var room_id = req.body.room_id;
@@ -776,18 +767,17 @@ app.post('/send/user', function (req, res) {
             to_client_id: to_client_id,
             data: data.data
         };
-        console.log('data send', data_client);
+        logObject('data send', data_client);
         io.to(to_client_id).emit(ename, data_client);
         res.status(200).send('ok send');
     }else{
-        console.log('miss param');
+        logObject('miss param');
         res.sendStatus(403);
     }
 });
 
 var redisPublicMessage = function(row){
-    console.log("redisPublicMessage=");
-    console.log(row);
+    logObject("redisPublicMessage=", row);
     var new_position = 0;
     var scenarioResult;
     var botResult;
@@ -846,11 +836,11 @@ var redisPublicMessage = function(row){
 function setUserOffline(user_id) {
     var current_time = new Date();
     current_time = current_time.getTime();
-    console.log('---------------------setUserOffline---------------------');
-    console.log('user_id', user_id, ', time of user: ', UserTime[user_id], ', current time', current_time, 'sub: >0', (current_time - UserTime[user_id] > TIME_USER_LOGOUT));
+    logObject('---------------------setUserOffline---------------------');
+    logObject('user_id', user_id, ', time of user: ', UserTime[user_id], ', current time', current_time, 'sub: >0', (current_time - UserTime[user_id] > TIME_USER_LOGOUT));
     if(!isEmpty(UserTime[user_id]) && (current_time - UserTime[user_id] > TIME_USER_LOGOUT)){
         User.findOne({_id: user_id, deleted_at: null, }, function (err, result) {
-            console.log('set user offline success');
+            logObject('set user offline success');
             if(!err && result){
                 result.is_login = false;
                 result.save();
@@ -862,7 +852,7 @@ function setUserOffline(user_id) {
 }
 
 function sendBroadcastMessage(row, scenarioResult, botResult, userProfileResult){
-    console.log("sendBroadcastMessage");
+    logObject("sendBroadcastMessage");
     var filter = ((typeof row.notification_filter !== 'undefined') ? row.notification_filter : []);
     var filter_user_profile = [];
     if(!(filter instanceof Array) || filter.length == 0){
@@ -923,7 +913,7 @@ function abortOnError(err, req, res, next) {
     if (err) {
         console.error("abortOnError Couldn't validate the signature.");
     } else {
-        console.log("next");
+        logObject("next");
         next();
     }
 }
@@ -952,12 +942,11 @@ function validRoom(data, callback){
     var room_type = data.room_type;
     var member = data.member;
     var room_type_arr = [ROOM_TYPE_ONE_MANY, ROOM_TYPE_ONE_ONE];
-    console.log('---------------------validRoom-----------------------');
-    console.log(data);
+    logObject('---------------------validRoom-----------------------', data);
     if(isEmptyMongodbID(user_id)){
         data.success = 0;
         data.message = 'user id miss';
-        console.log('user_id miss');
+        logObject('user_id miss');
         io.to(user_id).emit('status_join_room', data);
         return callback(true);
     }
@@ -968,12 +957,12 @@ function validRoom(data, callback){
             data.success = 0;
             data.message = 'message.room_type_validate';
             io.to(user_id).emit('status_join_room', data);
-            console.log('room_type_validate');
+            logObject('room_type_validate');
             return callback(true);
         } else if (isEmpty(member) || !(member instanceof Array) || (room_type == ROOM_TYPE_ONE_ONE && member.length != 2)) {
             data.success = 0;
             data.message = 'message.member_validate_1';
-            console.log('member_validate_1');
+            logObject('member_validate_1');
             io.to(user_id).emit('status_join_room', data);
             deleteUserRoom(room_id, user_id);
             return callback(true);
@@ -981,33 +970,31 @@ function validRoom(data, callback){
         var query = {member: {$all : member, $size : 2},room_type: room_type, deleted_at: null}
     }
     User.findOne({_id: user_id, deleted_at: null}, function (err, user) {
-        console.log('validRoom find user ');
-        logUser(user);
+        logObject('validRoom find user ', user);
         var params = createParameterDefault(room_type, undefined, data.user_id, member);
         if(err || !user){
             data.success = false;
             data.message = "message.user_not_exsits";
             io.to(user_id).emit('status_join_room', data);
-            console.log('user_not_exsits');
+            logObject('user_not_exsits');
             return callback(true);
         }
         getLastRoom(room_id, query, function(err, room){
-            console.log('***************query check room*************** room_id', room_id, 'query: ', query, 'params: ', params);
+            logObject('***************query check room*************** room_id', room_id, 'query: ', query, 'params: ', params);
             // trường hợp room đã tồn tại ( room 1-1, 1-n)
             // trường hợp room 1-1 chưa tồn tại => create room
             // các trường hợp còn lại lỗi hết
-            console.log('***************room data***************');
-            console.log(logRoom(room));
+            logObject('***************room data***************', room);
             if (!err && room) {
                 // room 1-1, admin_key_flg = false => create room
                 //           admin_key_flg = true, unknow => tra ve cac thong tin room
                 params.room_type = room.room_type;
                 params.member = room.member;
                 if(room.admin_key_flg == ADMIN_KEY_FLG_FALSE){
-                    console.log('room miss admin key');
+                    logObject('room miss admin key');
                     // Nếu room bị mất admin key và ko có room_id thì tạo room mới
                     if(room.room_type == ROOM_TYPE_ONE_ONE && isEmpty(room_id)){
-                        console.log('room create, room_id empty, admin key flag false');
+                        logObject('room create, room_id empty, admin key flag false');
                         roomCreate(room.admin_id, room.member, room.room_type, function(err, roomStore){
                             if (err) throw err;
                             params.room_id = roomStore._id;
@@ -1020,14 +1007,14 @@ function validRoom(data, callback){
                     }else{
                         // admin ko vao duoc room voi truong hop key clear
                         if(user_id == room.admin_id){
-                            console.log('admin bi clear data');
+                            logObject('admin bi clear data');
                             data.success = 0;
                             data.message = 'message.room_not_exits';
                             io.to(user_id).emit('status_join_room', data);
                             return callback(true);
                         // user binhf thuong van join duoc vao room
                         }else{
-                            console.log('room join bin thuong in truong hop 1-1, admin key flag false');
+                            logObject('room join bin thuong in truong hop 1-1, admin key flag false');
                             params.room_id = room._id;
                             params.admin_key_flg = room.admin_key_flg;
                             params.admin_id = room.admin_id;
@@ -1042,7 +1029,7 @@ function validRoom(data, callback){
                     params.admin_id = room.admin_id;
                     params.member = room.member;
                     params.room_type = room.room_type;
-                    console.log('room admin key', params.admin_key_flg);
+                    logObject('room admin key', params.admin_key_flg);
                     return callback(false, room, params);
                 }
             }else if(room_type == ROOM_TYPE_ONE_ONE){
@@ -1051,7 +1038,7 @@ function validRoom(data, callback){
                 var contact = user.contact;
                 if(!isEmpty(contact) && contact instanceof Array &&
                     ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0))){
-                    console.log('room create, room not exists');
+                    logObject('room create, room not exists');
                     roomCreate(user_id, member, room_type, function(err, roomStore){
                         if (err) throw err;
                         params.room_id = roomStore._id;
@@ -1063,7 +1050,7 @@ function validRoom(data, callback){
                     });
                 }
             } else{
-                console.log('member_validate_3');
+                logObject('member_validate_3');
                 data.success = 0;
                 data.message = 'message.room_not_exits';
                 io.to(user_id).emit('status_join_room', data);
@@ -1089,13 +1076,13 @@ function roomCreate(admin_id, member, room_type, callback){
         if (err){
             return callback(true);
         };
-        console.log('room true store');
+        logObject('room true store');
         return callback(false, roomStore);
     });
 }
 
 function do_ex_key_step(data, event_name, socket){
-    console.log('---------------------------sed event---------------------');
+    logObject('---------------------------sed event---------------------');
     // showListRoom(socket);
     var front_client_id = data.from_client_id;
     var to_client_id = data.to_client_id;
@@ -1107,19 +1094,19 @@ function do_ex_key_step(data, event_name, socket){
         to_client_id: to_client_id,
         data: data.data
     };
-    console.log('event_name: ',event_name, 'data: ', data, 'to client', to_client_id);
+    logObject('event_name: ',event_name, 'data: ', data, 'to client', to_client_id);
     // sendEventSocket(to_client_id, event_name, data_client);
     io.to(to_client_id).emit(event_name, data_client);
 }
 
 function validRoomEx(data, callback){
-    console.log('---------------------validRoomEx-----------------------');
+    logObject('---------------------validRoomEx-----------------------');
     var from_client_id = data.from_client_id,
         to_client_id = data.to_client_id,
         room_id = data.room_id,
         check_user_id = isEmpty(data.check_user_id) ? data.check_user_id : true;
     if(isEmptyMongodbID(room_id) || (check_user_id && (isEmptyMongodbID(from_client_id) || isEmptyMongodbID(to_client_id)))){
-        console.log('validRoomEx miss params by data' , data);
+        logObject('validRoomEx miss params by data' , data);
         var data_return = {
             'success' : false,
             'message' : 'validRoomEx miss params'
@@ -1131,7 +1118,7 @@ function validRoomEx(data, callback){
     }
     getRoomEx(data, function(error, room){
         if(error || !room){
-            console.log('room valid by id', room_id);
+            logObject('room valid by id', room_id);
             var data_return = {
                 'success' : false,
                 'message' : 'room valid'
@@ -1139,8 +1126,7 @@ function validRoomEx(data, callback){
             sendEventSocket(room_id, 'status_ex_key', data_return);
             return callback(true);
         }
-        console.log('**********************room true-----------');
-        logRoom(room);
+        logObject('**********************room true-----------', room);
         if(!isEmpty(data.admin_key_flg)){
             room.admin_key_flg = data.admin_key_flg;
             room.save();
@@ -1151,55 +1137,54 @@ function validRoomEx(data, callback){
 
 function validRoomEx2(room_id, user_id, callback){
     if(isEmptyMongodbID(room_id) || isEmptyMongodbID(user_id)){
-        console.log('miss param, room_id', room_id, 'user_id', user_id);
+        logObject('miss param, room_id', room_id, 'user_id', user_id);
         return callback(true);
     }
     getRoomEx2(room_id, {}, function(err, room){
         if(err || !room){
-            console.log('room_id miss', room_id, 'user_id', user_id);
+            logObject('room_id miss', room_id, 'user_id', user_id);
             return callback(true);
         }
         var room_member = room.member;
         var room_admin_id = room.admin_id;
         if(user_id != room_admin_id && room_member.indexOf(user_id)){
-            console.log('valid true');
+            logObject('valid true');
             return callback(false, room);
         }else if(user_id == room_admin_id){
-            console.log('room_id trao doi key admin voi admin');
+            logObject('room_id trao doi key admin voi admin');
             return callback(true);
         }
-        console.log('room_id error param', room_id, 'user_id', user_id);
+        logObject('room_id error param', room_id, 'user_id', user_id);
         return callback(true);
     });
 }
 
 function userJoinRoom(socket, room_id, callback) {
-    console.log('-----------------user join room-----------------------');
-    console.log(room_id);
+    logObject('-----------------user join room-----------------------', room_id);
     showListRoom(socket);
     var rooms = Object.keys(socket.rooms);
     if (rooms.indexOf(room_id) >= 0) {
-        console.log('room_id ton tai');
+        logObject('room_id ton tai');
         showListRoom(socket);
         return callback(true);
     }else if (rooms.indexOf(room_id) == -1) {
         socket.join(room_id, function() {
             showListRoom(socket);
-            console.log('room_id vua enjoin');
+            logObject('room_id vua enjoin');
             return callback(true);
         });
     }else{
-        console.log('error join room with ' +room_id);
+        logObject('error join room with ' +room_id);
         return callback(false);
     }
 }
 
 function validUserId(data, callback){
-    console.log('-----------------valid user id-----------------------');
+    logObject('-----------------valid user id-----------------------');
     var user_id = data.user_id;
     if(!user_id || !mongoose.Types.ObjectId.isValid(user_id)){
         data.success = 0;
-        console.log('status_join miss user_id', data);
+        logObject('status_join miss user_id', data);
         io.to(user_id).emit('status_join', data);
         return callback(true);
     }
@@ -1213,7 +1198,7 @@ function validUserId(data, callback){
             return callback(false, data, params);
         }else{
             data.success = 0;
-            console.log('status_join user valid', data);
+            logObject('status_join user valid', data);
             io.to(user_id).emit('status_join', data);
             return callback(true);
         }
@@ -1221,13 +1206,13 @@ function validUserId(data, callback){
 }
 
 function updateAdminKeyInRoom(admin_id, admin_key_flg_arr, callback){
-    console.log('-----updateAdminKeyInRoom admin_id: ' , admin_id, ' key: ', admin_key_flg_arr);
+    logObject('-----updateAdminKeyInRoom admin_id: ' , admin_id, ' key: ', admin_key_flg_arr);
     Room.find({admin_id: admin_id, deleted_at: null}, function (err, rooms) {
         if(!err && rooms){
             rooms.forEach(function (row) {
                 var current_admin_key_flg = ADMIN_KEY_FLG_FALSE;
                 var current_room_id = row._id;
-                console.log('room current: ', current_room_id, admin_key_flg_arr.indexOf(current_room_id));
+                logObject('room current: ', current_room_id, admin_key_flg_arr.indexOf(current_room_id));
                 if(!isEmpty(admin_key_flg_arr)){
                     for(var i =0 ; i < admin_key_flg_arr.length; i++){
                         if(admin_key_flg_arr[i] == current_room_id){
@@ -1251,7 +1236,7 @@ function doUserLogout(user_id, callback){
             // update login user
             user.is_login = false;
             user.save();
-            console.log('user_logout success');
+            logObject('user_logout success');
             data_return['success'] = true;
             UpdateStatusUserInRoom(user_id, false, function(err){
                 // return callback(false);
@@ -1269,11 +1254,11 @@ function doUserLogout(user_id, callback){
 var getRoom = function(data, callback) {
     var user_id = data.user_id;
     var room_id = data.room_id;
-    console.log('user_id: ', user_id, 'room_id: ', room_id);
+    logObject('user_id: ', user_id, 'room_id: ', room_id);
     Room.findOne({_id : room_id, member : {$in: [user_id]}, deleted_at: null}, function (err, result) {
-        console.log('getRoom', result);
+        logObject('getRoom', result);
         if(err || !result){
-            console.log('error getroom');
+            logObject('error getroom');
             data.success = 0;
             data.message = 'message.room_not-exits';
             io.to(user_id).emit('status_join_room', data);
@@ -1285,7 +1270,7 @@ var getRoom = function(data, callback) {
 };
 
 function getRoomEx(data, callback){
-    console.log('----------------------get Room ex------------');
+    logObject('----------------------get Room ex------------');
     var room_id = data.room_id;
     var query = {_id : room_id, deleted_at: null};
     var from_client_id = data.from_client_id,
@@ -1295,7 +1280,7 @@ function getRoomEx(data, callback){
         query.member = {$all : member, $size : 2};
     }
     Room.findOne(query, function (err, room) {
-        console.log('getRoom', room);
+        logObject('getRoom', room);
         if(err || !room){
             return callback(true);
         }
@@ -1304,7 +1289,7 @@ function getRoomEx(data, callback){
 }
 
 function getRoomEx2(room_id, option_query, callback){
-    console.log('----------------------get Room ex2------------');
+    logObject('----------------------get Room ex2------------');
     var query = {deleted_at: null},
         query_room = {};
     if(!isEmptyMongodbID(room_id)){
@@ -1320,7 +1305,7 @@ function getRoomEx2(room_id, option_query, callback){
 }
 
 function getLastRoom(room_id, option_query, callback){
-    console.log('----------------------getLastRoom------------');
+    logObject('----------------------getLastRoom------------');
     var query = {deleted_at: null},
         query_room = {};
     if(!isEmptyMongodbID(room_id)){
@@ -1342,7 +1327,7 @@ var stepA = function(page_id) {
     //
     //var result = ConnectPage.findOne({page_id: page_id, sns_type: SNS_TYPE_FACEBOOK, deleted_at: null}).exec())
     //.then(function(result) {
-    //    console.log(result);
+    //    logObject(result);
     //    return {
     //        result: result
     //    };
@@ -1368,19 +1353,19 @@ var stepA = function(page_id) {
 //同期処理
 var stepB = function(val) {
     var d = Q.defer();
-    console.log("stepB");
-    console.log(val);
+    logObject("stepB");
+    logObject(val);
     d.resolve('piyo');
     return d.promise;
 };
 
 function listen () {
     app.listen(app.get('port'), function() {
-        console.log('Node app is running on port', app.get('port'));
+        logObject('Node app is running on port', app.get('port'));
     });
 }
 function sendMessage(params, message, message_type){
-    console.log('-----------------------------sendMessageNew--------------------------------');
+    logObject('-----------------------------sendMessageNew--------------------------------');
     var now = new Date();
     var msg_data = {
         'user_id' : params.user_id,
@@ -1392,10 +1377,9 @@ function sendMessage(params, message, message_type){
     };
     getUserSaveLog(params)
         .then(function(data){
-            console.log('-----------------------------getUserSaveLog--------------------------------');
-            console.log('data: ',data);
+            logObject('-----------------------------getUserSaveLog--------------------------------', data);
             if(isEmpty(data) || isEmpty(data.error) || (data.error)){
-                console.log(data.reason);
+                logObject(data.reason);
                 return;
             }
             // send message for user in room with room_id
@@ -1409,7 +1393,7 @@ function sendMessage(params, message, message_type){
             if(!isEmpty(client_in_room)){
                 msg_data.user_read = client_in_room;
             }
-            console.log('send message to user  : ', msg_data);
+            logObject('send message to user:msg_data: ', msg_data, 'user_log: ', user_log);
             sendEventSocket(params.room_id, 'server_send_message', msg_data);
             return Promise.all([
                 saveUserSaveLog(params, user_log, message, message_type),
@@ -1417,27 +1401,27 @@ function sendMessage(params, message, message_type){
             ]);
         })
         .then(function () {
-            console.log('updateUnreadMessage then');
+            logObject('updateUnreadMessage then');
             return updateUnreadMessage(params);
         })
         .then(function (data) {
-            console.log('sendMessageOutsideRoom then');
+            logObject('sendMessageOutsideRoom then');
             if(isEmpty(data) || isEmpty(data.error) || (data.error)){
-                console.log(data);
+                logObject(data);
                 return;
             }
             var unread_message_counts = data.unread_message_counts;
             return sendMessageOutsideRoom(params, message, message_type, unread_message_counts);
         })
         .catch(function(err){
-            console.log('err: ', err);
+            logObject('err: ', err);
         })
 }
 
 function sendMessageBK(params, message, message_type) {
-    console.log('func sendMessage: ', params, message, message_type);
+    logObject('func sendMessage: ', params, message, message_type);
     if(message_type == USER_SEND_TEXT || message_type == USER_SEND_FILE) {
-        console.log('func USER_SEND_TEXT or USER_SEND_FILE: ');
+        logObject('func USER_SEND_TEXT or USER_SEND_FILE: ');
         var logCollection = params.logCollection;
         if(!logCollection){
             logCollection = CreateModelLogForName(params.room_id + "_logs");
@@ -1456,7 +1440,7 @@ function sendMessageBK(params, message, message_type) {
         });
         logCollection.save(function(err, logCollectionStore) {
             if (err) throw err;
-            console.log('logCollectionStore store');
+            logObject('logCollectionStore store');
             var result = {
                 'user_id' : params.user_id,
                 'admin_id' : params.admin_id,
@@ -1484,20 +1468,20 @@ function sendMessageBK(params, message, message_type) {
                 if(!isEmpty(client_in_room)){
                     result.user_read = client_in_room;
                 }
-                console.log('send message to user  : ', result);
+                logObject('send message to user  : ', result);
                 io.to(params.room_id).emit('server_send_message', result);
                 updateLastMessage(params, result);
                 var user_id_not_arr = params.user_id_not_arr;
                 if(!isEmpty(user_id_not_arr)){
-                    console.log('+++updateUnreadMessage');
+                    logObject('+++updateUnreadMessage');
                     updateUnreadMessage(params, function(err, unread_message_counts){
                         // sendMessageUserArr(params.user_id_not_arr, result);
-                        console.log('err', err, ', unread_message_counts: ', unread_message_counts);
+                        logObject('err', err, ', unread_message_counts: ', unread_message_counts);
                         if(!err && !isEmpty(unread_message_counts)){
                             Object.keys(unread_message_counts).forEach(function (id) {
                                 result.data_unread_message_count = unread_message_counts[id];
                                 // send message for user_id not in room
-                                console.log('unread.user_id: ', unread_message_counts[id], 'result: ', result);
+                                logObject('unread.user_id: ', unread_message_counts[id], 'result: ', result);
                                 sendEventSocket(id, 'server_send_message', result)
                             });
                         }
@@ -1553,13 +1537,13 @@ function insertUnreadMessage(room_id, user_ids){
             && data_list_update.s.currentBatch.operations
             && data_list_update.s.currentBatch.operations.length > 0){
             data_list_update.execute(function (error) {
-                console.log(error);
+                logObject(error);
             });
         }
     }
 }
 function updateUnreadMessage1(params, callback){
-    console.log('-----------run updateUnreadMessage');
+    logObject('-----------run updateUnreadMessage');
 
     // var data_list_update = UnreadMessage.collection.initializeOrderedBulkOp();
     var data_ids = params.user_id_not_arr;
@@ -1582,10 +1566,10 @@ function updateUnreadMessage1(params, callback){
                     unread.save();
                     unread_message_counts[unread.user_id] = unread.count;
                 });
-                console.log('user_id_tmp: ', user_id_tmp, ', data_ids: ', data_ids);
+                logObject('user_id_tmp: ', user_id_tmp, ', data_ids: ', data_ids);
                 if(user_id_tmp.length < data_ids.length){
                     var user_id2 = arrayDiff(data_ids, user_id_tmp);
-                    console.log('user_id2: ', user_id2);
+                    logObject('user_id2: ', user_id2);
                     insertUnreadMessage(room_id, user_id2);
                     for(var i = 0; i< user_id2.length; i++){
                         unread_message_counts[user_id2[i]] = 1;
@@ -1600,13 +1584,13 @@ function updateUnreadMessage1(params, callback){
 }
 
 function updateUserRoom(room_id, user_id, status){
-    console.log('update User in Room room_id', room_id, ' ,user_id', user_id, ', status', status);
+    logObject('update User in Room room_id', room_id, ' ,user_id', user_id, ', status', status);
     if(!isEmptyMongodbID(room_id) && !isEmptyMongodbID(user_id) && !isEmpty(UserRoom)){
         if(isEmpty(UserRoom[room_id])){
             UserRoom[room_id] = {};
         }
         UserRoom[room_id][user_id] = status;
-        console.log('after update', UserRoom);
+        logObject('after update', UserRoom);
     }
 }
 
@@ -1629,7 +1613,7 @@ function sendMessageUserArr(user_ids, message) {
     if(!isEmpty(user_ids) && user_ids.length >0){
         for(var key in user_ids){
             io.to(user_ids[key]).emit('server_send_message', message);
-            console.log('send message other room user_id', user_ids[key]);
+            logObject('send message other room user_id', user_ids[key]);
         }
     }
 }
@@ -1672,11 +1656,11 @@ function isEmpty (value, trim) {
 
 function showListRoom(socket) {
     if(isEmpty(socket.rooms)){
-        console.log('room empty or error');
+        logObject('room empty or error');
         return;
     }
     var rooms = Object.keys(socket.rooms);
-    console.log('room current', rooms);
+    logObject('room current', rooms);
 }
 
 function resetUnreadMessage(room_id, user_id) {
@@ -1695,14 +1679,14 @@ function resetUnreadMessage(room_id, user_id) {
 }
 
 function findClientsSocket(socket, roomId, user_id, namespace) {
-    // console.log('socket', socket);
+    // logObject('socket', socket);
     // var client = socket.adapter.rooms;
     var client = socket.adapter.rooms[roomId].sockets;
     var client_key = Object.keys(client);
     var room_list = socket.rooms;
-    // console.log('io.sockets.clients()', socket.rooms());
-    // console.log('io.sockets.clients(room)', socket.rooms(roomId));
-    console.log('room_id', roomId, 'client', client, 'client_key', client_key, 'room_list', room_list, 'UserIdsArr', UserIdsArr);
+    // logObject('io.sockets.clients()', socket.rooms());
+    // logObject('io.sockets.clients(room)', socket.rooms(roomId));
+    logObject('room_id', roomId, 'client', client, 'client_key', client_key, 'room_list', room_list, 'UserIdsArr', UserIdsArr);
     // socket.adapter.rooms
     return;
     var res = []
@@ -1725,7 +1709,7 @@ function findClientsSocket(socket, roomId, user_id, namespace) {
 }
 
 function setNickNameSocket(socket, user_id, callback) {
-    console.log('socket_id ', socket.id);
+    logObject('socket_id ', socket.id);
     var nickname_current = socket.nickname;
     var result = false;
     if(user_id && mongoose.Types.ObjectId(user_id)){
@@ -1733,10 +1717,10 @@ function setNickNameSocket(socket, user_id, callback) {
             socket.nickname = user_id;
             UserIdsArr[user_id] = socket.id;
             result = true;
-            console.log('nickname set', user_id);
+            logObject('nickname set', user_id);
         }else if(!isEmpty(nickname_current) && nickname_current == user_id){
             result = true;
-            console.log('nickname allway', user_id);
+            logObject('nickname allway', user_id);
         }
     }
     return callback(result);
@@ -1744,8 +1728,7 @@ function setNickNameSocket(socket, user_id, callback) {
 
 function UpdateStatusUserInRoom(user_id, status, callback){
     // chỉ update trạng thái user_id cho màn hình contact
-    console.log('--------------------UpdateStatusUserInRoom--------------------');
-    console.log(user_id, '---',status);
+    logObject('--------------------UpdateStatusUserInRoom--------------------', user_id, '---',status);
     User.find({contact : {$in: [user_id]}, deleted_at: null}, {}, {}, function(err, users) {
         if(!err && !isEmpty(users)){
             var data_user_online = {
@@ -1763,12 +1746,12 @@ function UpdateStatusUserInRoom(user_id, status, callback){
 
 function getUserInfo(user_id, calback){
     // get user info
-    console.log('------------getUserInfo----------------');
+    logObject('------------getUserInfo----------------');
     User.findOne({ _id: user_id}, {}, {}, function(err, user) {
         if(!err && user){
             return calback(false, user);
         }
-        console.log('error find user: ', user_id);
+        logObject('error find user: ', user_id);
         return calback(true);
     });
 }
@@ -1778,19 +1761,19 @@ function getUserNotExistsRoom(room_id, member, callback){
     var client_in_room = [];
     var clients = !isEmpty(UserRoom[room_id]) ? UserRoom[room_id] : {};
     if(!isEmptyMongodbID(room_id) && !isEmpty(clients) && !isEmpty(UserIdsArr)){
-        console.log('---check usser in room is room----- ');
-        console.log('UserIdsArr ', UserIdsArr, 'client', clients);
+        logObject('---check usser in room is room----- ');
+        logObject('UserIdsArr ', UserIdsArr, 'client', clients);
         for(var i = 0; i < member.length; i++){
             var user_item = member[i];
-            console.log('user_item: ', i, user_item);
+            logObject('user_item: ', i, user_item);
             if(!isEmpty(UserIdsArr[user_item]) && !isEmpty(clients[user_item]) && clients[user_item]){
                 client_in_room.push(user_item);
-                console.log('****user_item push online', user_item);
+                logObject('****user_item push online', user_item);
             }
         }
     }
     user_id_not_arr = array_diff(user_id_not_arr, client_in_room);
-    console.log('member not exits room', user_id_not_arr);
+    logObject('member not exits room', user_id_not_arr);
     return callback(user_id_not_arr, client_in_room);
 }
 
@@ -1856,7 +1839,7 @@ function setUserTime(user_id) {
     var current_time = new Date();
     current_time = current_time.getTime();
     UserTime[user_id] = current_time;
-    console.log('current_time', current_time, UserTime);
+    logObject('current_time', current_time, UserTime);
 }
 
 function isEmptyMongodbID(id){
@@ -1867,7 +1850,7 @@ function isEmptyMongodbID(id){
 }
 
 function sendEventSocket(room_id, event_name, data){
-    console.log('call event, ', room_id, event_name);
+    logObject('call event, ', room_id, event_name);
     io.to(room_id).emit(event_name, data);
 }
 
@@ -1883,7 +1866,7 @@ function createParameterDefault(room_type, room_id, user_id, member){
 function updateRoom(data, callback){
     var room_id = data.room_id;
     if(isEmptyMongodbID(room_id)){
-        console.log('room valid');
+        logObject('room valid');
         var data_return = {
             'success' : false,
             'message' : 'room valid'
@@ -1893,7 +1876,7 @@ function updateRoom(data, callback){
     }
     getRoomEx(data, function (error, room) {
         if(error || !room){
-            console.log('room valid');
+            logObject('room valid');
             var data_return = {
                 'success' : false,
                 'message' : 'room valid'
@@ -1922,10 +1905,10 @@ function clearLogUserRoom(user_id){
             var room_id = room._id;
             var logName = room_id + "_logs";
             var logCollection = CreateModelLogForName(logName);
-            console.log('---clear log by room: ', logName);
+            logObject('---clear log by room: ', logName);
             logCollection.updateMany({}, {$addToSet: {clear_log : [user_id]}}, function (err, log) {
                 if(err){
-                    console.log(' ko tim thay room');
+                    logObject(' ko tim thay room');
                     return;
                 }
             })
@@ -1934,7 +1917,7 @@ function clearLogUserRoom(user_id){
 }
 
 function getUserSaveLog(params){
-    console.log('*******************getUserSaveLog**************');
+    logObject('*******************getUserSaveLog**************');
     // tạo và trả về 1 Promise, khi này Promise ở trang thái pending
     return new Promise(function(resolve, reject) {
         // tâm sinh lý ngẫu nhiên
@@ -1949,7 +1932,7 @@ function getUserSaveLog(params){
             var user_log = [],
                 user_send_message = {};
             users.forEach(function(user) {
-                console.log(params.user_id ,'==', user._id);
+                logObject(params.user_id ,'==', user._id);
                 if(isEmpty(user.time_save_log) || (!isEmpty(user.time_save_log.save) && user.time_save_log.save)){
                     user_log.push(user);
                 }
@@ -1966,7 +1949,7 @@ function getUserSaveLog(params){
 }
 
 function saveUserSaveLog(params, users, message, message_type){
-    console.log('*******************saveUserSaveLog**************');
+    logObject('*******************saveUserSaveLog**************');
     return new Promise(function(resolve, reject) {
         var user_save_log = [];
         var logCollection = params.logCollection;
@@ -1989,11 +1972,10 @@ function saveUserSaveLog(params, users, message, message_type){
                 updated_at : now
             });
         });
-        console.log('user_save_log');
-        logUser(user_save_log);
+        logObject('user_save_log', user_save_log);
         logCollection.insertMany(user_save_log, function(error, docs) {
             if(error){
-                console.log('error when save log', error);
+                logObject('error when save log', error);
             }
         });
         return resolve(true);
@@ -2001,7 +1983,7 @@ function saveUserSaveLog(params, users, message, message_type){
 }
 
 function updateLastMessage(params, message, message_type){
-    console.log('*******************updateLastMessage**************');
+    logObject('*******************updateLastMessage**************');
     return new Promise(function(resolve, reject) {
         var now = new Date();
         LastMessage.findOne({room_id: params.room_id}, function(err, result) {
@@ -2038,7 +2020,7 @@ function updateLastMessage(params, message, message_type){
 }
 
 function updateUnreadMessage(params){
-    console.log('*******************updateUnreadMessage**************');
+    logObject('*******************updateUnreadMessage**************');
     return new Promise(function(resolve, reject) {
         var data_ids = params.user_id_not_arr;
         var room_id = params.room_id;
@@ -2063,10 +2045,10 @@ function updateUnreadMessage(params){
                     unread.save();
                     unread_message_counts[unread.user_id] = unread.count;
                 });
-                console.log('user_id_tmp: ', user_id_tmp, ', data_ids: ', data_ids);
+                logObject('user_id_tmp: ', user_id_tmp, ', data_ids: ', data_ids);
                 if(user_id_tmp.length < data_ids.length){
                     var user_id2 = arrayDiff(data_ids, user_id_tmp);
-                    console.log('user_id2: ', user_id2);
+                    logObject('user_id2: ', user_id2);
                     insertUnreadMessage(room_id, user_id2);
                     for(var i = 0; i< user_id2.length; i++){
                         unread_message_counts[user_id2[i]] = 1;
@@ -2081,7 +2063,7 @@ function updateUnreadMessage(params){
 }
 
 function sendMessageOutsideRoom(params, message, message_type, unread_message_counts){
-    console.log('*******************sendMessageOutsideRoom**************');
+    logObject('*******************sendMessageOutsideRoom**************');
     var now = new Date();
     var result = {
         'user_id' : params.user_id,
@@ -2091,12 +2073,12 @@ function sendMessageOutsideRoom(params, message, message_type, unread_message_co
         'message' : message,
         'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
     };
-    console.log('unread_message_counts: ', unread_message_counts);
+    logObject('unread_message_counts: ', unread_message_counts);
     if(!isEmpty(unread_message_counts)){
         Object.keys(unread_message_counts).forEach(function (id) {
             result.data_unread_message_count = unread_message_counts[id];
             // send message for user_id not in room
-            console.log('unread.user_id: ', id, ', count: ', unread_message_counts[id], 'result: ', result);
+            logObject('unread.user_id: ', id, ', count: ', unread_message_counts[id], 'result: ', result);
             sendEventSocket(id, 'server_send_message', result)
         });
     }
@@ -2117,70 +2099,29 @@ function userExKeyOnline(user_id){
         current_time = current_time.getTime()+2;
         for(var i = 0; i < queue_exchange_key.length; i++){
             var user_current = queue_exchange_key[i];
-            console.log('1', user_current.time);
+            logObject('1', user_current.time);
             if(!isEmpty(user_current.time)){
                 if(!isEmpty(user_current.data_client) && !isEmpty(user_current.data_client.to_client_id) && user_id == user_current.data_client.to_client_id){
-                    console.log('2');
                     if(current_time - user_current.time <= queue_time_exchange_key){
                         // exchange key
                     }
                     queue_exchange_key.splice(i, 1);
                 }else if(current_time - user_current.time > queue_time_exchange_key){
                     queue_exchange_key.splice(i, 1);
-                    console.log('3');
                 }
             }
         }
-        console.log('4');
-        console.log('end ',queue_exchange_key );
+        logObject('end ',queue_exchange_key );
     }
-}
-
-function logUser(user){
-    if(isEmpty(user)){
-        console.log(user);
-    }
-    logObject('user', user);
-}
-
-function logRoom(room){
-    if(isEmpty(room)){
-        console.log(room);
-    }
-    logObject('room ', room);
-}
-
-function logReturnObject(data){
-    var tmp = '';
-    Object.keys(data).forEach(function (key) {
-        tmp += key + ': ' + data[key] + ', ';
-    });
-    return tmp;
 }
 
 function logObject(name_log, data){
-    console.log(name_log);
     if(isEmpty(data)){
-        console.log(data);
+        return;
     }
-    if(data instanceof Object){
-        var tmp = '';
-        Object.keys(data).forEach(function (key) {
-            var tmp_data = data[key];
-            if(tmp_data instanceof Array){
-                tmp_data = '[' + tmp_data.join(', ') + ']';
-            }else if(tmp_data instanceof Object){
-                tmp_data = '{' + logReturnObject(tmp_data) + '}';
-            }
-            tmp += key + ': ' + tmp_data + ', ';
-        });
-        if(data instanceof Array){
-            tmp = '[' + tmp + ']';
-        }else if(data instanceof Object){
-            tmp = '{' + tmp + '}';
-        }
-        console.log(tmp);
-    }else{
-        console.log(data);
+    var line = [];
+    for(var i = 0; i < arguments.length; i++){
+        line.push(arguments[i])
     }
+    console.log('%j', line);
 }
