@@ -2165,17 +2165,17 @@ function logRoom(room){
     if(room instanceof Array){
         for(var i= 0; i< room.length; i++){
             var _room = room[i];
-            var member = _room.member;
-            if(!isEmpty(member) && member instanceof Array){
-                member = member.join(', ');
-            }
-            console.log('id: ', _room._id, 'name: ', _room.name,', member: ', member,', room_type: ',_room.room_type,', admin_key_flg: ',_room.admin_key_flg);
+            // var member = _room.member;
+            // if(!isEmpty(member) && member instanceof Array){
+            //     member = member.join(', ');
+            // }
+            console.log('id: ', _room._id, 'name: ', _room.name,', member: ', _room.member,', room_type: ',_room.room_type,', admin_key_flg: ',_room.admin_key_flg);
         }
     }else{
-        var member = room.member;
-        if(!isEmpty(member) && member instanceof Array){
-            member = member.join(', ');
-        }
-        console.log('id: ', room._id, 'name: ', room.name,', member: ', member,', room_type: ',room.room_type,', admin_key_flg: ',room.admin_key_flg);
+        // var member = room.member;
+        // if(!isEmpty(member) && member instanceof Array){
+        //     member = member.join(', ');
+        // }
+        console.log('id: ', room._id, 'name: ', room.name,', member: ', room.member,', room_type: ',room.room_type,', admin_key_flg: ',room.admin_key_flg);
     }
 }
