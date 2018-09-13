@@ -2140,7 +2140,7 @@ function logUser(user){
     if(isEmpty(user)){
         console.log(user);
     }
-    logObject('user', room);
+    logObject('user', user);
 }
 
 function logRoom(room){
