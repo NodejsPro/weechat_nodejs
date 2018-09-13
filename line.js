@@ -2143,10 +2143,18 @@ function logUser(user){
     if(user instanceof Array){
         for(var i= 0; i< user.length; i++){
             var _user = user[i];
-            console.log('id: ',_user._id,'name: ',_user.user_name,', phone: ',_user.phone,', contact: ',_user.contact.join(', '));
+            var contact = _user.contact;
+            if(!isEmpty(contact) && contact instanceof Array){
+                contact = contact.join(', ');
+            }
+            console.log('id: ',_user._id,'name: ',_user.user_name,', phone: ',_user.phone,', contact: ',contact);
         }
     }else{
-        console.log('id: ',user._id,'name: ',user.user_name,', phone: ',user.phone,', contact: ',user.contact.join(', '));
+        var contact = user.contact;
+        if(!isEmpty(contact) && contact instanceof Array){
+            contact = contact.join(', ');
+        }
+        console.log('id: ',user._id,'name: ',user.user_name,', phone: ',user.phone,', contact: ',contact);
     }
 }
 
@@ -2157,9 +2165,17 @@ function logRoom(room){
     if(room instanceof Array){
         for(var i= 0; i< room.length; i++){
             var _room = room[i];
-            console.log('id: ', _room._id, 'name: ', _room.name,', member: ', _room.member.join(', '),', room_type: ',_room.room_type,', admin_key_flg: ',_room.admin_key_flg);
+            var member = _room.member;
+            if(!isEmpty(member) && member instanceof Array){
+                member = member.join(', ');
+            }
+            console.log('id: ', _room._id, 'name: ', _room.name,', member: ', member,', room_type: ',_room.room_type,', admin_key_flg: ',_room.admin_key_flg);
         }
     }else{
-        console.log('id: ', room._id, 'name: ', room.name,', member: ', room.member.join(', '),', room_type: ',room.room_type,', admin_key_flg: ',room.admin_key_flg);
+        var member = room.member;
+        if(!isEmpty(member) && member instanceof Array){
+            member = member.join(', ');
+        }
+        console.log('id: ', room._id, 'name: ', room.name,', member: ', member,', room_type: ',room.room_type,', admin_key_flg: ',room.admin_key_flg);
     }
 }
