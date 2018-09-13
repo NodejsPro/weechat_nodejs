@@ -2140,44 +2140,47 @@ function logUser(user){
     if(isEmpty(user)){
         console.log(user);
     }
-    if(user instanceof Array){
-        for(var i= 0; i< user.length; i++){
-            var _user = user[i];
-            var contact = _user.contact;
-            if(!isEmpty(contact) && contact instanceof Array){
-                contact = contact.join(', ');
-            }
-            console.log('id: ',_user._id,'name: ',_user.user_name,', phone: ',_user.phone,', contact: ',contact);
-        }
-    }else{
-        var contact = user.contact;
-        if(!isEmpty(contact) && contact instanceof Array){
-            contact = contact.join(', ');
-        }
-        console.log('id: ',user._id,'name: ',user.user_name,', phone: ',user.phone,', contact: ',contact);
-    }
+    logObject('user', room);
 }
 
 function logRoom(room){
     if(isEmpty(room)){
         console.log(room);
     }
-    console.log(room);
-    if(room instanceof Array){
-        for(var i= 0; i< room.length; i++){
-            var _room = room[i];
-            // var member = _room.member;
-            // if(!isEmpty(member) && member instanceof Array){
-            //     member = member.join(', ');
-            // }
-            // console.log('id: ', _room._id, 'name: ', _room.name,', member: ', _room.member,', room_type: ',_room.room_type,', admin_key_flg: ',_room.admin_key_flg);
+    logObject('room ', room);
+}
+
+function logReturnObject(data){
+    var tmp = '';
+    Object.keys(data).forEach(function (key) {
+        tmp += key + ': ' + data[key] + ', ';
+    });
+    return tmp;
+}
+
+function logObject(name_log, data){
+    console.log(name_log);
+    if(isEmpty(data)){
+        console.log(data);
+    }
+    if(data instanceof Object){
+        var tmp = '';
+        Object.keys(data).forEach(function (key) {
+            var tmp_data = data[key];
+            if(tmp_data instanceof Array){
+                tmp_data = '[' + tmp_data.join(', ') + ']';
+            }else if(tmp_data instanceof Object){
+                tmp_data = '{' + logReturnObject(tmp_data) + '}';
+            }
+            tmp += key + ': ' + tmp_data + ', ';
+        });
+        if(data instanceof Array){
+            tmp = '[' + tmp + ']';
+        }else if(data instanceof Object){
+            tmp = '{' + tmp + '}';
         }
+        console.log(tmp);
     }else{
-        // var member = room.member;
-        // if(!isEmpty(member) && member instanceof Array){
-        //     member = member.join(', ');
-        // }
-        // console.log(room);
-        // console.log('id: ', room._id, 'name: ', room.name,', member: ', room.member,', room_type: ',room.room_type,', admin_key_flg: ',room.admin_key_flg);
+        console.log(data);
     }
 }
