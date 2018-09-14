@@ -319,32 +319,45 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         socket.on('user_join', function (data) {
             logObject('----------------------------------socket user_join---------------------------', data);
             showListRoom(socket);
-            validUserId(data, function (error, result, params) {
-                if(!error && result){
-                    var user_id = data.user_id;
-                    var admin_key_flg = data.admin_key_flg;
-                    updateAdminKeyInRoom(user_id, admin_key_flg, function(err){
-                        if(!err){
-                            userJoinRoom(socket, user_id, function(success){
-                                if(success){
-                                    setNickNameSocket(socket, user_id, function(success){
-                                        if(success){
-                                            UpdateStatusUserInRoom(user_id, true, function(err){
-                                                var data_return = {
-                                                    success: true,
-                                                };
-                                                setUserTime(user_id);
-                                                io.to(user_id).emit('status_join', data_return);
-                                                return;
-                                            });
-                                        }
-                                    });
-                                }
-                            });
-                        }
-                    });
-                }
-            });
+            var user_id = data.user_id;
+            var admin_key_flg = data.admin_key_flg;
+            // if(isEmpty(admin_key_flg) || (!isEmpty(admin_key_flg) && !(admin_key_flg instanceof Array))){
+            //     logObject('miss param admin_key_flg');
+            //     return;
+            // }
+            validUserIdPromise(data)
+                .then(function(data_user_check){
+                    logObject('data_user_check: ', data_user_check);
+                    if(isEmpty(data_user_check) || isEmpty(data_user_check.error) || (data_user_check.error)){
+                        logObject('data_user_check error', data_user_check.reason);
+                        throw data_user_check;
+                        return;
+                    }
+                    return Promise.all([
+                        updateAdminKeyInRoomPromise(user_id, admin_key_flg),
+                        userJoinRoomPromise(socket, user_id),
+                        setNickNameSocketPromise(socket, user_id),
+                        UpdateStatusUserInRoomPromise(user_id, true)
+                    ]);
+                })
+                .then(function (data_object) {
+                    let [admin_key_result, user_join_result, set_nick_result, update_status_user] = data_object;
+                    logObject('---------','admin_key_result', admin_key_result, ', user_join_result', user_join_result, ', set_nick_result', set_nick_result, ', update_status_user', update_status_user);
+                    if(isEmpty(admin_key_result) || !admin_key_result.error || isEmpty(user_join_result) || !user_join_result.error
+                        || isEmpty(set_nick_result) || !set_nick_result.error || isEmpty(update_status_user) || !update_status_user.error){
+                        throw data_object;
+                    }
+                    setUserTime(user_id);
+                    var data_return = {
+                        success: true,
+                    };
+                    io.to(user_id).emit('status_join', data_return);
+                    return;
+                })
+                .catch(function(err){
+                    err = getErrorException(err);
+                    logObject('----error user_join', err)
+                });
         });
 
         socket.on('user_join_room', function (data) {
@@ -920,11 +933,7 @@ function abortOnError(err, req, res, next) {
 
 function saveException(err){
     var now = new Date();
-    var message = err;
-    if(err.stack != void 0){
-        message += ". detail: " + err.stack;
-    }
-    message = message.replace(/([ ]+)/gm," ").replace(/(\r\n|\n|\r)/gm,".");
+    var message = getErrorException(err);
     var exception = new Exception({
         err: message,
         push_facebook_flg: 0,
@@ -1179,6 +1188,282 @@ function userJoinRoom(socket, room_id, callback) {
     }
 }
 
+//function Promise
+function userJoinRoomPromise(socket, room_id){
+    logObject('----userJoinRoomPromise', room_id);
+    var rooms = Object.keys(socket.rooms);
+    var return_data = {'error' : false, function: 'userJoinRoomPromise'};
+    return new Promise(function(resolve, reject) {
+        showListRoom(socket);
+        if (rooms.indexOf(room_id) >= 0) {
+            logObject('room_id ton tai');
+            showListRoom(socket);
+            return resolve(return_data);
+        }else if (rooms.indexOf(room_id) == -1) {
+            socket.join(room_id, function() {
+                showListRoom(socket);
+                logObject('room_id vua enjoin');
+                return resolve(return_data);
+            });
+        }else{
+            logObject('error join room with ' +room_id);
+            return_data.error = true;
+            return reject(return_data);
+        }
+    })
+}
+
+function setNickNameSocketPromise(socket, user_id) {
+    logObject('----setNickNameSocketPromise', socket.id, user_id);
+    var return_data = {error : true, function: 'setNickNameSocketPromise'};
+    return new Promise(function(resolve, reject) {
+        var nickname_current = socket.nickname;
+        if(user_id && mongoose.Types.ObjectId(user_id)){
+            if(isEmpty(nickname_current)){
+                socket.nickname = user_id;
+                UserIdsArr[user_id] = socket.id;
+                return_data.error = false;
+                logObject('nickname set', user_id);
+            }else if(!isEmpty(nickname_current) && nickname_current == user_id){
+                return_data.error = false;
+                logObject('nickname allway', user_id);
+            }
+        }
+        if(return_data.error){
+            return reject(return_data);
+        }else{
+            return resolve(return_data);
+        }
+    });
+}
+
+function UpdateStatusUserInRoomPromise(user_id, status){
+    // chỉ update trạng thái user_id cho màn hình contact
+    logObject('----UpdateStatusUserInRoomPromise------', user_id, '---',status);
+    var return_data = {'error' : false, function: 'UpdateStatusUserInRoomPromise'};
+    return new Promise(function(resolve, reject) {
+        User.find({contact : {$in: [user_id]}, deleted_at: null}, {}, {}, function(err, users) {
+            if(!err && !isEmpty(users)){
+                var data_user_online = {
+                    user_id: user_id,
+                    status: status,
+                };
+                // users.forEach(function(user) {
+                //     logObject('send for user online', user.user_name, 'status', status);
+                //     sendEventSocket(user._id, 'user_online', data_user_online);
+                // });
+                console.log('update status online');
+                return resolve(return_data);
+            }
+            console.log('update status error');
+            return_data.error = true;
+            return reject(return_data);
+        });
+    })
+}
+
+function updateAdminKeyInRoomPromise(admin_id, admin_key_flg_arr){
+    logObject('--------updateAdminKeyInRoomPromise admin_id: ' , admin_id, ' key: ', admin_key_flg_arr);
+    var return_data = {'error' : false, function: 'updateAdminKeyInRoomPromise'};
+    return new Promise(function(resolve, reject) {
+        Room.find({admin_id: admin_id, deleted_at: null}, function (err, rooms) {
+            if(!err && rooms){
+                rooms.forEach(function (row) {
+                    var current_admin_key_flg = ADMIN_KEY_FLG_FALSE;
+                    var current_room_id = row._id;
+                    if(isEmpty(admin_key_flg_arr) || (!isEmpty(admin_key_flg_arr) && !(admin_key_flg_arr instanceof Array))){
+                        admin_key_flg_arr = [];
+                        logObject('room send misss param: admin_key_flg_arr', admin_key_flg_arr);
+                    }
+                    logObject('room current: ', current_room_id, admin_key_flg_arr.indexOf(current_room_id));
+                    if(!isEmpty(admin_key_flg_arr)){
+                        for(var i =0 ; i < admin_key_flg_arr.length; i++){
+                            if(admin_key_flg_arr[i] == current_room_id){
+                                current_admin_key_flg = ADMIN_KEY_FLG_TRUE;
+                                break;
+                            }
+                        }
+                    }
+                    row.admin_key_flg = current_admin_key_flg;
+                    row.save();
+                });
+            }
+            return resolve(return_data);
+        })
+    });
+}
+
+function validUserIdPromise(data){
+    logObject('----validUserIdPromise');
+    var user_id = data.user_id;
+    var return_data = {'error' : false};
+    return new Promise(function(resolve, reject) {
+        if(!user_id || !mongoose.Types.ObjectId.isValid(user_id)){
+            data.success = 0;
+            logObject('status_join miss user_id', data);
+            io.to(user_id).emit('status_join', data);
+            return_data.error = true;
+            return reject(return_data);
+        }
+        User.findOne({_id: user_id, deleted_at: null}, function (err, result) {
+            if (!err && result) {
+                // update login user
+                result.is_login = true;
+                result.save();
+                logObject('user ', result.user_name, ' online');
+                //update key user room_type, room_id, user_id, member
+                var params = createParameterDefault(null, result._id, data.user_id, null);
+                return_data.data = data;
+                return_data.params = params;
+                return resolve(return_data);
+            }else{
+                data.success = 0;
+                logObject('status_join user valid', data);
+                io.to(user_id).emit('status_join', data);
+                return_data.error = true;
+                return reject(return_data);
+            }
+        });
+    });
+}
+
+function validRoomPromise(data){
+    var room_id = data.room_id;
+    var user_id = data.user_id;
+    var room_type = data.room_type;
+    var member = data.member;
+    var room_type_arr = [ROOM_TYPE_ONE_MANY, ROOM_TYPE_ONE_ONE];
+    var return_data_success = {'error' : false};
+    var return_data_error = {'error' : true};
+    logObject('---------------------validRoom-----------------------', data);
+    return new Promise(function(resolve, reject) {
+        if(isEmptyMongodbID(user_id)){
+            data.success = 0;
+            data.message = 'user id miss';
+            logObject('user_id miss');
+            io.to(user_id).emit('status_join_room', data);
+            return reject(return_data_error);
+        }
+        if(!isEmptyMongodbID(room_id)){
+            var query = {_id: room_id, deleted_at: null};
+        }else {
+            if (isEmpty(room_type) || !room_type_arr.indexOf(room_type)) {
+                data.success = 0;
+                data.message = 'message.room_type_validate';
+                io.to(user_id).emit('status_join_room', data);
+                logObject('room_type_validate');
+                return reject(return_data_error);
+            } else if (isEmpty(member) || !(member instanceof Array) || (room_type == ROOM_TYPE_ONE_ONE && member.length != 2)) {
+                data.success = 0;
+                data.message = 'message.member_validate_1';
+                logObject('member_validate_1');
+                io.to(user_id).emit('status_join_room', data);
+                deleteUserRoom(room_id, user_id);
+                return reject(return_data_error);
+            }
+            var query = {member: {$all : member, $size : 2},room_type: room_type, deleted_at: null}
+        }
+        User.findOne({_id: user_id, deleted_at: null}, function (err, user) {
+            logObject('validRoom find user ', user);
+            var params = createParameterDefault(room_type, undefined, data.user_id, member);
+            if(err || !user){
+                data.success = false;
+                data.message = "message.user_not_exsits";
+                io.to(user_id).emit('status_join_room', data);
+                logObject('user_not_exsits');
+                return reject(return_data_error);
+            }
+            getLastRoom(room_id, query, function(err, room){
+                logObject('***************query check room*************** room_id', room_id, 'query: ', query, 'params: ', params);
+                // trường hợp room đã tồn tại ( room 1-1, 1-n)
+                // trường hợp room 1-1 chưa tồn tại => create room
+                // các trường hợp còn lại lỗi hết
+                logObject('***************room data***************', room);
+                if (!err && room) {
+                    // room 1-1, admin_key_flg = false => create room
+                    //           admin_key_flg = true, unknow => tra ve cac thong tin room
+                    params.room_type = room.room_type;
+                    params.member = room.member;
+                    return_data_success.room = room;
+                    if(room.admin_key_flg == ADMIN_KEY_FLG_FALSE){
+                        logObject('room miss admin key');
+                        // Nếu room bị mất admin key và ko có room_id thì tạo room mới
+                        if(room.room_type == ROOM_TYPE_ONE_ONE && isEmpty(room_id)){
+                            logObject('room create, room_id empty, admin key flag false');
+                            roomCreate(room.admin_id, room.member, room.room_type, function(err, roomStore){
+                                if (err) throw err;
+                                params.room_id = roomStore._id;
+                                params.admin_key_flg = roomStore.admin_key_flg;
+                                params.admin_id = roomStore.admin_id;
+                                params.member = roomStore.member;
+                                params.room_type = roomStore.room_type;
+                                return_data_success.room = roomStore;
+                                return_data_success.params = params;
+                                return resolve(return_data_success);
+                            });
+                        }else{
+                            // admin ko vao duoc room voi truong hop key clear
+                            if(user_id == room.admin_id){
+                                logObject('admin bi clear data');
+                                data.success = 0;
+                                data.message = 'message.room_not_exits';
+                                io.to(user_id).emit('status_join_room', data);
+                                return reject(return_data_error);
+                                // user binhf thuong van join duoc vao room
+                            }else{
+                                logObject('room join bin thuong in truong hop 1-1, admin key flag false');
+                                params.room_id = room._id;
+                                params.admin_key_flg = room.admin_key_flg;
+                                params.admin_id = room.admin_id;
+                                params.member = room.member;
+                                params.room_type = room.room_type;
+                                return_data_success.room = room;
+                                return_data_success.params = params;
+                                return resolve(return_data_success);
+                            }
+                        }
+                    }else{
+                        params.room_id = room._id;
+                        params.admin_key_flg = room.admin_key_flg;
+                        params.admin_id = room.admin_id;
+                        params.member = room.member;
+                        params.room_type = room.room_type;
+                        logObject('room admin key', params.admin_key_flg);
+                        return_data_success.params = params;
+                        return resolve(return_data_success);
+                    }
+                }else if(room_type == ROOM_TYPE_ONE_ONE){
+                    var u1 = member[0];
+                    var u2 = member[1];
+                    var contact = user.contact;
+                    if(!isEmpty(contact) && contact instanceof Array &&
+                        ((u1 == user._id && contact.indexOf(u2) >= 0) ||( u2 == user._id && contact.indexOf(u1) >= 0))){
+                        logObject('room create, room not exists');
+                        roomCreate(user_id, member, room_type, function(err, roomStore){
+                            if (err) throw err;
+                            params.room_id = roomStore._id;
+                            params.admin_key_flg = roomStore.admin_key_flg;
+                            params.admin_id = roomStore.admin_id;
+                            params.member = roomStore.member;
+                            params.room_type = roomStore.room_type;
+                            return_data_success.room = roomStore;
+                            return_data_success.params = params;
+                            return resolve(return_data_success);
+                        });
+                    }
+                } else{
+                    logObject('member_validate_3');
+                    data.success = 0;
+                    data.message = 'message.room_not_exits';
+                    io.to(user_id).emit('status_join_room', data);
+                    deleteUserRoom(room_id, user_id);
+                    return reject(return_data_error);
+                }
+            });
+        });
+    });
+}
+
 function validUserId(data, callback){
     logObject('-----------------valid user id-----------------------');
     var user_id = data.user_id;
@@ -1397,7 +1682,7 @@ function sendMessage(params, message, message_type){
             if(!isEmpty(client_in_room)){
                 msg_data.user_read = client_in_room;
             }
-            logObject('send message to user:msg_data: ', msg_data, 'user_log: ', user_log);
+            logObject('****send message to user:msg_data: ', msg_data, 'user_log: ', user_log, '*************');
             sendEventSocket(params.room_id, 'server_send_message', msg_data);
             return Promise.all([
                 saveUserSaveLog(params, user_log, message, message_type),
@@ -1405,11 +1690,11 @@ function sendMessage(params, message, message_type){
             ]);
         })
         .then(function () {
-            logObject('updateUnreadMessage then');
+            logObject('-----------------------------updateUnreadMessage then-----------------------------');
             return updateUnreadMessage(params);
         })
         .then(function (data) {
-            logObject('sendMessageOutsideRoom then');
+            logObject('-----------------------------sendMessageOutsideRoom then-----------------------------');
             if(isEmpty(data) || isEmpty(data.error) || (data.error)){
                 logObject(data);
                 return;
@@ -1664,7 +1949,7 @@ function showListRoom(socket) {
         return;
     }
     var rooms = Object.keys(socket.rooms);
-    logObject('room current', rooms);
+    logObject('****showListRoom room current', rooms);
 }
 
 function resetUnreadMessage(room_id, user_id) {
@@ -2120,12 +2405,32 @@ function userExKeyOnline(user_id){
 }
 
 function logObject(name_log, data){
+    var new_line = false;
+    var line = [];
+    if(name_log.toString().search('----') >= 0){
+        new_line = true;
+    }
+    if(new_line){
+        console.log('');
+    }
     if(isEmpty(data)){
+        console.log(name_log);
         return;
     }
-    var line = [];
     for(var i = 0; i < arguments.length; i++){
         line.push(arguments[i])
     }
     console.log('%j', line);
+}
+
+function getErrorException(err){
+    var message = err;
+    if(typeof (err) == 'string'){
+        message = message.replace(/([ ]+)/gm," ").replace(/(\r\n|\n|\r)/gm,".");
+    }
+    if(err.stack != void 0){
+        let stack = err.stack.replace(/([ ]+)/gm," ").replace(/(\r\n|\n|\r)/gm,".");
+        message += ". detail: " + stack;
+    }
+    return message;
 }
