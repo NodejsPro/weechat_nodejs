@@ -321,10 +321,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             showListRoom(socket);
             var user_id = data.user_id;
             var admin_key_flg = data.admin_key_flg;
-            // if(isEmpty(admin_key_flg) || (!isEmpty(admin_key_flg) && !(admin_key_flg instanceof Array))){
-            //     logObject('miss param admin_key_flg');
-            //     return;
-            // }
+            if(admin_key_flg == void 0 || (!isEmpty(admin_key_flg) && !(admin_key_flg instanceof Array))){
+                logObject('miss param admin_key_flg');
+                return;
+            }
             validUserIdPromise(data)
                 .then(function(data_user_check){
                     logObject('data_user_check: ', data_user_check);
