@@ -482,11 +482,13 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 }
                 if(!error && room){
                     getUserInfo(user_id, function(err, user){
-                        var member = room.member;
-                        data.user_name = user.user_name;
-                        if(member.indexOf(user_id) >= 0){
-                            sendEventSocket(room_id, 'trigger_user_typing', data);
-                            return;
+                        if(!err && !isEmpty(user)){
+                            var member = room.member;
+                            data.user_name = user.user_name;
+                            if(member.indexOf(user_id) >= 0){
+                                sendEventSocket(room_id, 'trigger_user_typing', data);
+                                return;
+                            }
                         }
                     });
                 }
