@@ -2409,7 +2409,7 @@ function userExKeyOnline(user_id){
 function logObject(name_log, data){
     var new_line = false;
     var line = [];
-    if(name_log.toString().search('----') >= 0){
+    if((typeof name_log === 'string') && name_log.search('----') >= 0){
         new_line = true;
     }
     if(new_line){
