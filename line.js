@@ -737,10 +737,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             logObject('---------------------------------event_user_clear_message---------------------------', data);
             var room_id = data.room_id,
                 user_id = data.user_id,
-                parent_log_id = data.parent_log_id,
+                log_id = data.log_id,
                 option_query = {
-                    room_id: room_id,
-                    user_id: {$in: [user_id]}
+                    deleted_at: null,
+                    member: {$in: [user_id]}
                 };
             if(isEmptyMongodbID(room_id) || isEmptyMongodbID(user_id)){
                 logObject('miss param');
@@ -752,9 +752,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     return;
                 }
                 var logCollection = CreateModelLogForName(room_id + "_logs");
-                logCollection.remove({uid: admin_id});
-                data.success = true;
-                sendEventSocket(room_id, 'event_server_clear_log', data);
+                logCollection.deleteMany({_id: log_id, uid: user_id}, function(err, data){
+                    logObject(err, data);
+                });
+                sendEventSocket(room_id, 'event_server_clear_message', data);
             })
         });
 
