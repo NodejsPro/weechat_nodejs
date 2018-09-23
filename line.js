@@ -1730,12 +1730,13 @@ function sendMessage(params, message, message_type){
             logObject('-----------------------------updateUnreadMessage then-----------------------------', data2);
             let [dataUserLog, dataUpdateLastMessage] = data2;
             logObject('dataUserLog', dataUserLog, 'client_in_room', params.client_in_room);
+            var logs_id = dataUserLog.logs_id;
             if(!isEmpty(params.client_in_room)){
                 for(var i = 0 ; i < params.client_in_room.length; i++){
                     var current_client_in_room = params.client_in_room[i];
                     logObject('current_client_in_room', current_client_in_room);
-                    if(!isEmpty(dataUserLog[current_client_in_room])){
-                        msg_data._id = dataUserLog[current_client_in_room];
+                    if(!isEmpty(logs_id[current_client_in_room])){
+                        msg_data._id = logs_id[current_client_in_room];
                         logObject('server_send_message', msg_data);
                         sendEventSocket(current_client_in_room, 'server_send_message', msg_data);
                     }
