@@ -712,7 +712,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             var room_id = data.room_id,
                 user_id = data.user_id,
                 option_query = {
-                    room_id: room_id,
+                    deleted_at: null,
                     member: {$in: [user_id]}
                 };
             if(isEmptyMongodbID(room_id) || isEmptyMongodbID(user_id)){
