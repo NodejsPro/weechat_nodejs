@@ -708,19 +708,27 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         });
 
         socket.on('event_user_clear_log', function(data){
-            data('---------------------------------event_user_clear_log---------------------------', data);
-            if(isEmptyMongodbID(data.user_id)){
-                data('miss param user_id', data.user_id);
+            logObject('---------------------------------event_user_clear_log---------------------------', data);
+            var room_id = data.room_id,
+                user_id = data.user_id,
+                option_query = {
+                    room_id: room_id,
+                    user_id: {$in: [user_id]}
+                };
+            if(isEmptyMongodbID(room_id) || isEmptyMongodbID(user_id)){
+                logObject('miss param');
                 return;
             }
-            var user_id = data.user_id;
-            User.findOne({ _id: user_id, deleted_at: null}, {}, {}, function(err, user) {
-                if(err || !user){
-                    data('user_id invalid');
-                    return ;
+            getRoomEx2(room_id, option_query, function(err, room){
+                if(err || isEmpty(room)){
+                    logObject('room lỗi hoặc ko tim thay');
+                    return;
                 }
-                clearLogUserRoom(user_id);
-            });
+                var logCollection = CreateModelLogForName(room_id + "_logs");
+                logCollection.remove({uid: admin_id});
+                data.success = true;
+                sendEventSocket(room_id, 'event_server_clear_log', data);
+            })
         });
 
         // lắng nghe client muốn trao đổi key với admin trong 1 room
