@@ -1721,14 +1721,26 @@ function sendMessage(params, message, message_type){
                 msg_data.user_read = client_in_room;
             }
             logObject('****send message to user:msg_data: ', msg_data, 'user_log: ', user_log, '*************');
-            sendEventSocket(params.room_id, 'server_send_message', msg_data);
             return Promise.all([
                 saveUserSaveLog(params, user_log, message, message_type),
                 updateLastMessage(params, message, message_type)
             ]);
         })
-        .then(function () {
-            logObject('-----------------------------updateUnreadMessage then-----------------------------');
+        .then(function (data2) {
+            logObject('-----------------------------updateUnreadMessage then-----------------------------', data2);
+            let [dataUserLog, dataUpdateLastMessage] = data2;
+            logObject('dataUserLog', dataUserLog, 'client_in_room', params.client_in_room);
+            if(!isEmpty(params.client_in_room)){
+                for(var i = 0 ; i < params.client_in_room.length; i++){
+                    var current_client_in_room = params.client_in_room[i];
+                    logObject('current_client_in_room', current_client_in_room);
+                    if(!isEmpty(dataUserLog[current_client_in_room])){
+                        msg_data._id = dataUserLog[current_client_in_room];
+                        logObject('server_send_message', msg_data);
+                        sendEventSocket(current_client_in_room, 'server_send_message', msg_data);
+                    }
+                }
+            }
             return updateUnreadMessage(params);
         })
         .then(function (data) {
@@ -2304,8 +2316,16 @@ function saveUserSaveLog(params, users, message, message_type){
             if(error){
                 logObject('error when save log', error);
             }
+            var log_ids = {};
+            docs.forEach(function(doc) {
+                log_ids[doc.uid] = doc._id;
+            });
+            var data = {
+                error : false,
+                log_ids: log_ids
+            };
+            return resolve(data);
         });
-        return resolve(true);
     });
 }
 
