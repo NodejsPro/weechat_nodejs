@@ -725,7 +725,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     return;
                 }
                 var logCollection = CreateModelLogForName(room_id + "_logs");
-                logCollection.remove({uid: admin_id});
+                logCollection.remove({uid: user_id});
                 data.success = true;
                 sendEventSocket(room_id, 'event_server_clear_log', data);
             })
