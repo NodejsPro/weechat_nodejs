@@ -1716,6 +1716,8 @@ function sendMessage(params, message, message_type){
                 msg_data.user_name = user_send_message.user_name;
                 msg_data.avatar = setAvatar(user_send_message.avatar);
             }
+            params.user_name = user_send_message.user_name;
+            params.avatar = setAvatar(user_send_message.avatar);
             var client_in_room = params.client_in_room;
             if(!isEmpty(client_in_room)){
                 msg_data.user_read = client_in_room;
@@ -2415,6 +2417,8 @@ function sendMessageOutsideRoom(params, message, message_type, unread_message_co
     var now = new Date();
     var result = {
         'user_id' : params.user_id,
+        'user_name' : params.user_name,
+        'avatar' : params.avatar,
         'admin_id' : params.admin_id,
         'room_id' : params.room_id,
         'message_type' : message_type,
