@@ -1702,6 +1702,7 @@ function sendMessage(params, message, message_type){
         'message' : message,
         'created_at' : moment(now).tz(TIMEZONE).format(date_format_global),
     };
+    var log_ids = {};
     getUserSaveLog(params)
         .then(function(data){
             logObject('-----------------------------getUserSaveLog--------------------------------', data);
@@ -1732,16 +1733,18 @@ function sendMessage(params, message, message_type){
             logObject('-----------------------------updateUnreadMessage then-----------------------------', data2);
             let [dataUserLog, dataUpdateLastMessage] = data2;
             logObject('dataUserLog', dataUserLog, 'client_in_room', params.client_in_room);
-            var log_ids = dataUserLog.log_ids;
+            log_ids = dataUserLog.log_ids;
             if(!isEmpty(params.client_in_room)){
                 for(var i = 0 ; i < params.client_in_room.length; i++){
                     var current_client_in_room = params.client_in_room[i];
+                    var _id = '';
                     logObject('current_client_in_room', current_client_in_room);
                     if(!isEmpty(log_ids[current_client_in_room])){
-                        msg_data._id = log_ids[current_client_in_room];
-                        logObject('server_send_message', msg_data);
-                        sendEventSocket(current_client_in_room, 'server_send_message', msg_data);
+                        _id = log_ids[current_client_in_room];
                     }
+                    msg_data._id = _id;
+                    logObject('server_send_message', msg_data);
+                    sendEventSocket(current_client_in_room, 'server_send_message', msg_data);
                 }
             }
             return updateUnreadMessage(params);
@@ -1753,7 +1756,7 @@ function sendMessage(params, message, message_type){
                 return;
             }
             var unread_message_counts = data.unread_message_counts;
-            return sendMessageOutsideRoom(params, message, message_type, unread_message_counts);
+            return sendMessageOutsideRoom(params, message, message_type, unread_message_counts, log_ids);
         })
         .catch(function(err){
             logObject('err: ', err);
@@ -2412,7 +2415,7 @@ function updateUnreadMessage(params){
     });
 }
 
-function sendMessageOutsideRoom(params, message, message_type, unread_message_counts){
+function sendMessageOutsideRoom(params, message, message_type, unread_message_counts, log_ids){
     logObject('*******************sendMessageOutsideRoom**************');
     var now = new Date();
     var result = {
@@ -2431,6 +2434,11 @@ function sendMessageOutsideRoom(params, message, message_type, unread_message_co
             result.data_unread_message_count = unread_message_counts[id];
             // send message for user_id not in room
             logObject('unread.user_id: ', id, ', count: ', unread_message_counts[id], 'result: ', result);
+            var _id = '';
+            if(!isEmpty(log_ids[id])){
+                _id = log_ids[id];
+            }
+            result._id = _id;
             sendEventSocket(id, 'server_send_message', result)
         });
     }
