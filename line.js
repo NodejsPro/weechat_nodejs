@@ -343,8 +343,8 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 .then(function (data_object) {
                     let [admin_key_result, user_join_result, set_nick_result, update_status_user] = data_object;
                     logObject('---------','admin_key_result', admin_key_result, ', user_join_result', user_join_result, ', set_nick_result', set_nick_result, ', update_status_user', update_status_user);
-                    if(isEmpty(admin_key_result) || !admin_key_result.error || isEmpty(user_join_result) || !user_join_result.error
-                        || isEmpty(set_nick_result) || !set_nick_result.error || isEmpty(update_status_user) || !update_status_user.error){
+                    if(isEmpty(admin_key_result) || admin_key_result.error || isEmpty(user_join_result) || user_join_result.error
+                        || isEmpty(set_nick_result) || set_nick_result.error || isEmpty(update_status_user) || update_status_user.error){
                         throw data_object;
                     }
                     setUserTime(user_id);
@@ -356,6 +356,11 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 })
                 .catch(function(err){
                     err = getErrorException(err);
+                    var data = {
+                        success : false,
+                        message : 'Co loi....'
+                    };
+                    sendEventSocket(user_id, 'status_join_room', data);
                     logObject('----error user_join', err)
                 });
         });
@@ -991,7 +996,7 @@ function validRoom(data, callback){
     var room_type_arr = [ROOM_TYPE_ONE_MANY, ROOM_TYPE_ONE_ONE];
     logObject('---------------------validRoom-----------------------', data);
     if(isEmptyMongodbID(user_id)){
-        data.success = 0;
+        data.success = false;
         data.message = 'user id miss';
         logObject('user_id miss');
         io.to(user_id).emit('status_join_room', data);
@@ -1001,13 +1006,13 @@ function validRoom(data, callback){
         var query = {_id: room_id, deleted_at: null};
     }else {
         if (isEmpty(room_type) || !room_type_arr.indexOf(room_type)) {
-            data.success = 0;
+            data.success = false;
             data.message = 'message.room_type_validate';
             io.to(user_id).emit('status_join_room', data);
             logObject('room_type_validate');
             return callback(true);
         } else if (isEmpty(member) || !(member instanceof Array) || (room_type == ROOM_TYPE_ONE_ONE && member.length != 2)) {
-            data.success = 0;
+            data.success = false;
             data.message = 'message.member_validate_1';
             logObject('member_validate_1');
             io.to(user_id).emit('status_join_room', data);
@@ -1024,6 +1029,12 @@ function validRoom(data, callback){
             data.message = "message.user_not_exsits";
             io.to(user_id).emit('status_join_room', data);
             logObject('user_not_exsits');
+            return callback(true);
+        }else if(!user.is_login){
+            data.success = false;
+            data.message = "message.user_offline";
+            io.to(user_id).emit('status_join_room', data);
+            logObject('user_offline');
             return callback(true);
         }
         getLastRoom(room_id, query, function(err, room){
@@ -1055,7 +1066,7 @@ function validRoom(data, callback){
                         // admin ko vao duoc room voi truong hop key clear
                         if(user_id == room.admin_id){
                             logObject('admin bi clear data');
-                            data.success = 0;
+                            data.success = false;
                             data.message = 'message.room_not_exits';
                             io.to(user_id).emit('status_join_room', data);
                             return callback(true);
@@ -1098,7 +1109,7 @@ function validRoom(data, callback){
                 }
             } else{
                 logObject('member_validate_3');
-                data.success = 0;
+                data.success = false;
                 data.message = 'message.room_not_exits';
                 io.to(user_id).emit('status_join_room', data);
                 deleteUserRoom(room_id, user_id);
@@ -1312,9 +1323,11 @@ function updateAdminKeyInRoomPromise(admin_id, admin_key_flg_arr){
                 rooms.forEach(function (row) {
                     var current_admin_key_flg = ADMIN_KEY_FLG_FALSE;
                     var current_room_id = row._id;
-                    if(isEmpty(admin_key_flg_arr) || (!isEmpty(admin_key_flg_arr) && !(admin_key_flg_arr instanceof Array))){
+                    if(admin_key_flg_arr == void 0 || (admin_key_flg_arr != void 0 && !(admin_key_flg_arr instanceof Array))){
                         admin_key_flg_arr = [];
                         logObject('room send misss param: admin_key_flg_arr', admin_key_flg_arr);
+                        return_data.error = true;
+                        return reject(return_data);
                     }
                     logObject('room current: ', current_room_id, admin_key_flg_arr.indexOf(current_room_id));
                     if(!isEmpty(admin_key_flg_arr)){
@@ -1379,7 +1392,7 @@ function validRoomPromise(data){
     logObject('---------------------validRoom-----------------------', data);
     return new Promise(function(resolve, reject) {
         if(isEmptyMongodbID(user_id)){
-            data.success = 0;
+            data.success = false;
             data.message = 'user id miss';
             logObject('user_id miss');
             io.to(user_id).emit('status_join_room', data);
@@ -1389,13 +1402,13 @@ function validRoomPromise(data){
             var query = {_id: room_id, deleted_at: null};
         }else {
             if (isEmpty(room_type) || !room_type_arr.indexOf(room_type)) {
-                data.success = 0;
+                data.success = false;
                 data.message = 'message.room_type_validate';
                 io.to(user_id).emit('status_join_room', data);
                 logObject('room_type_validate');
                 return reject(return_data_error);
             } else if (isEmpty(member) || !(member instanceof Array) || (room_type == ROOM_TYPE_ONE_ONE && member.length != 2)) {
-                data.success = 0;
+                data.success = false;
                 data.message = 'message.member_validate_1';
                 logObject('member_validate_1');
                 io.to(user_id).emit('status_join_room', data);
@@ -1446,7 +1459,7 @@ function validRoomPromise(data){
                             // admin ko vao duoc room voi truong hop key clear
                             if(user_id == room.admin_id){
                                 logObject('admin bi clear data');
-                                data.success = 0;
+                                data.success = false;
                                 data.message = 'message.room_not_exits';
                                 io.to(user_id).emit('status_join_room', data);
                                 return reject(return_data_error);
@@ -1494,7 +1507,7 @@ function validRoomPromise(data){
                     }
                 } else{
                     logObject('member_validate_3');
-                    data.success = 0;
+                    data.success = false;
                     data.message = 'message.room_not_exits';
                     io.to(user_id).emit('status_join_room', data);
                     deleteUserRoom(room_id, user_id);
@@ -1589,7 +1602,7 @@ var getRoom = function(data, callback) {
         logObject('getRoom', result);
         if(err || !result){
             logObject('error getroom');
-            data.success = 0;
+            data.success = false;
             data.message = 'message.room_not-exits';
             io.to(user_id).emit('status_join_room', data);
             return callback(true);
@@ -2198,7 +2211,7 @@ function isEmptyMongodbID(id){
 }
 
 function sendEventSocket(room_id, event_name, data){
-    logObject('call event, ', room_id, event_name);
+    logObject('call event, ', room_id, event_name, data);
     io.to(room_id).emit(event_name, data);
 }
 
@@ -2494,7 +2507,9 @@ function logObject(name_log, data){
     for(var i = 0; i < arguments.length; i++){
         line.push(arguments[i])
     }
-    console.log('%j', line);
+    var now = new Date();
+    var date = moment(now).tz(TIMEZONE).format(date_format_global);
+    console.log('date: %s: %j', date, line);
 }
 
 function getErrorException(err){
