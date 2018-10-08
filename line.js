@@ -1286,10 +1286,10 @@ function UpdateStatusUserInRoomPromise(user_id, status){
                     user_id: user_id,
                     status: status,
                 };
-                // users.forEach(function(user) {
-                //     logObject('send for user online', user.user_name, 'status', status);
-                //     sendEventSocket(user._id, 'user_online', data_user_online);
-                // });
+                users.forEach(function(user) {
+                    logObject('send for user online', user.user_name, 'status', status);
+                    sendEventSocket(user._id, 'user_online', data_user_online);
+                });
                 console.log('update status online');
                 return resolve(return_data);
             }
