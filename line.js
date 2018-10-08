@@ -1280,16 +1280,19 @@ function UpdateStatusUserInRoomPromise(user_id, status){
     logObject('----UpdateStatusUserInRoomPromise------', user_id, '---',status);
     var return_data = {'error' : false, function: 'UpdateStatusUserInRoomPromise'};
     return new Promise(function(resolve, reject) {
-        User.find({contact : {$in: [user_id]}, deleted_at: null}, {}, {}, function(err, users) {
-            if(!err && !isEmpty(users)){
+        User.findOne({_id: user_id, deleted_at: null}, function (err, user) {
+            if(!err && !isEmpty(user)){
                 var data_user_online = {
                     user_id: user_id,
                     status: status,
                 };
-                users.forEach(function(user) {
-                    logObject('send for user online', user.user_name, 'status', status);
-                    sendEventSocket(user._id, 'user_online', data_user_online);
-                });
+                var contact = user.contact;
+                if(!isEmpty(contact)){
+                    contact.forEach(function(user_contact_id) {
+                        logObject('send for user online', user_contact_id, 'status', status);
+                        sendEventSocket(user_contact_id, 'user_online', data_user_online);
+                    });
+                }
                 console.log('update status online');
                 return resolve(return_data);
             }
