@@ -62,6 +62,21 @@ var createModelLogForName = function (name) {
     return establishedModels[name];
 };
 
+var CreateModelUserRoomForName = function (name) {
+    if (!(name in establishedModels)) {
+        var Any = new Schema({
+            room_id: String,
+            admin_id: String,
+            user_id: String,
+            key_ground : String,
+            created_at : Date,
+        }, { collection: name });
+        Any.index({ room_id: 1, user_id: 1, created_at: -1});
+        establishedModels[name] = mongoose.model(name, Any);
+    }
+    return establishedModels[name];
+};
+
 var ExceptionSchema = new Schema({
     err: Schema.Types.Mixed,
     push_facebook_flg: Number,
@@ -104,4 +119,5 @@ exports.UnreadMessage = mongoose.model('UnreadMessage', UnreadMessageSchema);
 exports.LastMessage = mongoose.model('LastMessage', LastMessageSchema);
 
 exports.CreateModelLogForName = createModelLogForName;
+exports.CreateModelUserRoomForName = CreateModelUserRoomForName;
 
