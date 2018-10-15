@@ -1052,7 +1052,7 @@ function validRoom(data, callback){
                     logObject('room miss admin key');
                     // Nếu room bị mất admin key và ko có room_id thì tạo room mới
                     if(room.room_type == ROOM_TYPE_ONE_ONE && isEmpty(room_id)){
-                        logObject('room create, room_id empty, admin key flag false');
+                        logObject('room create, room_id empty, admin mất key, admin key flag false');
                         roomCreate(room.admin_id, room.member, room.room_type, function(err, roomStore){
                             if (err) throw err;
                             params.room_id = roomStore._id;
@@ -1091,6 +1091,7 @@ function validRoom(data, callback){
                     return callback(false, room, params);
                 }
             }else if(room_type == ROOM_TYPE_ONE_ONE){
+                logObject('Room loi hoac ko ton tai: error', err, ', room', room);
                 var u1 = member[0];
                 var u2 = member[1];
                 var contact = user.contact;
@@ -1649,6 +1650,7 @@ function getRoomEx2(room_id, option_query, callback){
 
 function getLastRoom(room_id, option_query, callback){
     logObject('----------------------getLastRoom------------');
+    logObject('room_id: ', room_id, ', option_query: ', option_query);
     var query = {deleted_at: null},
         query_room = {};
     if(!isEmptyMongodbID(room_id)){
