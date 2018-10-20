@@ -1032,6 +1032,7 @@ function validRoom(data, callback){
             return callback(true);
         }else if(!user.is_login){
             logObject('user_offline change online');
+            user.is_login = true;
             sendUserStatusInContact(user_id, user.contact, true);
         }
         getLastRoom(room_id, query, function(err, room){
