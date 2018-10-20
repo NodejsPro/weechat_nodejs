@@ -1078,7 +1078,7 @@ function validRoom(data, callback){
                             logObject('admin bi clear data');
                             data.success = false;
                             data.message = 'message.room_not_exits';
-                            io.to(user_id).emit('status_join_room', data);
+                            sendEventSocket(user_id, 'status_join_room', data);
                             return callback(true);
                         // user binhf thuong van join duoc vao room
                         }else{
