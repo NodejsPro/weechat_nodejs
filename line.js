@@ -76,7 +76,7 @@ var UserRoom = {};
 //format {user_id_1: 123456, user_id_2: 234567}
 var UserTime = {};
 
-const TIME_USER_LOGOUT = 1000;// 1 giây
+const TIME_USER_LOGOUT = 5000;// 5 giây
 
 const filter_variable = ["user_gender", "user_locale", "user_timezone", "user_referral"];
 
@@ -372,6 +372,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 if(!error && room){
                     userJoinRoom(socket, user_id, function(success){
                         if(success){
+                            logObject('nick name before check', socket.nickname, 'user_id', user_id);
                             setNickNameSocket(socket, user_id, function(success){
                                 setUserTime(user_id);
                                 if(success){
@@ -1035,12 +1036,12 @@ function validRoom(data, callback){
             user.is_login = true;
             sendUserStatusInContact(user_id, user.contact, true);
         }
+        logObject('***************query check room*************** room_id', room_id, 'query: ', query, 'params: ', params);
         getLastRoom(room_id, query, function(err, room){
-            logObject('***************query check room*************** room_id', room_id, 'query: ', query, 'params: ', params);
             // trường hợp room đã tồn tại ( room 1-1, 1-n)
             // trường hợp room 1-1 chưa tồn tại => create room
             // các trường hợp còn lại lỗi hết
-            logObject('***************room data***************', room);
+            logObject('***************room data***************', 'err', err, ', room', room);
             if (!err && room) {
                 // room 1-1, admin_key_flg = false => create room
                 //           admin_key_flg = true, unknow => tra ve cac thong tin room
@@ -1935,6 +1936,7 @@ function setNickNameSocket(socket, user_id, callback) {
             logObject('nickname allway', user_id);
         }
     }
+    logObject('result setickName: ', nickname_current, user_id);
     return callback(result);
 }
 
