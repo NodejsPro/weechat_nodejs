@@ -1049,6 +1049,7 @@ function validRoom(data, callback){
                 params.member = room.member;
                 if(room.admin_key_flg == ADMIN_KEY_FLG_FALSE){
                     logObject('room miss admin key');
+                    data.admin_key_flg = ADMIN_KEY_FLG_FALSE;
                     // Nếu room bị mất admin key và ko có room_id thì tạo room mới
                     if(room.room_type == ROOM_TYPE_ONE_ONE && isEmpty(room_id)){
                         logObject('room create, room_id empty, admin key flag false');
