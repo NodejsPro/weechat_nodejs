@@ -427,6 +427,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                             getRoom(data, function( error, result, params){
                                 logObject("user_send_message error",error, result, params);
                                 if(!error && result){
+                                    if(!isEmpty(result.admin_key_flg) && !result.admin_key_flg){
+                                        logObject('*********** room bi mat key nen ko chat duoc');
+                                        return;
+                                    }
                                     userJoinRoom(socket, params.room_id, function (success) {
                                         if(!success){
                                             data.success = false;
@@ -775,6 +779,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             var user_id = data.user_id;
             validRoomEx2(room_id, user_id, function(error, room){
                 if(!error && room){
+                    if(!isEmpty(room.admin_key_flg) && !room.admin_key_flg){
+                        logObject('****Room bi mat key thi khong the exchange key');
+                        return;
+                    }
                     var admin_id = room.admin_id;
                     var data_send = {
                         'room_id' : room_id,
