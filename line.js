@@ -333,6 +333,8 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                         throw data_user_check;
                         return;
                     }
+                    // set lai nickname cho socket
+                    socket.nickname = user_id;
                     return Promise.all([
                         updateAdminKeyInRoomPromise(user_id, admin_key_flg),
                         userJoinRoomPromise(socket, user_id),
