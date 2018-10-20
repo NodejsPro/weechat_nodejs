@@ -76,7 +76,7 @@ var UserRoom = {};
 //format {user_id_1: 123456, user_id_2: 234567}
 var UserTime = {};
 
-const TIME_USER_LOGOUT = 5000;// 5 giây
+const TIME_USER_LOGOUT = 1000;// 1 giây
 
 const filter_variable = ["user_gender", "user_locale", "user_timezone", "user_referral"];
 
