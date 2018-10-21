@@ -29,6 +29,11 @@ var date_format_mini_global = 'YYYY-MM-DD';
 var kue = require('kue'),
     queue = kue.createQueue();
 
+// các trường hợp disable log
+var list_disable_show_log = [
+	'user_typing'
+];
+
 var Room = model.Room;
 
 /**
@@ -2358,6 +2363,9 @@ function userExKeyOnline(user_id){
 }
 
 function logObject(name_log, data){
+	if(list_disable_show_log.indexOf(name_log) >= 0){
+		return;
+	}
     var new_line = false;
     var line = [];
     if((typeof name_log === 'string') && name_log.search('----') >= 0){
