@@ -2079,7 +2079,7 @@ function setUserTime(user_id) {
 }
 
 function isEmptyMongodbID(id){
-    if(isEmpty(id) || !mongoose.Types.ObjectId(id)){
+    if(isEmpty(id) || !mongoose.Types.ObjectId.isValid(id)){
         return true;
     }
     return false;
@@ -2419,7 +2419,7 @@ function clearSocketOld(socket, callback){
     var rooms = Object.keys(socket.rooms);
     if(rooms){
         rooms.forEach(function (value) {
-            if(!isEmptyMongodbID(value)){
+            if(mongoose.Types.ObjectId.isValid(value)){
                 socket.leave(value);
             }
         });
