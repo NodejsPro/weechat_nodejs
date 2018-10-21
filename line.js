@@ -323,53 +323,55 @@ if (!sticky.listen(server, config.get('socketPort'))) {
 
         socket.on('user_join', function (data) {
             logObject('----------------------------------socket user_join---------------------------', data);
-            showListRoom(socket);
-            var user_id = data.user_id;
-            var admin_key_flg = data.admin_key_flg;
-            if(admin_key_flg == void 0 || (!isEmpty(admin_key_flg) && !(admin_key_flg instanceof Array))){
-                logObject('miss param admin_key_flg');
-                return;
-            }
-            validUserIdPromise(data)
-                .then(function(data_user_check){
-                    logObject('data_user_check: ', data_user_check);
-                    if(isEmpty(data_user_check) || isEmpty(data_user_check.error) || (data_user_check.error)){
-                        logObject('data_user_check error', data_user_check.reason);
-                        throw data_user_check;
-                        return;
-                    }
-                    // set lai nickname cho socket
-                    socket.nickname = user_id;
-                    return Promise.all([
-                        updateAdminKeyInRoomPromise(user_id, admin_key_flg),
-                        userJoinRoomPromise(socket, user_id),
-                        setNickNameSocketPromise(socket, user_id),
-                        UpdateStatusUserInRoomPromise(user_id, true)
-                    ]);
-                })
-                .then(function (data_object) {
-                    let [admin_key_result, user_join_result, set_nick_result, update_status_user] = data_object;
-                    logObject('---------','admin_key_result', admin_key_result, ', user_join_result', user_join_result, ', set_nick_result', set_nick_result, ', update_status_user', update_status_user);
-                    if(isEmpty(admin_key_result) || admin_key_result.error || isEmpty(user_join_result) || user_join_result.error
-                        || isEmpty(set_nick_result) || set_nick_result.error || isEmpty(update_status_user) || update_status_user.error){
-                        throw data_object;
-                    }
-                    setUserTime(user_id);
-                    var data_return = {
-                        success: true,
-                    };
-                    io.to(user_id).emit('status_join', data_return);
+            clearSocketOld(socket, function(){
+                showListRoom(socket);
+                var user_id = data.user_id;
+                var admin_key_flg = data.admin_key_flg;
+                if(admin_key_flg == void 0 || (!isEmpty(admin_key_flg) && !(admin_key_flg instanceof Array))){
+                    logObject('miss param admin_key_flg');
                     return;
-                })
-                .catch(function(err){
-                    err = getErrorException(err);
-                    var data = {
-                        success : false,
-                        message : 'Co loi....'
-                    };
-                    sendEventSocket(user_id, 'status_join_room', data);
-                    logObject('----error user_join', err)
-                });
+                }
+                validUserIdPromise(data)
+                    .then(function(data_user_check){
+                        logObject('data_user_check: ', data_user_check);
+                        if(isEmpty(data_user_check) || isEmpty(data_user_check.error) || (data_user_check.error)){
+                            logObject('data_user_check error', data_user_check.reason);
+                            throw data_user_check;
+                            return;
+                        }
+                        // set lai nickname cho socket
+                        socket.nickname = user_id;
+                        return Promise.all([
+                            updateAdminKeyInRoomPromise(user_id, admin_key_flg),
+                            userJoinRoomPromise(socket, user_id),
+                            setNickNameSocketPromise(socket, user_id),
+                            UpdateStatusUserInRoomPromise(user_id, true)
+                        ]);
+                    })
+                    .then(function (data_object) {
+                        let [admin_key_result, user_join_result, set_nick_result, update_status_user] = data_object;
+                        logObject('---------','admin_key_result', admin_key_result, ', user_join_result', user_join_result, ', set_nick_result', set_nick_result, ', update_status_user', update_status_user);
+                        if(isEmpty(admin_key_result) || admin_key_result.error || isEmpty(user_join_result) || user_join_result.error
+                            || isEmpty(set_nick_result) || set_nick_result.error || isEmpty(update_status_user) || update_status_user.error){
+                            throw data_object;
+                        }
+                        setUserTime(user_id);
+                        var data_return = {
+                            success: true,
+                        };
+                        io.to(user_id).emit('status_join', data_return);
+                        return;
+                    })
+                    .catch(function(err){
+                        err = getErrorException(err);
+                        var data = {
+                            success : false,
+                            message : 'Co loi....'
+                        };
+                        sendEventSocket(user_id, 'status_join_room', data);
+                        logObject('----error user_join', err)
+                    });
+            });
         });
 
         socket.on('user_join_room', function (data) {
@@ -2409,5 +2411,20 @@ function sendUserStatusInContact(user_id, contact, status){
         for(var i = 0; i< contact.length; i++){
             sendEventSocket(contact[i], 'user_online', data_user_online);
         }
+    }
+}
+
+function clearSocketOld(socket, callback){
+    logObject('****clearSocketOld');
+    var rooms = Object.keys(socket.rooms);
+    if (!isEmpty(rooms)) {
+        rooms.forEach(function (value) {
+            if(!isEmptyMongodbID(value)){
+                socket.leave(value);
+            }
+        });
+        return callback(false);
+    }else{
+        return callback(false);
     }
 }
