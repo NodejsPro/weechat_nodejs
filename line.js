@@ -2417,7 +2417,7 @@ function sendUserStatusInContact(user_id, contact, status){
 function clearSocketOld(socket, callback){
     logObject('****clearSocketOld');
     var rooms = Object.keys(socket.rooms);
-    if (!isEmpty(rooms)) {
+    if(rooms){
         rooms.forEach(function (value) {
             if(!isEmptyMongodbID(value)){
                 socket.leave(value);
