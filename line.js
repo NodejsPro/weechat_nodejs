@@ -382,6 +382,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                             logObject('nick name before check', socket.nickname, 'user_id', user_id);
                             setNickNameSocket(socket, user_id, function(success){
                                 setUserTime(user_id);
+								UserIdsArr[user_id] = socket.id;
                                 if(success){
                                     var data_result = {
                                         success: true,
@@ -428,6 +429,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 if(success){
                     setNickNameSocket(socket, user_id, function(success) {
                         if (success) {
+							UserIdsArr[user_id] = socket.id;
                             logObject('******************setNickNameSocket ', UserIdsArr);
                             getRoom(data, function( error, result, params){
                                 logObject("user_send_message error",error, result, params);
