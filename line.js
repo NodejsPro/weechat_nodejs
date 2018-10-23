@@ -631,6 +631,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
             logObject('---------------------------------event_ex_key_step1---------------------------', data);
             validRoomEx(data, function(error, room){
                 if(!error && room){
+                    if(!isEmpty(room.admin_key_flg) && !room.admin_key_flg){
+                        logObject('****Room bi mat key thi khong the exchange key');
+                        return;
+                    }
                     var from_client_id = data.from_client_id;
                     var to_client_id = data.to_client_id;
                     var room_id = data.room_id;
@@ -656,6 +660,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         socket.on('event_ex_key_step2', function(data){
             logObject('---------------------------------event_ex_key_step2---------------------------', data);
             validRoomEx(data, function(error, room){
+                if(!isEmpty(room.admin_key_flg) && !room.admin_key_flg){
+                    logObject('****Room bi mat key thi khong the exchange key');
+                    return;
+                }
                 var from_client_id = data.from_client_id;
                 var to_client_id = data.to_client_id;
                 var room_id = data.room_id;
@@ -677,6 +685,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         socket.on('event_ex_key_step3', function(data){
             logObject('---------------------------------event_ex_key_step3---------------------------', data);
             validRoomEx(data, function(error, room){
+                if(!isEmpty(room.admin_key_flg) && !room.admin_key_flg){
+                    logObject('****Room bi mat key thi khong the exchange key');
+                    return;
+                }
                 var from_client_id = data.from_client_id;
                 var to_client_id = data.to_client_id;
                 var room_id = data.room_id;
@@ -698,6 +710,10 @@ if (!sticky.listen(server, config.get('socketPort'))) {
         socket.on('event_ex_key_step4', function(data){
             logObject('---------------------------------event_ex_key_step4---------------------------', data);
             validRoomEx(data, function(error, room){
+                if(!isEmpty(room.admin_key_flg) && !room.admin_key_flg){
+                    logObject('****Room bi mat key thi khong the exchange key');
+                    return;
+                }
                 var from_client_id = data.from_client_id;
                 var to_client_id = data.to_client_id;
                 var room_id = data.room_id;
