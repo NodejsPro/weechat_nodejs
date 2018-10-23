@@ -359,7 +359,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                         var data_return = {
                             success: true,
                         };
-                        io.to(user_id).emit('status_join', data_return);
+                        sendEventSocket(user_id, 'status_join', data_return);
                         return;
                     })
                     .catch(function(err){
@@ -401,12 +401,12 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                             logObject('send status false');
                                             data.success = false;
                                             data.message = "message.not_join_room ," + param.room_id;
-                                            io.to(user_id).emit('status_join_room', data);
+                                            sendEventSocket(user_id, 'status_join_room', data);
                                             return;
                                         }
                                         updateUserRoom(param.room_id, param.user_id, true);
                                         setUserTime(user_id);
-                                        io.to(user_id).emit('status_join_room', data_result);
+                                        sendEventSocket(user_id, 'status_join_room', data_result);
                                         resetUnreadMessage(param.room_id, user_id);
                                         return;
                                     });
@@ -444,7 +444,7 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                                         if(!success){
                                             data.success = false;
                                             data.message = "message.not_join_room ," + params.room_id;
-                                            io.to(user_id).emit('status_join_room', data);
+                                            sendEventSocket(user_id, 'status_join_room', data);
                                             return;
                                         }
                                         updateUserRoom(params.room_id, user_id, true);
@@ -1035,7 +1035,7 @@ function validRoom(data, callback){
         data.success = false;
         data.message = 'user id miss';
         logObject('user_id miss');
-        io.to(user_id).emit('status_join_room', data);
+        sendEventSocket(user_id, 'status_join_room', data);
         return callback(true);
     }
     if(!isEmptyMongodbID(room_id)){
@@ -1044,14 +1044,14 @@ function validRoom(data, callback){
         if (isEmpty(room_type) || !room_type_arr.indexOf(room_type)) {
             data.success = false;
             data.message = 'message.room_type_validate';
-            io.to(user_id).emit('status_join_room', data);
+            sendEventSocket(user_id, 'status_join_room', data);
             logObject('room_type_validate');
             return callback(true);
         } else if (isEmpty(member) || !(member instanceof Array) || (room_type == ROOM_TYPE_ONE_ONE && member.length != 2)) {
             data.success = false;
             data.message = 'message.member_validate_1';
             logObject('member_validate_1');
-            io.to(user_id).emit('status_join_room', data);
+            sendEventSocket(user_id, 'status_join_room', data);
             deleteUserRoom(room_id, user_id);
             return callback(true);
         }
@@ -1063,7 +1063,7 @@ function validRoom(data, callback){
         if(err || !user){
             data.success = false;
             data.message = "message.user_not_exsits";
-            io.to(user_id).emit('status_join_room', data);
+            sendEventSocket(user_id, 'status_join_room', data);
             logObject('user_not_exsits');
             return callback(true);
         }else if(!user.is_login){
@@ -1148,7 +1148,7 @@ function validRoom(data, callback){
                 logObject('member_validate_3');
                 data.success = false;
                 data.message = 'message.room_not_exits';
-                io.to(user_id).emit('status_join_room', data);
+                sendEventSocket(user_id, 'status_join_room', data);
                 deleteUserRoom(room_id, user_id);
                 return callback(true);
             }
@@ -1382,7 +1382,7 @@ function validUserIdPromise(data){
         if(!user_id || !mongoose.Types.ObjectId.isValid(user_id)){
             data.success = 0;
             logObject('status_join miss user_id', data);
-            io.to(user_id).emit('status_join', data);
+            sendEventSocket(user_id, 'status_join', data);
             return_data.error = true;
             return reject(return_data);
         }
@@ -1400,7 +1400,7 @@ function validUserIdPromise(data){
             }else{
                 data.success = 0;
                 logObject('status_join user valid', data);
-                io.to(user_id).emit('status_join', data);
+                sendEventSocket(user_id, 'status_join', data);
                 return_data.error = true;
                 return reject(return_data);
             }
@@ -1414,7 +1414,7 @@ function validUserId(data, callback){
     if(!user_id || !mongoose.Types.ObjectId.isValid(user_id)){
         data.success = 0;
         logObject('status_join miss user_id', data);
-        io.to(user_id).emit('status_join', data);
+        sendEventSocket(user_id, 'status_join', data);
         return callback(true);
     }
     User.findOne({_id: user_id, deleted_at: null}, function (err, result) {
@@ -1428,7 +1428,7 @@ function validUserId(data, callback){
         }else{
             data.success = 0;
             logObject('status_join user valid', data);
-            io.to(user_id).emit('status_join', data);
+            sendEventSocket(user_id, 'status_join', data);
             return callback(true);
         }
     });
@@ -1494,7 +1494,7 @@ var getRoom = function(data, callback) {
             logObject('error getroom');
             data.success = false;
             data.message = 'message.room_not-exits';
-            io.to(user_id).emit('status_join_room', data);
+            sendEventSocket(user_id, 'status_join_room', data);
             return callback(true);
         }
         var params = createParameterDefault(data.message_type, room_id, data.user_id, result.member);
