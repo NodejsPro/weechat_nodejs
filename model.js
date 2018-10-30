@@ -79,6 +79,7 @@ var RoomSchema = new Schema({
     admin_key_flg : Number,
     member: Array,
     created_at : Date,
+    deleted_at : Date,
     updated_at : Date
 });
 

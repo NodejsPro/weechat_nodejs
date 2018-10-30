@@ -427,63 +427,58 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                 logObject('data send empty');
                 return;
             }
-            userJoinRoom(socket, user_id, function(success){
-                if(success){
-                    setNickNameSocket(socket, user_id, function(success) {
-                        if (success) {
-							UserIdsArr[user_id] = socket.id;
-                            logObject('******************setNickNameSocket ', UserIdsArr);
-                            getRoom(data, function( error, result, params){
-                                logObject("user_send_message error",error, result, params);
-                                if(!error && result){
-                                    if(!isEmpty(result.admin_key_flg) && !result.admin_key_flg){
-                                        logObject('*********** room bi mat key nen ko chat duoc');
-                                        return;
-                                    }
-                                    userJoinRoom(socket, params.room_id, function (success) {
-                                        if(!success){
-                                            data.success = false;
-                                            data.message = "message.not_join_room ," + params.room_id;
-                                            sendEventSocket(user_id, 'status_join_room', data);
-                                            return;
-                                        }
-                                        updateUserRoom(params.room_id, user_id, true);
-                                        logObject('******************check userid arr ', UserIdsArr);
-                                        getUserNotExistsRoom(params.room_id, params.member, function(user_id_not_arr, client_in_room){
-                                            logObject('getUserNotExistsRoom', user_id_not_arr);
-                                            user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
-                                            params.user_id_not_arr = user_id_not_arr;
-                                            params.client_in_room = client_in_room;
-                                            params.admin_id = result.admin_id;
-                                            logObject('parama, ', params);
-                                            switch (message_type){
-                                                case USER_SEND_FILE:
-                                                    var message = data.message;
-                                                    if(!isEmpty(message) && Array.isArray(message)){
-                                                        var msg = [];
-                                                        message.forEach(function(row) {
-                                                            var obj = {
-                                                                'path' : !isEmpty(row.path) ?  row.path : '',
-                                                                'name_origin' : !isEmpty(row.name_origin) ?  row.name_origin : '',
-                                                                'file_type' : !isEmpty(row.file_type) ?  row.file_type : '',
-                                                            };
-                                                            msg.push(obj);
-                                                        });
-                                                        sendMessage(params, msg, data.message_type);
-                                                    }
-
-                                                    break;
-                                                case USER_SEND_TEXT:
-                                                    sendMessage(params, data.message, data.message_type);
-                                                    break;
-                                            }
-                                        });
-                                    });
-                                }
-                            });
-                        }
-                    });
+            getRoom(data, function( error, result, params){
+                if(error || isEmpty(result)){
+                    logObject("user_send_message error", result, params);
                 }
+                userJoinRoom(socket, user_id, function(success){
+                    if(success){
+                        setNickNameSocket(socket, user_id, function(success) {
+                            if(!isEmpty(result.admin_key_flg) && !result.admin_key_flg){
+                                logObject('*********** room bi mat key nen ko chat duoc');
+                                return;
+                            }
+                            userJoinRoom(socket, params.room_id, function (success) {
+                                if(!success){
+                                    data.success = false;
+                                    data.message = "message.not_join_room ," + params.room_id;
+                                    sendEventSocket(user_id, 'status_join_room', data);
+                                    return;
+                                }
+                                updateUserRoom(params.room_id, user_id, true);
+                                logObject('******************check userid arr ', UserIdsArr);
+                                getUserNotExistsRoom(params.room_id, params.member, function(user_id_not_arr, client_in_room){
+                                    logObject('getUserNotExistsRoom', user_id_not_arr);
+                                    user_id_not_arr = removeElementFromArray(user_id_not_arr, params.user_id);
+                                    params.user_id_not_arr = user_id_not_arr;
+                                    params.client_in_room = client_in_room;
+                                    params.admin_id = result.admin_id;
+                                    logObject('parama, ', params);
+                                    switch (message_type){
+                                        case USER_SEND_FILE:
+                                            var message = data.message;
+                                            if(!isEmpty(message) && Array.isArray(message)){
+                                                var msg = [];
+                                                message.forEach(function(row) {
+                                                    var obj = {
+                                                        'path' : !isEmpty(row.path) ?  row.path : '',
+                                                        'name_origin' : !isEmpty(row.name_origin) ?  row.name_origin : '',
+                                                        'file_type' : !isEmpty(row.file_type) ?  row.file_type : '',
+                                                    };
+                                                    msg.push(obj);
+                                                });
+                                                sendMessage(params, msg, data.message_type);
+                                            }
+                                            break;
+                                        case USER_SEND_TEXT:
+                                            sendMessage(params, data.message, data.message_type);
+                                            break;
+                                    }
+                                });
+                            });
+                        });
+                    }
+                });
             });
         });
 
@@ -793,6 +788,39 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     logObject(err, data);
                 });
                 sendEventSocket(room_id, 'event_server_clear_message', data);
+            })
+        });
+
+        socket.on('trigger_user_delete_room', function(data){
+            logObject('---------------------------------trigger_user_delete_room---------------------------', data);
+            var room_id = data.room_id,
+                user_id = data.user_id,
+                option_query = {
+                    deleted_at: null,
+                    member: {$in: [user_id]}
+                };
+            if(isEmptyMongodbID(room_id) || isEmptyMongodbID(user_id)){
+                logObject('miss param');
+                return;
+            }
+            getRoomEx2(room_id, option_query, function(err, room){
+                if(err || isEmpty(room)){
+                    logObject('room lỗi hoặc ko tim thay');
+                    return;
+                }
+                var logCollection = CreateModelLogForName(room_id + "_logs");
+                if(room.room_type == ROOM_TYPE_ONE_ONE || (room.room_type == ROOM_TYPE_ONE_MANY && room.admin_id == user_id)){
+                    var now = new Date();
+                    room.deleted_at = now;
+                    room.save();
+                    var member = !isEmpty(room.member) ? room.member: [];
+                    for(var i =0; i < member.length; i++){
+                        socket.leave(member[i]);
+                        sendEventSocket(member[i], 'event_server_delete_room', data);
+                    }
+                    logCollection.remove({}, function(err){
+                    });
+                }
             })
         });
 
