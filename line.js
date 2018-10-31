@@ -814,8 +814,8 @@ if (!sticky.listen(server, config.get('socketPort'))) {
                     room.deleted_at = now;
                     room.save();
                     var member = !isEmpty(room.member) ? room.member: [];
+                    socket.leave(room_id);
                     for(var i =0; i < member.length; i++){
-                        socket.leave(member[i]);
                         sendEventSocket(member[i], 'event_server_delete_room', data);
                     }
                     logCollection.remove({}, function(err){
